@@ -30,7 +30,7 @@
 
 #define DRIVER_MAJOR      1
 #define DRIVER_MINOR      0
-#define DRIVER_PATCHLEVEL 0
+#define DRIVER_PATCHLEVEL 68
 
 struct evdi_fbdev;
 struct evdi_painter;
