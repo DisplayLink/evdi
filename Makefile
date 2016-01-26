@@ -4,7 +4,7 @@
 
 all:
 	$(MAKE) -C module $(MFLAGS)
-	$(MAKE) -C library $(MFLAGS)
+	CFLAGS="-I../module $(CFLAGS)" $(MAKE) -C library $(MFLAGS)
 
 clean:
 	$(MAKE) clean -C module $(MFLAGS)
