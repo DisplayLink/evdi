@@ -1,7 +1,12 @@
 // Copyright (c) 2015 DisplayLink (UK) Ltd.
-
+#include <stddef.h>
+#include <stdint.h>
+#include <libdrm/drm.h>
+#ifndef __user
+#  define __user
+#endif
+#include "evdi_drm.h"
 #include "evdi_lib.h"
-#include "evdi_ioctl.h"
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>

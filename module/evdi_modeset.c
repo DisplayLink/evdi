@@ -18,7 +18,7 @@
 #include <drm/drm_plane_helper.h>
 #endif
 #include "evdi_drv.h"
-#include "evdi_ioctl.h"
+#include "evdi_drm.h"
 
 static void evdi_crtc_dpms(struct drm_crtc *crtc, int mode)
 {

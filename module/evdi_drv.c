@@ -13,7 +13,7 @@
 #include <drm/drmP.h>
 #include <drm/drm_crtc_helper.h>
 #include "evdi_drv.h"
-#include "evdi_ioctl.h"
+#include "evdi_drm.h"
 #include "evdi_debug.h"
 
 MODULE_AUTHOR("DisplayLink (UK) Ltd.");

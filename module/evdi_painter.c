@@ -9,7 +9,7 @@
 #include <drm/drmP.h>
 #include <drm/drm_edid.h>
 #include "evdi_drv.h"
-#include "evdi_ioctl.h"
+#include "evdi_drm.h"
 #include <linux/mutex.h>
 
 struct evdi_event_update_ready_pending {
