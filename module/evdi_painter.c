@@ -34,7 +34,8 @@ struct evdi_event_crtc_state_pending {
 
 struct evdi_painter {
   bool is_connected;
-  u8 edid[EDID_LENGTH];
+  struct edid *edid;
+  unsigned int edid_length;
 
   struct mutex lock;
   struct drm_clip_rect dirty_rects[MAX_DIRTS];
@@ -169,19 +170,22 @@ bool evdi_painter_is_connected(struct evdi_device *evdi)
   return false;
 }
 
-u8 *evdi_painter_get_edid(struct evdi_device *evdi)
+u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 {
   u8 *block = NULL;
   EVDI_CHECKPT();
 
   painter_lock(evdi->painter);
-  if (evdi_painter_is_connected(evdi)) {
-    block = kmalloc(EDID_LENGTH, GFP_KERNEL);
+  if (evdi_painter_is_connected(evdi) &&
+    evdi->painter->edid &&
+    evdi->painter->edid_length) {
+    block = kmalloc(evdi->painter->edid_length, GFP_KERNEL);
     if (block) {
-      memcpy(block, &evdi->painter->edid[0], EDID_LENGTH);
+      memcpy(block, evdi->painter->edid, evdi->painter->edid_length);
       EVDI_DEBUG("(dev=%d) %02x %02x %02x\n", evdi->dev_index, block[0], block[1], block[2]);
     }
   }
+
   painter_unlock(evdi->painter);
   return block;
 }
@@ -367,7 +371,11 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
   }
 }
 
-void evdi_painter_connect(struct evdi_device* evdi, void const* edid, struct drm_file* file, int dev_index)
+void evdi_painter_connect(struct evdi_device* evdi,
+                          void const* edid,
+                          unsigned int edid_length,
+                          struct drm_file* file,
+                          int dev_index)
 {
   struct evdi_painter* painter = evdi->painter;
   EVDI_CHECKPT();
@@ -382,8 +390,15 @@ void evdi_painter_connect(struct evdi_device* evdi, void const* edid, struct drm
   evdi->dev_index = dev_index;
   EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index, painter->drm_filp);
 
-  memcpy(painter->edid, edid, EDID_LENGTH);
-  EVDI_DEBUG("(dev=%d) Edid (3 bytes): %02x %02x %02x\n", evdi->dev_index, painter->edid[0], painter->edid[1], painter->edid[2]);
+  painter->edid_length = edid_length;
+  painter->edid = krealloc(painter->edid, painter->edid_length, GFP_KERNEL);
+
+  copy_from_user(painter->edid, edid, painter->edid_length);
+  EVDI_DEBUG("(dev=%d) Edid (3 bytes): %02x %02x %02x\n",
+             evdi->dev_index,
+             painter->edid->header[0],
+             painter->edid->header[1],
+             painter->edid->header[2]);
 
   painter->is_connected = true;
 
@@ -445,7 +460,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data, struct dr
 
   if (painter) {
     if (cmd->connected) {
-      evdi_painter_connect(evdi, cmd->edid, file, cmd->dev_index);
+      evdi_painter_connect(evdi, cmd->edid, cmd->edid_length, file, cmd->dev_index);
     } else {
       evdi_painter_disconnect(evdi, file);
     }
@@ -554,3 +569,16 @@ int evdi_painter_init(struct evdi_device *dev)
   return -ENOMEM;
 }
 
+void evdi_painter_cleanup(struct evdi_device *evdi)
+{
+  struct evdi_painter *painter = evdi->painter;
+
+  EVDI_CHECKPT();
+  if (painter) {
+    painter_lock(painter);
+    kfree(painter->edid);
+    painter->edid_length = 0;
+    painter->edid = NULL;
+    painter_unlock(painter);
+  }
+}

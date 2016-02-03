@@ -272,13 +272,13 @@ void evdi_close(evdi_handle handle)
   }
 }
 
-void evdi_connect(evdi_handle handle, const unsigned char* edid)
+void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length)
 {
   struct drm_evdi_connect cmd = { 1 };
   cmd.dev_index = handle->device_index;
-  if (edid) {
-    memcpy(cmd.edid, edid, 128);
-  }
+  cmd.edid = edid;
+  cmd.edid_length = edid_length;
+
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");
 }
 

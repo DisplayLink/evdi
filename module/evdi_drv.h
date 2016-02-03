@@ -114,7 +114,7 @@ void evdi_stats_cleanup(struct evdi_device *evdi);
 
 bool evdi_painter_is_connected(struct evdi_device *evdi);
 void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file);
-u8 *evdi_painter_get_edid(struct evdi_device *evdi);
+u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
                              struct evdi_framebuffer *fb,
                              const struct drm_clip_rect* rect);

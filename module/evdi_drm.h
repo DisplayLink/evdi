@@ -52,7 +52,8 @@ struct drm_evdi_event_crtc_state {
 struct drm_evdi_connect {
 	int32_t connected;
 	int32_t dev_index;
-	unsigned char edid[128];
+	const unsigned char* __user edid;
+	unsigned int edid_length;
 };
 
 struct drm_evdi_mapfifo {

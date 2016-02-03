@@ -55,6 +55,7 @@ int evdi_driver_unload(struct drm_device *dev)
   evdi_fbdev_unplug(dev);
   drm_unplug_dev(dev);
 
+  evdi_painter_cleanup(evdi);
   evdi_stats_cleanup(evdi);
   evdi_fbdev_cleanup(dev);
   evdi_modeset_cleanup(dev);

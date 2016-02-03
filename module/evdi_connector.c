@@ -23,28 +23,26 @@
 static int evdi_get_modes(struct drm_connector *connector)
 {
   struct evdi_device *evdi = connector->dev->dev_private;
-  struct edid *edid;
-  int ret;
+  struct edid *edid = NULL;
+  int errorCode = 0;
 
-  edid = (struct edid *)evdi_painter_get_edid(evdi);
+  edid = (struct edid *)evdi_painter_get_edid_copy(evdi);
   if (!edid) {
     drm_mode_connector_update_edid_property(connector, NULL);
     return 0;
   }
 
-  /*
-   * We only read the main block, but if the monitor reports extension
-   * blocks then the drm edid code expects them to be present, so patch
-   * the extension count to 0.
-   */
-  edid->checksum += edid->extensions;
-  edid->extensions = 0;
+  errorCode = drm_mode_connector_update_edid_property(connector, edid);
+  if (!errorCode) {
+    if (!drm_add_edid_modes(connector, edid)) {
+      EVDI_WARN("No modes added from edid\n");
+    }
+  } else {
+    EVDI_ERROR("Failed to set edid modes! error: %d\n", errorCode);
+  }
 
-  drm_mode_connector_update_edid_property(connector, edid);
-  ret = drm_add_edid_modes(connector, edid);
   kfree(edid);
-
-  return ret;
+  return errorCode;
 }
 
 static int evdi_mode_valid(struct drm_connector *connector,

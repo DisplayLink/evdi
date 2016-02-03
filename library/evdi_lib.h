@@ -56,7 +56,7 @@ evdi_device_status evdi_check_device(int device);
 evdi_handle evdi_open(int device);
 int evdi_add_device();
 void evdi_close(evdi_handle handle);
-void evdi_connect(evdi_handle handle, const unsigned char* edid);
+void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length);
 void evdi_disconnect(evdi_handle handle);
 int evdi_poll_dirty_pixels(evdi_handle handle,
                            unsigned char* buf,
