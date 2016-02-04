@@ -196,21 +196,38 @@ static int device_has_master(const char* device_file_path)
   return 0;
 }
 
-static int open_device(int device)
+static int wait_for_master(const char *device_path)
 {
-  char dev[32] = "";
-  int has_master = 0;
   int cnt = OPEN_TOTAL_WAIT_US / SLEEP_INTERVAL_US;
-
-  snprintf(dev, 31, "/dev/dri/card%d", device);
-  has_master = device_has_master(dev);
+  int has_master = device_has_master(device_path);
 
   while (!has_master && cnt--) {
     usleep(SLEEP_INTERVAL_US);
-    has_master = device_has_master(dev);
+    has_master = device_has_master(device_path);
   }
 
-  return has_master ? open(dev, O_RDWR) : -EAGAIN;
+  return has_master;
+}
+
+static int open_device(int device)
+{
+  char dev[32] = "";
+  int dev_fd = 0;
+
+  snprintf(dev, 31, "/dev/dri/card%d", device);
+
+#ifndef CHROMEOS
+  if (!wait_for_master(dev)) {
+    return -EAGAIN;
+  }
+#endif
+
+  dev_fd = open(dev, O_RDWR);
+  if (dev_fd >= 0) {
+    do_ioctl(dev_fd, DRM_IOCTL_DROP_MASTER, NULL, "drop_master");
+  }
+
+  return dev_fd;
 }
 
 // ********************* Public part **************************
