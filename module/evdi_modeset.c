@@ -148,8 +148,10 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	drm_mode_create_dirty_info_property(dev);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
 	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+	drm_dev_set_unique(dev, dev_name(dev->dev));
 #endif
 	evdi_crtc_init(dev);
 
