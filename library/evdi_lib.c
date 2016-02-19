@@ -25,6 +25,7 @@
 #define SLEEP_INTERVAL_US   100000L
 #define OPEN_TOTAL_WAIT_US  5000000L
 #define MAX_FILEPATH        256
+#define MAX_DIRTS	    16
 
 typedef struct _evdi_frame_buffer_node {
   evdi_buffer frame_buffer;
@@ -398,11 +399,11 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
 evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed* event)
 { 
   evdi_mode e;
-  e.width = event->mode.width;
-  e.height = event->mode.height;
-  e.refresh_rate = event->mode.refresh_rate;
-  e.bits_per_pixel =  event->mode.bits_per_pixel;
-  e.pixel_format = event->mode.pixel_format;
+  e.width = event->hdisplay;
+  e.height = event->vdisplay;
+  e.refresh_rate = event->vrefresh;
+  e.bits_per_pixel =  event->bits_per_pixel;
+  e.pixel_format = event->pixel_format;
   return e;
 }
 

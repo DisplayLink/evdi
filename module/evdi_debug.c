@@ -1,4 +1,10 @@
-// Copyright (c) 2015 DisplayLink (UK) Ltd.
+/*
+ * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ *
+ * This file is subject to the terms and conditions of the GNU General Public
+ * License v2. See the file COPYING in the main directory of this archive for
+ * more details.
+ */
 
 #include <linux/module.h>
 #include <linux/moduleparam.h>

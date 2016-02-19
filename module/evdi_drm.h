@@ -9,8 +9,6 @@
 #ifndef __UAPI_EVDI_DRM_H__
 #define __UAPI_EVDI_DRM_H__
 
-#define MAX_DIRTS 16
-
 /* Output events sent from driver to evdi lib */
 #define DRM_EVDI_EVENT_UPDATE_READY  0x80000000
 #define DRM_EVDI_EVENT_DPMS          0x80000001
@@ -23,25 +21,16 @@ struct drm_evdi_event_update_ready {
 
 struct drm_evdi_event_dpms {
 	struct drm_event base;
-	int mode;
-};
-
-struct drm_evdi_mode {
-	int32_t width;
-	int32_t height;
-	int32_t refresh_rate;
-	int32_t bits_per_pixel;
-	uint32_t pixel_format;
+	int32_t mode;
 };
 
 struct drm_evdi_event_mode_changed {
 	struct drm_event base;
-	struct drm_evdi_mode mode;
-};
-
-enum drm_evdi_crtc_state {
-	EVDI_CRTC_DISABLED,
-	EVDI_CRTC_ENABLED,
+	int32_t hdisplay;
+	int32_t vdisplay;
+	int32_t vrefresh;
+	int32_t bits_per_pixel;
+	uint32_t pixel_format;
 };
 
 struct drm_evdi_event_crtc_state {
@@ -52,7 +41,7 @@ struct drm_evdi_event_crtc_state {
 struct drm_evdi_connect {
 	int32_t connected;
 	int32_t dev_index;
-	const unsigned char* __user edid;
+	const unsigned char * __user edid;
 	unsigned int edid_length;
 };
 
@@ -65,12 +54,12 @@ struct drm_evdi_request_update {
 };
 
 enum drm_evdi_grabpix_mode {
-	EVDI_GRABPIX_MODE_RECTS,
-	EVDI_GRABPIX_MODE_DIRTY,
+	EVDI_GRABPIX_MODE_RECTS = 0,
+	EVDI_GRABPIX_MODE_DIRTY = 1,
 };
 
 struct drm_evdi_grabpix {
-	int32_t mode;
+	enum drm_evdi_grabpix_mode mode;
 	int32_t buf_width;
 	int32_t buf_height;
 	int32_t buf_byte_stride;
