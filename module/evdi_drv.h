@@ -94,6 +94,8 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size);
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
+struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
+				      struct drm_gem_object *obj, int flags);
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);

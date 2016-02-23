@@ -296,3 +296,172 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 	put_device(dev->dev);
 	return ERR_PTR(ret);
 }
+
+struct evdi_drm_dmabuf_attachment {
+	struct sg_table sgt;
+	enum dma_data_direction dir;
+	bool is_mapped;
+};
+
+static int evdi_attach_dma_buf(struct dma_buf *dmabuf,
+			       struct device *dev,
+			       struct dma_buf_attachment *attach)
+{
+	struct evdi_drm_dmabuf_attachment *evdi_attach;
+
+	evdi_attach = kzalloc(sizeof(*evdi_attach), GFP_KERNEL);
+	if (!evdi_attach)
+		return -ENOMEM;
+
+	evdi_attach->dir = DMA_NONE;
+	attach->priv = evdi_attach;
+
+	return 0;
+}
+
+static void evdi_detach_dma_buf(struct dma_buf *dmabuf,
+				struct dma_buf_attachment *attach)
+{
+	struct evdi_drm_dmabuf_attachment *evdi_attach = attach->priv;
+	struct sg_table *sgt;
+
+	if (!evdi_attach)
+		return;
+
+	sgt = &evdi_attach->sgt;
+
+	if (evdi_attach->dir != DMA_NONE)
+		dma_unmap_sg(attach->dev, sgt->sgl, sgt->nents,
+			     evdi_attach->dir);
+
+	sg_free_table(sgt);
+	kfree(evdi_attach);
+	attach->priv = NULL;
+}
+
+static struct sg_table *evdi_map_dma_buf(struct dma_buf_attachment *attach,
+					 enum dma_data_direction dir)
+{
+	struct evdi_drm_dmabuf_attachment *evdi_attach = attach->priv;
+	struct evdi_gem_object *obj = to_evdi_bo(attach->dmabuf->priv);
+	struct drm_device *dev = obj->base.dev;
+	struct scatterlist *rd, *wr;
+	struct sg_table *sgt = NULL;
+	unsigned int i;
+	int page_count;
+	int nents, ret;
+
+	DRM_DEBUG_PRIME("[DEV:%s] size:%zd dir=%d\n", dev_name(attach->dev),
+			attach->dmabuf->size, dir);
+
+	/* just return current sgt if already requested. */
+	if (evdi_attach->dir == dir && evdi_attach->is_mapped)
+		return &evdi_attach->sgt;
+
+	if (!obj->pages) {
+		ret = evdi_gem_get_pages(obj, GFP_KERNEL);
+		if (ret) {
+			DRM_ERROR("failed to map pages.\n");
+			return ERR_PTR(ret);
+		}
+	}
+
+	page_count = obj->base.size / PAGE_SIZE;
+	obj->sg = drm_prime_pages_to_sg(obj->pages, page_count);
+	if (IS_ERR(obj->sg)) {
+		DRM_ERROR("failed to allocate sgt.\n");
+		return ERR_CAST(obj->sg);
+	}
+
+	sgt = &evdi_attach->sgt;
+
+	ret = sg_alloc_table(sgt, obj->sg->orig_nents, GFP_KERNEL);
+	if (ret) {
+		DRM_ERROR("failed to alloc sgt.\n");
+		return ERR_PTR(-ENOMEM);
+	}
+
+	mutex_lock(&dev->struct_mutex);
+
+	rd = obj->sg->sgl;
+	wr = sgt->sgl;
+	for (i = 0; i < sgt->orig_nents; ++i) {
+		sg_set_page(wr, sg_page(rd), rd->length, rd->offset);
+		rd = sg_next(rd);
+		wr = sg_next(wr);
+	}
+
+	if (dir != DMA_NONE) {
+		nents = dma_map_sg(attach->dev, sgt->sgl, sgt->orig_nents, dir);
+		if (!nents) {
+			DRM_ERROR("failed to map sgl with iommu.\n");
+			sg_free_table(sgt);
+			sgt = ERR_PTR(-EIO);
+			goto err_unlock;
+		}
+	}
+
+	evdi_attach->is_mapped = true;
+	evdi_attach->dir = dir;
+	attach->priv = evdi_attach;
+
+ err_unlock:
+	mutex_unlock(&dev->struct_mutex);
+	return sgt;
+}
+
+static void evdi_unmap_dma_buf(struct dma_buf_attachment *attach,
+			       struct sg_table *sgt,
+			       enum dma_data_direction dir)
+{
+}
+
+static void *evdi_dmabuf_kmap(struct dma_buf *dma_buf, unsigned long page_num)
+{
+	return NULL;
+}
+
+static void *evdi_dmabuf_kmap_atomic(struct dma_buf *dma_buf,
+				     unsigned long page_num)
+{
+	return NULL;
+}
+
+static void evdi_dmabuf_kunmap(struct dma_buf *dma_buf,
+			       unsigned long page_num, void *addr)
+{
+}
+
+static void evdi_dmabuf_kunmap_atomic(struct dma_buf *dma_buf,
+				      unsigned long page_num, void *addr)
+{
+}
+
+static int evdi_dmabuf_mmap(struct dma_buf *dma_buf, struct vm_area_struct *vma)
+{
+	return -EINVAL;
+}
+
+static struct dma_buf_ops evdi_dmabuf_ops = {
+
+	.attach = evdi_attach_dma_buf,
+	.detach = evdi_detach_dma_buf,
+	.map_dma_buf = evdi_map_dma_buf,
+	.unmap_dma_buf = evdi_unmap_dma_buf,
+	.kmap = evdi_dmabuf_kmap,
+	.kmap_atomic = evdi_dmabuf_kmap_atomic,
+	.kunmap = evdi_dmabuf_kunmap,
+	.kunmap_atomic = evdi_dmabuf_kunmap_atomic,
+	.mmap = evdi_dmabuf_mmap,
+	.release = drm_gem_dmabuf_release,
+};
+
+struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
+				      struct drm_gem_object *obj, int flags)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
+	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags);
+#else
+	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags, NULL);
+#endif
+}
