@@ -10,10 +10,14 @@
  * more details.
  */
 
+#include <linux/version.h>
+
 #include <drm/drmP.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#include <drm/drm_atomic.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#include <linux/version.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
 #include <drm/drm_plane_helper.h>
 #endif
@@ -101,6 +105,9 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 
 static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.set_config = drm_crtc_helper_set_config,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+	.set_property = drm_atomic_crtc_set_property,
+#endif
 	.destroy = evdi_crtc_destroy,
 };
 
