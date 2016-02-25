@@ -30,10 +30,21 @@ int evdi_driver_load(struct drm_device *dev, unsigned long flags)
 
 	EVDI_CHECKPT();
 	ret = evdi_modeset_init(dev);
+	if (ret)
+		goto err;
 
 	ret = evdi_fbdev_init(dev);
+	if (ret)
+		goto err;
 
-	evdi_painter_init(evdi);
+	ret = drm_vblank_init(dev, 1);
+	if (ret)
+		goto err_fb;
+
+	ret = evdi_painter_init(evdi);
+	if (ret)
+		goto err_fb;
+
 	evdi_stats_init(evdi);
 
 	drm_kms_helper_poll_init(dev);
@@ -42,6 +53,13 @@ int evdi_driver_load(struct drm_device *dev, unsigned long flags)
 	platform_set_drvdata(platdev, dev);
 
 	return 0;
+
+err_fb:
+	evdi_fbdev_cleanup(dev);
+err:
+	kfree(evdi);
+	EVDI_ERROR("%d\n", ret);
+	return ret;
 }
 
 int evdi_driver_unload(struct drm_device *dev)
@@ -50,6 +68,7 @@ int evdi_driver_unload(struct drm_device *dev)
 
 	EVDI_CHECKPT();
 
+	drm_vblank_cleanup(dev);
 	drm_kms_helper_poll_fini(dev);
 	drm_connector_unplug_all(dev);
 	evdi_fbdev_unplug(dev);

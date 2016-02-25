@@ -24,6 +24,17 @@
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 
+struct evdi_flip_queue
+{
+	struct mutex lock;
+	struct workqueue_struct *wq;
+	struct delayed_work work;
+	struct drm_crtc *crtc;
+	struct drm_pending_vblank_event *event;
+	u64 flip_time;  /* in jiffies */
+	u64 vblank_interval;  /* in jiffies */
+};
+
 static void evdi_crtc_dpms(struct drm_crtc *crtc, int mode)
 {
 	struct evdi_device *evdi = crtc->dev->dev_private;
@@ -45,24 +56,43 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 {
 	struct drm_device *dev = NULL;
 	struct evdi_device *evdi = NULL;
+	struct evdi_flip_queue *flip_queue = NULL;
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,15,0)
-	struct evdi_framebuffer *ufb = to_evdi_fb(crtc->fb);
+	struct evdi_framebuffer *efb = to_evdi_fb(crtc->fb);
 #else
-	struct evdi_framebuffer *ufb = NULL;
+	struct evdi_framebuffer *efb = NULL;
 
 	if (NULL == crtc->primary) {
 		EVDI_DEBUG("evdi_crtc_mode_set primary plane is NULL");
 		return 0;
 	}
-	ufb = to_evdi_fb(crtc->primary->fb);
+	efb = to_evdi_fb(crtc->primary->fb);
 #endif
 
 	EVDI_ENTER();
-	dev = ufb->base.dev;
+
+	efb = to_evdi_fb(crtc->primary->fb);
+	if (old_fb) {
+		struct evdi_framebuffer *eold_fb = to_evdi_fb(old_fb);
+
+		eold_fb->active = false;
+	}
+	efb->active = true;
+
+	dev = efb->base.dev;
 	evdi = dev->dev_private;
-	evdi_painter_mode_changed_notify(evdi, &ufb->base, adjusted_mode);
+	evdi_painter_mode_changed_notify(evdi, &efb->base, adjusted_mode);
+
+	/* update flip queue vblank interval */
+	flip_queue = evdi->flip_queue;
+	if (flip_queue) {
+		mutex_lock(&flip_queue->lock);
+		flip_queue->vblank_interval = HZ / drm_mode_vrefresh(mode);
+		mutex_unlock(&flip_queue->lock);
+	}
+
 	/* damage all of it */
-	evdi_handle_damage(ufb, 0, 0, ufb->base.width, ufb->base.height);
+	evdi_handle_damage(efb, 0, 0, efb->base.width, efb->base.height);
 	EVDI_EXIT();
 	return 0;
 }
@@ -80,6 +110,92 @@ static void evdi_crtc_destroy(struct drm_crtc *crtc)
 	EVDI_CHECKPT();
 	drm_crtc_cleanup(crtc);
 	kfree(crtc);
+}
+
+static void evdi_sched_page_flip(struct work_struct *work)
+{
+	struct evdi_flip_queue *flip_queue =
+		container_of(container_of(work, struct delayed_work, work),
+	struct evdi_flip_queue, work);
+	struct drm_crtc *crtc;
+	struct drm_device *dev;
+	struct drm_pending_vblank_event *event;
+	struct drm_framebuffer *fb;
+
+	mutex_lock(&flip_queue->lock);
+	crtc = flip_queue->crtc;
+	dev = crtc->dev;
+	event = flip_queue->event;
+	fb = crtc->primary->fb;
+	flip_queue->event = NULL;
+	mutex_unlock(&flip_queue->lock);
+
+	EVDI_CHECKPT();
+	if (fb)
+		evdi_handle_damage(to_evdi_fb(fb), 0, 0, fb->width, fb->height);
+
+	if (event) {
+		unsigned long flags = 0;
+
+		spin_lock_irqsave(&dev->event_lock, flags);
+		drm_send_vblank_event(dev, 0, event);
+		spin_unlock_irqrestore(&dev->event_lock, flags);
+	}
+}
+
+static int evdi_crtc_page_flip(struct drm_crtc *crtc,
+			       struct drm_framebuffer *fb,
+			       struct drm_pending_vblank_event *event,
+			       uint32_t page_flip_flags)
+{
+	struct drm_device *dev = crtc->dev;
+	struct evdi_device *evdi = dev->dev_private;
+	struct evdi_flip_queue *flip_queue = evdi->flip_queue;
+
+	if (!flip_queue || !flip_queue->wq) {
+		DRM_ERROR("Uninitialized page flip queue\n");
+		return -ENOMEM;
+	}
+
+	mutex_lock(&flip_queue->lock);
+
+	EVDI_CHECKPT();
+	atomic_inc(&evdi->frame_count);
+	flip_queue->crtc = crtc;
+	if (fb) {
+		struct evdi_framebuffer *efb = to_evdi_fb(fb);
+		struct drm_framebuffer *old_fb = crtc->primary->fb;
+
+		if (old_fb) {
+			struct evdi_framebuffer *eold_fb = to_evdi_fb(old_fb);
+
+			eold_fb->active = false;
+		}
+		efb->active = true;
+		crtc->primary->fb = fb;
+	}
+	if (event) {
+		if (flip_queue->event) {
+			unsigned long flags = 0;
+
+			spin_lock_irqsave(&dev->event_lock, flags);
+			drm_send_vblank_event(dev, 0, flip_queue->event);
+			spin_unlock_irqrestore(&dev->event_lock, flags);
+		}
+		flip_queue->event = event;
+	}
+	if (!delayed_work_pending(&flip_queue->work)) {
+		u64 now = jiffies;
+		u64 next_flip =
+		flip_queue->flip_time + flip_queue->vblank_interval;
+		flip_queue->flip_time = (next_flip < now) ? now : next_flip;
+		queue_delayed_work(flip_queue->wq, &flip_queue->work,
+				   flip_queue->flip_time - now);
+	}
+
+	mutex_unlock(&flip_queue->lock);
+
+	return 0;
 }
 
 static void evdi_crtc_prepare(struct drm_crtc *crtc)
@@ -109,6 +225,7 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.set_property = drm_atomic_crtc_set_property,
 #endif
 	.destroy = evdi_crtc_destroy,
+	.page_flip = evdi_crtc_page_flip,
 };
 
 static int evdi_crtc_init(struct drm_device *dev)
@@ -117,9 +234,8 @@ static int evdi_crtc_init(struct drm_device *dev)
 	int status = 0;
 
 	EVDI_CHECKPT();
-	crtc =
-	    kzalloc(sizeof(struct drm_crtc) + sizeof(struct drm_connector *),
-		    GFP_KERNEL);
+	crtc = kzalloc(sizeof(struct drm_crtc) + sizeof(struct drm_connector *),
+		       GFP_KERNEL);
 	if (crtc == NULL)
 		return -ENOMEM;
 
@@ -128,6 +244,40 @@ static int evdi_crtc_init(struct drm_device *dev)
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
 
 	return 0;
+}
+
+static void evdi_flip_workqueue_init(struct drm_device *dev)
+{
+	struct evdi_device *evdi = dev->dev_private;
+	struct evdi_flip_queue *flip_queue =
+		kzalloc(sizeof(struct evdi_flip_queue), GFP_KERNEL);
+
+	EVDI_CHECKPT();
+	BUG_ON(!flip_queue);
+	mutex_init(&flip_queue->lock);
+	flip_queue->wq = create_singlethread_workqueue("flip");
+	BUG_ON(!flip_queue->wq);
+	INIT_DELAYED_WORK(&flip_queue->work, evdi_sched_page_flip);
+	flip_queue->flip_time = jiffies;
+	flip_queue->vblank_interval = HZ / 60;
+	evdi->flip_queue = flip_queue;
+}
+
+static void evdi_flip_workqueue_cleanup(struct drm_device *dev)
+{
+	struct evdi_device *evdi = dev->dev_private;
+	struct evdi_flip_queue *flip_queue = evdi->flip_queue;
+
+	if (!flip_queue)
+		return;
+
+	EVDI_CHECKPT();
+	if (flip_queue->wq) {
+		flush_workqueue(flip_queue->wq);
+		destroy_workqueue(flip_queue->wq);
+	}
+	mutex_destroy(&flip_queue->lock);
+	kfree(flip_queue);
 }
 
 static const struct drm_mode_config_funcs evdi_mode_funcs = {
@@ -164,11 +314,14 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	evdi_connector_init(dev, encoder);
 
+	evdi_flip_workqueue_init(dev);
+
 	return 0;
 }
 
 void evdi_modeset_cleanup(struct drm_device *dev)
 {
 	EVDI_CHECKPT();
+	evdi_flip_workqueue_cleanup(dev);
 	drm_mode_config_cleanup(dev);
 }

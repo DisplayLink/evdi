@@ -42,6 +42,9 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 
 	EVDI_CHECKPT();
 
+	if (!fb->active)
+		return 0;
+
 	if (!fb->obj->vmapping) {
 		if (evdi_gem_vmap(fb->obj) == -ENOMEM) {
 			DRM_ERROR("failed to vmap fb\n");
@@ -202,7 +205,11 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 	int ret = 0;
 
 	EVDI_CHECKPT();
+
 	drm_modeset_lock_all(fb->dev);
+
+	if (!ufb->active)
+		goto unlock;
 
 	if (ufb->obj->base.import_attach) {
 		ret =

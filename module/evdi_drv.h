@@ -34,6 +34,7 @@
 
 struct evdi_fbdev;
 struct evdi_painter;
+struct evdi_flip_queue;
 
 struct evdi_device {
 	struct device *dev;
@@ -47,6 +48,8 @@ struct evdi_device {
 	atomic_t frame_count;
 
 	int dev_index;
+
+	struct evdi_flip_queue *flip_queue;
 };
 
 struct evdi_gem_object {
@@ -61,6 +64,7 @@ struct evdi_gem_object {
 struct evdi_framebuffer {
 	struct drm_framebuffer base;
 	struct evdi_gem_object *obj;
+	bool active;
 };
 
 #define to_evdi_fb(x) container_of(x, struct evdi_framebuffer, base)
