@@ -13,6 +13,7 @@
 #include <linux/platform_device.h>
 #include <drm/drmP.h>
 #include "evdi_drv.h"
+#include "evdi_cursor.h"
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags)
 {
@@ -28,8 +29,13 @@ int evdi_driver_load(struct drm_device *dev, unsigned long flags)
 	evdi->ddev = dev;
 	dev->dev_private = evdi;
 
+	ret =  evdi_cursor_alloc(&evdi->cursor);
+	if (ret)
+		goto err;
+
 	EVDI_CHECKPT();
 	ret = evdi_modeset_init(dev);
+
 	if (ret)
 		goto err;
 
@@ -59,6 +65,8 @@ err_fb:
 err:
 	kfree(evdi);
 	EVDI_ERROR("%d\n", ret);
+	if (evdi->cursor)
+		evdi_cursor_free(evdi->cursor);
 	return ret;
 }
 
@@ -72,6 +80,8 @@ int evdi_driver_unload(struct drm_device *dev)
 	drm_kms_helper_poll_fini(dev);
 	drm_connector_unplug_all(dev);
 	evdi_fbdev_unplug(dev);
+	if (evdi->cursor)
+		evdi_cursor_free(evdi->cursor);
 	evdi_painter_cleanup(evdi);
 	evdi_stats_cleanup(evdi);
 	evdi_fbdev_cleanup(dev);

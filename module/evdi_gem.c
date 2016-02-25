@@ -461,7 +461,17 @@ struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
 	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags);
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 1, 0)
 	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags, NULL);
+#else
+	struct dma_buf_export_info exp_info = {
+		.exp_name = "evdi",
+		.ops = &evdi_dmabuf_ops,
+		.size = obj->size,
+		.flags = flags,
+		.resv = NULL,
+		.priv = obj
+	};
+	return dma_buf_export(&exp_info);
 #endif
 }

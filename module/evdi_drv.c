@@ -7,11 +7,11 @@
  * more details.
  */
 
+#include <drm/drmP.h>
+#include <drm/drm_crtc_helper.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 
-#include <drm/drmP.h>
-#include <drm/drm_crtc_helper.h>
 #include "evdi_drv.h"
 #include "evdi_drm.h"
 #include "evdi_debug.h"

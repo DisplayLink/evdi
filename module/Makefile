@@ -1,7 +1,10 @@
 #
-# Copyright (c) 2015 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
 #
-
+# This file is subject to the terms and conditions of the GNU General Public
+# License v2. See the file COPYING in the main directory of this archive for
+# more details.
+#
 ifneq ($(DKMS_BUILD),)
 
 # DKMS
@@ -9,7 +12,7 @@ ifneq ($(DKMS_BUILD),)
 KERN_DIR := /lib/modules/$(KERNELRELEASE)/build
 
 ccflags-y := -Iinclude/drm
-evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o
+evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o evdi_cursor.o
 obj-m := evdi.o
 
 KBUILD_VERBOSE ?= 1
@@ -31,13 +34,17 @@ ifneq ($(KERNELRELEASE),)
 # Note: this can be removed once it is in kernel tree and Kconfig is properly used
 CONFIG_DRM_EVDI := m
 ccflags-y := -Iinclude/drm
-evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o
+evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o evdi_cursor.o
 obj-$(CONFIG_DRM_EVDI) := evdi.o
 
 else
 
-# kbuild against current kernel
-KDIR := /lib/modules/$(shell uname -r)/build
+# kbuild against specified or current kernel
+ifeq ($(KVER),)
+	KVER := $(shell uname -r)
+endif
+
+KDIR := /lib/modules/$(KVER)/build
 CFLAGS := -std=c99 -g -fPIC
 
 default: module

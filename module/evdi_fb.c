@@ -29,6 +29,7 @@ struct evdi_fbdev {
 	int fb_count;
 };
 
+
 int evdi_handle_damage(struct evdi_framebuffer *fb,
 		       int x, int y, int width, int height)
 {
@@ -38,7 +39,6 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 	int line_offset = 0;
 	int byte_offset = 0;
 	char *pix = NULL;
-
 
 	EVDI_CHECKPT();
 
@@ -61,12 +61,12 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 	pix = (char *)fb->obj->vmapping + byte_offset;
 
 	EVDI_VERBOSE
-	    ("%p %d,%d-%dx%d %02x%02x%02x%02x%02x%02x%02x%02x\n", fb, x,
-	     y, width, height, ((int)(pix[0]) & 0xff),
-	     ((int)(pix[1]) & 0xff), ((int)(pix[2]) & 0xff),
-	     ((int)(pix[3]) & 0xff), ((int)(pix[4]) & 0xff),
-	     ((int)(pix[5]) & 0xff), ((int)(pix[6]) & 0xff),
-	     ((int)(pix[7]) & 0xff));
+	("%p %d,%d-%dx%d %02x%02x%02x%02x%02x%02x%02x%02x\n", fb, x,
+	 y, width, height, ((int)(pix[0]) & 0xff),
+	 ((int)(pix[1]) & 0xff), ((int)(pix[2]) & 0xff),
+	 ((int)(pix[3]) & 0xff), ((int)(pix[4]) & 0xff),
+	 ((int)(pix[5]) & 0xff), ((int)(pix[6]) & 0xff),
+	 ((int)(pix[7]) & 0xff));
 
 	evdi_painter_mark_dirty(evdi, fb, &rect);
 
@@ -469,7 +469,6 @@ struct drm_framebuffer *evdi_fb_user_fb_create(struct drm_device *dev,
 	ret = evdi_framebuffer_init(dev, ufb, mode_cmd, to_evdi_bo(obj));
 	if (ret)
 		goto err_inval;
-	drm_gem_object_unreference(obj);
 	return &ufb->base;
 
  err_no_mem:

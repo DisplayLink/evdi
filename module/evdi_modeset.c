@@ -23,6 +23,11 @@
 #endif
 #include "evdi_drm.h"
 #include "evdi_drv.h"
+#include "evdi_cursor.h"
+
+#define EVDI_CURSOR_W 64
+#define EVDI_CURSOR_H 64
+#define EVDI_CURSOR_BUF (EVDI_CURSOR_W * EVDI_CURSOR_H)
 
 struct evdi_flip_queue
 {
@@ -49,6 +54,7 @@ static bool evdi_crtc_mode_fixup(struct drm_crtc *crtc,
 	return true;
 }
 
+
 static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 			      struct drm_display_mode *mode,
 			      struct drm_display_mode *adjusted_mode,
@@ -56,18 +62,13 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 {
 	struct drm_device *dev = NULL;
 	struct evdi_device *evdi = NULL;
-	struct evdi_flip_queue *flip_queue = NULL;
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,15,0)
-	struct evdi_framebuffer *efb = to_evdi_fb(crtc->fb);
-#else
 	struct evdi_framebuffer *efb = NULL;
+	struct evdi_flip_queue *flip_queue = NULL;
 
 	if (NULL == crtc->primary) {
 		EVDI_DEBUG("evdi_crtc_mode_set primary plane is NULL");
 		return 0;
 	}
-	efb = to_evdi_fb(crtc->primary->fb);
-#endif
 
 	EVDI_ENTER();
 
@@ -116,7 +117,7 @@ static void evdi_sched_page_flip(struct work_struct *work)
 {
 	struct evdi_flip_queue *flip_queue =
 		container_of(container_of(work, struct delayed_work, work),
-	struct evdi_flip_queue, work);
+			struct evdi_flip_queue, work);
 	struct drm_crtc *crtc;
 	struct drm_device *dev;
 	struct drm_pending_vblank_event *event;
@@ -133,7 +134,6 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	EVDI_CHECKPT();
 	if (fb)
 		evdi_handle_damage(to_evdi_fb(fb), 0, 0, fb->width, fb->height);
-
 	if (event) {
 		unsigned long flags = 0;
 
@@ -187,15 +187,61 @@ static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 	if (!delayed_work_pending(&flip_queue->work)) {
 		u64 now = jiffies;
 		u64 next_flip =
-		flip_queue->flip_time + flip_queue->vblank_interval;
+			flip_queue->flip_time + flip_queue->vblank_interval;
 		flip_queue->flip_time = (next_flip < now) ? now : next_flip;
 		queue_delayed_work(flip_queue->wq, &flip_queue->work,
-				   flip_queue->flip_time - now);
+			flip_queue->flip_time - now);
 	}
 
 	mutex_unlock(&flip_queue->lock);
 
 	return 0;
+}
+
+static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
+				struct drm_file *file,
+				uint32_t handle,
+				uint32_t width,
+				uint32_t height)
+{
+	struct drm_device *dev = crtc->dev;
+	struct evdi_device *evdi = dev->dev_private;
+	int ret;
+
+	EVDI_CHECKPT();
+	mutex_lock(&dev->struct_mutex);
+	ret = evdi_cursor_set(crtc, file, handle, width, height, evdi->cursor);
+	mutex_unlock(&dev->struct_mutex);
+	EVDI_DEBUG("evdi_crtc_cursor_set unlock\n");
+	if (ret) {
+		DRM_ERROR("Failed to set UDL cursor\n");
+		return ret;
+	}
+
+	/* For now we don't care whether the application wanted the mouse set,
+	   or not. */
+	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+}
+
+static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+{
+	struct drm_device *dev = crtc->dev;
+	struct evdi_device *evdi = dev->dev_private;
+	int ret = 0;
+
+	mutex_lock(&dev->struct_mutex);
+	if (!evdi_cursor_enabled(evdi->cursor))
+		goto error;
+		ret = evdi_cursor_move(crtc, x, y, evdi->cursor);
+		if (ret) {
+			DRM_ERROR("Failed to move UDL cursor\n");
+			goto error;
+		}
+	mutex_unlock(&dev->struct_mutex);
+	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+error:
+	mutex_unlock(&dev->struct_mutex);
+	return ret;
 }
 
 static void evdi_crtc_prepare(struct drm_crtc *crtc)
@@ -226,6 +272,8 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 #endif
 	.destroy = evdi_crtc_destroy,
 	.page_flip = evdi_crtc_page_flip,
+	.cursor_set = evdi_crtc_cursor_set,
+	.cursor_move = evdi_crtc_cursor_move,
 };
 
 static int evdi_crtc_init(struct drm_device *dev)
