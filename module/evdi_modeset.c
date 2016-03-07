@@ -214,7 +214,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	mutex_unlock(&dev->struct_mutex);
 	EVDI_DEBUG("evdi_crtc_cursor_set unlock\n");
 	if (ret) {
-		DRM_ERROR("Failed to set UDL cursor\n");
+		DRM_ERROR("Failed to set evdi cursor\n");
 		return ret;
 	}
 
@@ -234,7 +234,7 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 		goto error;
 		ret = evdi_cursor_move(crtc, x, y, evdi->cursor);
 		if (ret) {
-			DRM_ERROR("Failed to move UDL cursor\n");
+			DRM_ERROR("Failed to move evdi cursor\n");
 			goto error;
 		}
 	mutex_unlock(&dev->struct_mutex);
@@ -282,8 +282,7 @@ static int evdi_crtc_init(struct drm_device *dev)
 	int status = 0;
 
 	EVDI_CHECKPT();
-	crtc = kzalloc(sizeof(struct drm_crtc) + sizeof(struct drm_connector *),
-		       GFP_KERNEL);
+	crtc = kzalloc(sizeof(struct drm_crtc), GFP_KERNEL);
 	if (crtc == NULL)
 		return -ENOMEM;
 
@@ -353,10 +352,10 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	drm_mode_create_dirty_info_property(dev);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0) && LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
-	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
 	drm_dev_set_unique(dev, dev_name(dev->dev));
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
 #endif
 	evdi_crtc_init(dev);
 

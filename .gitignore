@@ -1,8 +1,10 @@
 *.d
 *.o
+*.so
 *.ko
 *.cmd
 *.rej
 *.symvers
 modules.order
 module/.tmp_versions/
+module/evdi.mod.c

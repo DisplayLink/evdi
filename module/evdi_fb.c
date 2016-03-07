@@ -29,16 +29,63 @@ struct evdi_fbdev {
 	int fb_count;
 };
 
+struct drm_clip_rect evdi_framebuffer_sanitize_rect(
+				const struct evdi_framebuffer *fb,
+				const struct drm_clip_rect *dirty_rect)
+{
+	struct drm_clip_rect rect = *dirty_rect;
+
+	if (rect.x1 > rect.x2) {
+		unsigned short tmp = rect.x2;
+
+		EVDI_WARN("Wrong clip rect: x1 > x2\n");
+		rect.x2 = rect.x1;
+		rect.x1 = tmp;
+	}
+
+	if (rect.y1 > rect.y2) {
+		unsigned short tmp = rect.y2;
+
+		EVDI_WARN("Wrong clip rect: y1 > y2\n");
+		rect.y2 = rect.y1;
+		rect.y1 = tmp;
+	}
+
+
+	if (rect.x1 > fb->base.width) {
+		EVDI_WARN("Wrong clip rect: x1 > fb.width\n");
+		rect.x1 = fb->base.width;
+	}
+
+	if (rect.y1 > fb->base.height) {
+		EVDI_WARN("Wrong clip rect: y1 > fb.height\n");
+		rect.y1 = fb->base.height;
+	}
+
+	if (rect.x2 > fb->base.width) {
+		EVDI_WARN("Wrong clip rect: x2 > fb.width\n");
+		rect.x2 = fb->base.width;
+	}
+
+	if (rect.y2 > fb->base.height) {
+		EVDI_WARN("Wrong clip rect: y2 > fb.height\n");
+		rect.y2 = fb->base.height;
+	}
+
+	return rect;
+}
 
 int evdi_handle_damage(struct evdi_framebuffer *fb,
 		       int x, int y, int width, int height)
 {
-	const struct drm_clip_rect rect = { x, y, x + width, y + height };
+	const struct drm_clip_rect dirty_rect = { x, y, x + width, y + height };
+	const struct drm_clip_rect rect =
+		evdi_framebuffer_sanitize_rect(fb, &dirty_rect);
 	struct drm_device *dev = fb->base.dev;
 	struct evdi_device *evdi = dev->dev_private;
 	int line_offset = 0;
 	int byte_offset = 0;
-	char *pix = NULL;
+	unsigned char *pix = NULL;
 
 	EVDI_CHECKPT();
 
@@ -57,16 +104,14 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 	}
 
 	line_offset = fb->base.pitches[0] * y;
-	byte_offset = line_offset + (x * 4);	/*RG24*/
-	pix = (char *)fb->obj->vmapping + byte_offset;
+	byte_offset = line_offset + (rect.x1 * 4); /*RGB32*/
 
-	EVDI_VERBOSE
-	("%p %d,%d-%dx%d %02x%02x%02x%02x%02x%02x%02x%02x\n", fb, x,
-	 y, width, height, ((int)(pix[0]) & 0xff),
-	 ((int)(pix[1]) & 0xff), ((int)(pix[2]) & 0xff),
-	 ((int)(pix[3]) & 0xff), ((int)(pix[4]) & 0xff),
-	 ((int)(pix[5]) & 0xff), ((int)(pix[6]) & 0xff),
-	 ((int)(pix[7]) & 0xff));
+	pix = (unsigned char *)fb->obj->vmapping + byte_offset;
+
+	EVDI_VERBOSE("%p %d,%d-%dx%d %02x%02x%02x%02x%02x%02x%02x%02x\n",
+		fb, rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1,
+		pix[0], pix[1], pix[2], pix[3],
+		pix[4], pix[5], pix[6], pix[7]);
 
 	evdi_painter_mark_dirty(evdi, fb, &rect);
 
@@ -75,29 +120,39 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 
 static int evdi_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
-	unsigned long start = vma->vm_start;
-	unsigned long size = vma->vm_end - vma->vm_start;
-	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
-	unsigned long page, pos;
+	unsigned long vma_start = vma->vm_start;
+	unsigned long vma_size = vma->vm_end - vma->vm_start;
+	unsigned long vma_page_cnt = vma_size >> PAGE_SHIFT;
+	unsigned long smem_page_cnt = info->fix.smem_len >> PAGE_SHIFT;
+	unsigned long smem_offset = vma->vm_pgoff << PAGE_SHIFT;
+	unsigned long smem_pos;
 
-	if (offset + size > info->fix.smem_len)
+	if (smem_page_cnt < vma->vm_pgoff)
 		return -EINVAL;
 
-	pos = (unsigned long)info->fix.smem_start + offset;
+	if (vma_page_cnt > smem_page_cnt - vma->vm_pgoff)
+		return -EINVAL;
 
-	pr_notice("mmap() framebuffer addr:%lu size:%lu\n", pos, size);
+	smem_pos = (unsigned long)info->fix.smem_start + smem_offset;
 
-	while (size > 0) {
-		page = vmalloc_to_pfn((void *)pos);
-		if (remap_pfn_range(vma, start, page, PAGE_SIZE, PAGE_SHARED))
+	pr_notice("mmap() framebuffer addr:%lu size:%lu\n", smem_pos, vma_size);
+
+	while (vma_size > 0) {
+		unsigned long page = vmalloc_to_pfn((void *)smem_pos);
+
+		if (remap_pfn_range(vma,
+				    vma_start,
+				    page,
+				    PAGE_SIZE,
+				    PAGE_SHARED))
 			return -EAGAIN;
 
-		start += PAGE_SIZE;
-		pos += PAGE_SIZE;
-		if (size > PAGE_SIZE)
-			size -= PAGE_SIZE;
+		vma_start += PAGE_SIZE;
+		smem_pos += PAGE_SIZE;
+		if (vma_size > PAGE_SIZE)
+			vma_size -= PAGE_SIZE;
 		else
-			size = 0;
+			vma_size = 0;
 	}
 
 	return 0;
@@ -144,15 +199,8 @@ static void evdi_fb_imageblit(struct fb_info *info,
 static int evdi_fb_open(struct fb_info *info, int user)
 {
 	struct evdi_fbdev *ufbdev = info->par;
-	struct drm_device *dev = ufbdev->ufb.base.dev;
-	struct evdi_device *evdi = dev->dev_private;
-
-	/* If the USB device is gone, we don't accept new opens */
-	if (drm_device_is_unplugged(evdi->ddev))
-		return -ENODEV;
 
 	ufbdev->fb_count++;
-
 	pr_notice("open /dev/fb%d user=%d fb_info=%p count=%d\n",
 		  info->node, user, info, ufbdev->fb_count);
 
@@ -281,8 +329,13 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	uint32_t size;
 	int ret = 0;
 
-	if (sizes->surface_bpp == 24)
+	if (sizes->surface_bpp == 24) {
 		sizes->surface_bpp = 32;
+	} else if (sizes->surface_bpp != 32) {
+		EVDI_ERROR("Not supported pixel format (bpp=%d)\n",
+			   sizes->surface_bpp);
+		return -EINVAL;
+	}
 
 	mode_cmd.width = sizes->surface_width;
 	mode_cmd.height = sizes->surface_height;
@@ -447,6 +500,15 @@ struct drm_framebuffer *evdi_fb_user_fb_create(struct drm_device *dev,
 	struct evdi_framebuffer *ufb;
 	int ret;
 	uint32_t size;
+
+	unsigned int depth;
+	int bpp;
+
+	drm_fb_get_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
+	if (bpp != 32) {
+		EVDI_ERROR("Unsupported bpp (%d)\n", bpp);
+		return ERR_PTR(-EINVAL);
+	}
 
 	obj = drm_gem_object_lookup(dev, file, mode_cmd->handles[0]);
 	if (obj == NULL)

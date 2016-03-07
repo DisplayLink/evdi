@@ -63,12 +63,6 @@ evdi_detect(struct drm_connector *connector, bool force)
 	struct evdi_device *evdi = connector->dev->dev_private;
 
 	EVDI_CHECKPT();
-
-	if (drm_device_is_unplugged(connector->dev)) {
-		EVDI_DEBUG("Drm device unplugged\n");
-		return connector_status_disconnected;
-	}
-
 	if (evdi_painter_is_connected(evdi)) {
 		EVDI_DEBUG("(dev=%d) Painter is connected\n", evdi->dev_index);
 		return connector_status_connected;

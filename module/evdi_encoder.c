@@ -9,11 +9,11 @@
  * License v2. See the file COPYING in the main directory of this archive for
  * more details.
  */
- 
-#include <linux/version.h>
+
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
+#include <linux/version.h>
 #include "evdi_drv.h"
 
 /* dummy encoder */
@@ -68,19 +68,31 @@ static const struct drm_encoder_funcs evdi_enc_funcs = {
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev)
 {
 	struct drm_encoder *encoder;
-	int status = 0;
+	int ret = 0;
 
 	encoder = kzalloc(sizeof(struct drm_encoder), GFP_KERNEL);
 	if (!encoder)
-		return NULL;
+		goto err;
 
-	#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
-	  	status = drm_encoder_init(dev, encoder, &evdi_enc_funcs, DRM_MODE_ENCODER_TMDS);
-	#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
-		status = drm_encoder_init(dev, encoder, &evdi_enc_funcs, DRM_MODE_ENCODER_TMDS, dev_name(dev->dev));
-	#endif
-	EVDI_DEBUG("drm_encoder_init: %d\n", status);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
+			       DRM_MODE_ENCODER_TMDS, dev_name(dev->dev));
+#else
+	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
+			       DRM_MODE_ENCODER_TMDS);
+#endif
+
+	if (ret) {
+		EVDI_ERROR("Failed to initialize encoder: %d\n", ret);
+		goto err_encoder;
+	}
+
 	drm_encoder_helper_add(encoder, &evdi_helper_funcs);
 	encoder->possible_crtcs = 1;
 	return encoder;
+
+err_encoder:
+	kfree(encoder);
+err:
+	return NULL;
 }

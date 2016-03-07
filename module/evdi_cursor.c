@@ -147,10 +147,8 @@ int evdi_cursor_composing_pixel(char __user *buffer,
 				int cmd_offset)
 {
 	int const composed_value = blend_alpha(fb_value, cursor_value);
-	int __always_unused unused =
-		copy_to_user(buffer + cmd_offset, &composed_value, 4);
 
-	return 0;
+	return copy_to_user(buffer + cmd_offset, &composed_value, 4);
 }
 
 int evdi_cursor_composing_and_copy(struct evdi_cursor *cursor,
@@ -198,10 +196,13 @@ int evdi_cursor_composing_and_copy(struct evdi_cursor *cursor,
 						  mouse_pix_y + mouse_pix_x));
 			cmd_offset = (buf_byte_stride * mouse_pix_y) +
 						       (mouse_pix_x * 4);
-			evdi_cursor_composing_pixel(buffer,
+			if (evdi_cursor_composing_pixel(buffer,
 						    curs_val,
 						    fb_value,
-						    cmd_offset);
+						    cmd_offset)) {
+				EVDI_ERROR("Failed to compose cursor pixel\n");
+				return -EFAULT;
+			}
 		}
 	}
 

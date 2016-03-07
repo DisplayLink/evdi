@@ -26,11 +26,11 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20160225"
+#define DRIVER_DATE   "20160301"
 
 #define DRIVER_MAJOR      1
 #define DRIVER_MINOR      0
-#define DRIVER_PATCHLEVEL 453
+#define DRIVER_PATCHLEVEL 463
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -138,5 +138,9 @@ int evdi_painter_request_update_ioctl(struct drm_device *drm_dev, void *data,
 
 int evdi_painter_init(struct evdi_device *evdi);
 void evdi_painter_cleanup(struct evdi_device *evdi);
+
+struct drm_clip_rect evdi_framebuffer_sanitize_rect(
+			const struct evdi_framebuffer *fb,
+			const struct drm_clip_rect *rect);
 
 #endif

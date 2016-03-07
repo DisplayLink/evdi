@@ -17,31 +17,39 @@
 #define EVDI_LOGLEVEL_DEBUG   5
 #define EVDI_LOGLEVEL_VERBOSE 6
 
-extern unsigned g_evdi_loglevel;
+extern unsigned evdi_loglevel;
 
-#define EVDI_PRINTK(kLEVEL, lEVEL, pREFIX, ...)	do { \
-	if (lEVEL <= g_evdi_loglevel) {\
-		printk(kLEVEL "[%s] %s ", pREFIX, __func__); \
-		printk(kLEVEL __VA_ARGS__); \
+#define EVDI_PRINTK(kLEVEL, lEVEL, FORMAT_STR, ...)	do { \
+	if (lEVEL <= evdi_loglevel) {\
+		printk(kLEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
 	} \
 } while (0)
 
-#define EVDI_LOG(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_ALWAYS, " ", __VA_ARGS__)
-#define EVDI_FATAL(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_FATAL, "F", __VA_ARGS__)
-#define EVDI_ERROR(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_ERROR, "E", __VA_ARGS__)
-#define EVDI_WARN(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_WARN, "W", __VA_ARGS__)
-#define EVDI_INFO(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_INFO, "I", __VA_ARGS__)
-#define EVDI_DEBUG(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_DEBUG, "D", __VA_ARGS__)
-#define EVDI_VERBOSE(...) \
-	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_VERBOSE, "V", __VA_ARGS__)
+#define EVDI_FATAL(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_CRIT, EVDI_LOGLEVEL_FATAL,\
+		    "[F] %s:%d " FORMAT_STR, __func__, __LINE__, ##__VA_ARGS__)
 
-#define EVDI_CHECKPT() EVDI_VERBOSE("L%d\n", __LINE__)
+#define EVDI_ERROR(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_ERR, EVDI_LOGLEVEL_ERROR,\
+		    "[E] %s:%d " FORMAT_STR, __func__, __LINE__, ##__VA_ARGS__)
+
+#define EVDI_WARN(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_WARNING, EVDI_LOGLEVEL_WARN,\
+		    "[W] %s:%d " FORMAT_STR, __func__, __LINE__, ##__VA_ARGS__)
+
+#define EVDI_INFO(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_INFO,\
+		    "[I] " FORMAT_STR, ##__VA_ARGS__)
+
+#define EVDI_DEBUG(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_DEBUG,\
+		    "[D] %s:%d " FORMAT_STR, __func__, __LINE__, ##__VA_ARGS__)
+
+#define EVDI_VERBOSE(FORMAT_STR, ...) \
+	EVDI_PRINTK(KERN_DEFAULT, EVDI_LOGLEVEL_VERBOSE,\
+		    "[V] %s:%d " FORMAT_STR, __func__, __LINE__, ##__VA_ARGS__)
+
+#define EVDI_CHECKPT() EVDI_VERBOSE("\n")
 #define EVDI_ENTER() EVDI_VERBOSE("enter\n")
 #define EVDI_EXIT() EVDI_VERBOSE("exit\n")
 

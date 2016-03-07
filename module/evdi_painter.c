@@ -35,6 +35,8 @@ struct evdi_event_crtc_state_pending {
 };
 
 #define MAX_DIRTS 16
+#define EDID_EXT_BLOCK_SIZE 128
+#define MAX_EDID_SIZE (255 * EDID_EXT_BLOCK_SIZE + sizeof(struct edid))
 
 struct evdi_painter {
 	bool is_connected;
@@ -65,52 +67,22 @@ static int rect_area(const struct drm_clip_rect *r)
 	return (r->x2 - r->x1) * (r->y2 - r->y1);
 }
 
-static bool contains_rect(const struct drm_clip_rect *outer,
-			  const struct drm_clip_rect *inner)
-{
-	if (inner->x1 >= outer->x1
-	    && inner->y1 >= outer->y1
-	    && inner->x2 <= outer->x2 && inner->y2 <= outer->y2) {
-		return true;
-	}
-	return false;
-}
-
 static void merge_dirty_rects(struct drm_clip_rect *rects, int *count)
 {
 	int a, b;
 
 	for (a = 0; a < *count - 1; ++a) {
 		for (b = a + 1; b < *count;) {
-			bool eliminate_b = contains_rect(&rects[a], &rects[b]);
+			/* collapse to bounding rect if it is fewer pixels */
+			const int area_a = rect_area(&rects[a]);
+			const int area_b = rect_area(&rects[b]);
+			struct drm_clip_rect bounding_rect = rects[a];
 
+			expand_rect(&bounding_rect, &rects[b]);
 
-			if (!eliminate_b &&
-			     contains_rect(&rects[b], &rects[a])) {
-				rects[a] = rects[b];
-				eliminate_b = true;
-			}
-			if (!eliminate_b) {
-				/* collapse to bounding rect
-				   if it is less pixels */
-				const int area_a = rect_area(&rects[a]);
-				const int area_b = rect_area(&rects[b]);
-				struct drm_clip_rect bounding_rect = rects[a];
-
-				expand_rect(&bounding_rect, &rects[b]);
-
-				if (rect_area(&bounding_rect) <=
-				    area_a + area_b) {
-					rects[a] = bounding_rect;
-					eliminate_b = true;
-				}
-			}
-			if (eliminate_b) {
-				if (b + 1 < *count) {
-					memcpy(rects + b, rects + b + 1,
-					       (*count - b -
-						1) * sizeof(*rects));
-				}
+			if (rect_area(&bounding_rect) <= area_a + area_b) {
+				rects[a] = bounding_rect;
+				rects[b] = rects[*count - 1];
 				/* repass */
 				b = a + 1;
 				--*count;
@@ -134,8 +106,7 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 	*count = 1;
 }
 
-
-static void copy_pixels(struct evdi_framebuffer *ufb,
+static int copy_pixels(struct evdi_framebuffer *ufb,
 			char __user *buffer,
 			int buf_byte_stride,
 			int num_rects, struct drm_clip_rect *rects,
@@ -145,7 +116,6 @@ static void copy_pixels(struct evdi_framebuffer *ufb,
 {
 	struct drm_framebuffer *fb = &ufb->base;
 	struct drm_clip_rect *r;
-	int __always_unused unused;
 
 	EVDI_CHECKPT();
 
@@ -162,12 +132,15 @@ static void copy_pixels(struct evdi_framebuffer *ufb,
 			     r->y2);
 
 		for (; y > 0; --y) {
-			unused = copy_to_user(dst, src, byte_span);
+			if (copy_to_user(dst, src, byte_span))
+				return -EFAULT;
+
 			src += fb->pitches[0];
 			dst += buf_byte_stride;
 		}
 	}
-	evdi_cursor_composing_and_copy(cursor_copy,
+
+	return evdi_cursor_composing_and_copy(cursor_copy,
 				       ufb,
 				       buffer,
 				       buf_byte_stride,
@@ -219,13 +192,8 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 static void evdi_painter_send_event(struct drm_file *drm_filp,
 				    struct list_head *event_link)
 {
-	struct drm_device *dev = drm_filp->minor->dev;
-	unsigned long flags;
-
-	spin_lock_irqsave(&dev->event_lock, flags);
 	list_add_tail(event_link, &drm_filp->event_list);
 	wake_up_interruptible(&drm_filp->event_wait);
-	spin_unlock_irqrestore(&dev->event_lock, flags);
 }
 
 static void evdi_painter_send_update_ready(struct evdi_painter *painter)
@@ -330,24 +298,25 @@ static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
 
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     struct evdi_framebuffer *fb,
-			     const struct drm_clip_rect *rect)
+			     const struct drm_clip_rect *dirty_rect)
 {
+	struct drm_clip_rect rect = evdi_framebuffer_sanitize_rect(
+								fb, dirty_rect);
 	struct evdi_painter *painter = evdi->painter;
 
 	painter_lock(evdi->painter);
-	EVDI_VERBOSE("(dev=%d) %d,%d-%d,%d\n", evdi->dev_index, rect->x1,
-		     rect->y1, rect->x2, rect->y2);
+	EVDI_VERBOSE("(dev=%d) %d,%d-%d,%d\n", evdi->dev_index, rect.x1,
+		     rect.y1, rect.x2, rect.y2);
 
-	if (painter->num_dirts == MAX_DIRTS) {
+	if (painter->num_dirts == MAX_DIRTS)
 		merge_dirty_rects(&painter->dirty_rects[0],
 				  &painter->num_dirts);
-	}
-	if (painter->num_dirts == MAX_DIRTS) {
+
+	if (painter->num_dirts == MAX_DIRTS)
 		collapse_dirty_rects(&painter->dirty_rects[0],
 				     &painter->num_dirts);
-	}
 
-	memcpy(&painter->dirty_rects[painter->num_dirts], rect, sizeof(*rect));
+	memcpy(&painter->dirty_rects[painter->num_dirts], &rect, sizeof(rect));
 	painter->num_dirts++;
 
 	if (painter->recent_fb != fb) {
@@ -413,48 +382,67 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 	}
 }
 
-void evdi_painter_connect(struct evdi_device *evdi,
-			  void const __user *edid, unsigned int edid_length,
-			  struct drm_file *file, int dev_index)
+int
+evdi_painter_connect(struct evdi_device *evdi,
+		     void const __user *edid_data, unsigned int edid_length,
+		     struct drm_file *file, int dev_index)
 {
 	struct evdi_painter *painter = evdi->painter;
-	int __always_unused unused;
 	struct edid *new_edid = NULL;
+	int expected_edid_size = 0;
 
 	EVDI_CHECKPT();
 
-	painter_lock(painter);
-
-	if (painter->drm_filp) {
-		EVDI_ERROR("(dev=%d) Double connect - replacing %p with %p\n",
-			   dev_index, painter->drm_filp, file);
+	if (edid_length < sizeof(struct edid)) {
+		EVDI_ERROR("Edid length too small\n");
+		return -EINVAL;
 	}
 
-	painter->drm_filp = file;
-	evdi->dev_index = dev_index;
+	if (edid_length > MAX_EDID_SIZE) {
+		EVDI_ERROR("Edid length too large\n");
+		return -EINVAL;
+	}
+
+	new_edid = kzalloc(edid_length, GFP_KERNEL);
+	if (!new_edid)
+		return -ENOMEM;
+
+	if (copy_from_user(new_edid, edid_data, edid_length)) {
+		EVDI_ERROR("(dev=%d) LSP Failed to read edid\n", dev_index);
+		kfree(new_edid);
+		return -EFAULT;
+	}
+
+	expected_edid_size = sizeof(struct edid) +
+			     new_edid->extensions * EDID_EXT_BLOCK_SIZE;
+	if (expected_edid_size != edid_length) {
+		EVDI_ERROR("Wrong edid size. Expected %d but is %d\n",
+			   expected_edid_size, edid_length);
+		kfree(new_edid);
+		return -EINVAL;
+	}
+
+	if (painter->drm_filp)
+		EVDI_WARN("(dev=%d) Double connect - replacing %p with %p\n",
+			  dev_index, painter->drm_filp, file);
+
 	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
 		   painter->drm_filp);
 
-	new_edid = krealloc(painter->edid, edid_length, GFP_KERNEL);
-	if (new_edid) {
-		painter->edid_length = edid_length;
-		painter->edid = new_edid;
+	painter_lock(painter);
 
-		unused = copy_from_user(painter->edid, edid, edid_length);
-		EVDI_DEBUG("(dev=%d) Edid (3 bytes): %02x %02x %02x\n",
-			   evdi->dev_index,
-			   painter->edid->header[0],
-			   painter->edid->header[1],
-			   painter->edid->header[2]);
-
-		painter->is_connected = true;
-	} else {
-		EVDI_FATAL("Failed to read edid\n");
-	}
+	evdi->dev_index = dev_index;
+	painter->drm_filp = file;
+	kfree(painter->edid);
+	painter->edid_length = edid_length;
+	painter->edid = new_edid;
+	painter->is_connected = true;
 
 	painter_unlock(painter);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
+
+	return 0;
 }
 
 void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
@@ -539,7 +527,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	struct drm_framebuffer *fb = NULL;
 	struct evdi_cursor *cursor_copy = NULL;
 	int err = 0;
-	int __always_unused unused;
+
+	EVDI_CHECKPT();
 
 	if (!painter)
 		return -ENODEV;
@@ -572,22 +561,24 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		} else {
 			merge_dirty_rects(&painter->dirty_rects[0],
 					  &painter->num_dirts);
-			if (painter->num_dirts > cmd->num_rects) {
+			if (painter->num_dirts > cmd->num_rects)
 				collapse_dirty_rects(&painter->dirty_rects[0],
-				&painter->num_dirts);
-			}
-			cmd->num_rects = painter->num_dirts;
-			unused = copy_to_user(cmd->rects, painter->dirty_rects,
-				     cmd->num_rects * sizeof(cmd->rects[0]));
-			copy_pixels(painter->recent_fb,
-						cmd->buffer,
-						cmd->buf_byte_stride,
-						painter->num_dirts,
-						painter->dirty_rects,
-						cmd->buf_width,
-						cmd->buf_height,
-						cursor_copy);
+						     &painter->num_dirts);
 
+			cmd->num_rects = painter->num_dirts;
+
+			if (copy_to_user(cmd->rects, painter->dirty_rects,
+				cmd->num_rects * sizeof(cmd->rects[0])))
+				err = -EFAULT;
+			else
+				err = copy_pixels(painter->recent_fb,
+						  cmd->buffer,
+						  cmd->buf_byte_stride,
+						  painter->num_dirts,
+						  painter->dirty_rects,
+						  cmd->buf_width,
+						  cmd->buf_height,
+						  cursor_copy);
 
 			painter->num_dirts = 0;
 		}

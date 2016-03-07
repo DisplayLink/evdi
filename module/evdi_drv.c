@@ -20,10 +20,12 @@ MODULE_AUTHOR("DisplayLink (UK) Ltd.");
 MODULE_DESCRIPTION("Extensible Virtual Display Interface");
 MODULE_LICENSE("GPL");
 
+#define EVDI_DEVICE_COUNT_MAX 16
+
 static struct evdi_context {
 	struct device *root_dev;
 	unsigned dev_count;
-	struct platform_device *devices[16];
+	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
 } evdi_context;
 
 static struct drm_driver driver;
@@ -101,6 +103,7 @@ static void evdi_add_device(void)
 		.size_data = 0,
 		.dma_mask = DMA_BIT_MASK(32),
 	};
+
 	evdi_context.devices[evdi_context.dev_count] =
 	    platform_device_register_full(&pdevinfo);
 	if (dma_set_mask(&evdi_context.devices[evdi_context.dev_count]->dev,
@@ -128,15 +131,6 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	return 0;
 }
 
-void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
-{
-	struct evdi_device *evdi = drm_dev->dev_private;
-
-	EVDI_CHECKPT();
-	if (evdi)
-		evdi_painter_close(evdi, file);
-}
-
 static void evdi_remove_all(void)
 {
 	int i;
@@ -160,7 +154,7 @@ static struct platform_driver evdi_platform_driver = {
 		   .name = "evdi",
 		   .mod_name = KBUILD_MODNAME,
 		   .owner = THIS_MODULE,
-		   },
+	}
 };
 
 static ssize_t version_show(struct device *dev, struct device_attribute *attr,
@@ -180,21 +174,25 @@ static ssize_t add_store(struct device *dev,
 			 struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
-	int parsed;
 	unsigned int val;
 
-	parsed = kstrtouint(buf, 10, &val);
-	if (parsed != 0) {
-		EVDI_DEBUG(" invalid device count \"%s\"\n", buf);
-	} else if (val == 0) {
-		EVDI_VERBOSE(" adding 0 devices has no effect\n");
-	} else {
-		unsigned new_dev_count = evdi_context.dev_count + val;
-
-		EVDI_DEBUG(" increasing device count to %u\n", new_dev_count);
-		while (val--)
-			evdi_add_device();
+	if (kstrtouint(buf, 10, &val)) {
+		EVDI_ERROR("Invalid device count \"%s\"\n", buf);
+		return -EINVAL;
 	}
+	if (val == 0) {
+		EVDI_WARN("Adding 0 devices has no effect\n");
+		return count;
+	}
+	if (evdi_context.dev_count + val >= EVDI_DEVICE_COUNT_MAX) {
+		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
+		return -EINVAL;
+	}
+
+	EVDI_DEBUG("Increasing device count to %u\n",
+		   evdi_context.dev_count + val);
+	while (val--)
+		evdi_add_device();
 
 	return count;
 }
@@ -210,28 +208,27 @@ static ssize_t remove_all_store(struct device *dev,
 static ssize_t loglevel_show(struct device *dev, struct device_attribute *a,
 			     char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%u\n", g_evdi_loglevel);
+	return snprintf(buf, PAGE_SIZE, "%u\n", evdi_loglevel);
 }
 
 static ssize_t loglevel_store(struct device *dev,
 			      struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
-	int parsed;
 	unsigned int val;
 
-	parsed = kstrtouint(buf, 10, &val);
-	if (parsed == 0) {
-		if (val >= EVDI_LOGLEVEL_ALWAYS &&
-		    val <= EVDI_LOGLEVEL_VERBOSE) {
-			EVDI_LOG("setting loglevel to %u\n", val);
-			g_evdi_loglevel = val;
-		} else {
-			EVDI_ERROR("invalid loglevel %u\n", val);
-		}
-	} else {
-		EVDI_ERROR("unable to parse %u\n", val);
+	if (kstrtouint(buf, 10, &val)) {
+		EVDI_ERROR("Unable to parse %u\n", val);
+		return -EINVAL;
 	}
+	if (val < EVDI_LOGLEVEL_ALWAYS ||
+	    val > EVDI_LOGLEVEL_VERBOSE) {
+		EVDI_ERROR("Invalid loglevel %u\n", val);
+		return -EINVAL;
+	}
+
+	EVDI_INFO("Setting loglevel to %u\n", val);
+	evdi_loglevel = val;
 	return count;
 }
 
@@ -247,7 +244,7 @@ static int __init evdi_init(void)
 {
 	int i;
 
-	EVDI_LOG("Initialising logging on level %u\n", g_evdi_loglevel);
+	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
 	evdi_context.root_dev = root_device_register("evdi");
 	if (!PTR_RET(evdi_context.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
