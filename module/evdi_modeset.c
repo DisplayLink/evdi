@@ -29,8 +29,7 @@
 #define EVDI_CURSOR_H 64
 #define EVDI_CURSOR_BUF (EVDI_CURSOR_W * EVDI_CURSOR_H)
 
-struct evdi_flip_queue
-{
+struct evdi_flip_queue {
 	struct mutex lock;
 	struct workqueue_struct *wq;
 	struct delayed_work work;
@@ -64,6 +63,7 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 	struct evdi_device *evdi = NULL;
 	struct evdi_framebuffer *efb = NULL;
 	struct evdi_flip_queue *flip_queue = NULL;
+	struct drm_clip_rect rect;
 
 	if (NULL == crtc->primary) {
 		EVDI_DEBUG("evdi_crtc_mode_set primary plane is NULL");
@@ -93,7 +93,14 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 	}
 
 	/* damage all of it */
-	evdi_handle_damage(efb, 0, 0, efb->base.width, efb->base.height);
+	evdi_set_new_scanout_buffer(evdi, efb);
+	evdi_flip_scanout_buffer(evdi);
+
+	rect.x1 = 0;
+	rect.y1 = 0;
+	rect.x2 = efb->base.width;
+	rect.y2 = efb->base.height;
+	evdi_painter_mark_dirty(evdi, &rect);
 	EVDI_EXIT();
 	return 0;
 }
@@ -122,6 +129,7 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	struct drm_device *dev;
 	struct drm_pending_vblank_event *event;
 	struct drm_framebuffer *fb;
+	struct evdi_device *evdi = NULL;
 
 	mutex_lock(&flip_queue->lock);
 	crtc = flip_queue->crtc;
@@ -130,10 +138,16 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	fb = crtc->primary->fb;
 	flip_queue->event = NULL;
 	mutex_unlock(&flip_queue->lock);
+	evdi = dev->dev_private;
 
 	EVDI_CHECKPT();
-	if (fb)
-		evdi_handle_damage(to_evdi_fb(fb), 0, 0, fb->width, fb->height);
+	if (fb) {
+		const struct drm_clip_rect rect = {
+			0, 0, fb->width, fb->height };
+
+		evdi_flip_scanout_buffer(evdi);
+		evdi_painter_mark_dirty(evdi, &rect);
+	}
 	if (event) {
 		unsigned long flags = 0;
 
@@ -173,6 +187,7 @@ static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 		}
 		efb->active = true;
 		crtc->primary->fb = fb;
+		evdi_set_new_scanout_buffer(evdi, efb);
 	}
 	if (event) {
 		if (flip_queue->event) {

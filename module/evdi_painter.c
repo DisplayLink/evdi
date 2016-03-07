@@ -46,7 +46,8 @@ struct evdi_painter {
 	struct mutex lock;
 	struct drm_clip_rect dirty_rects[MAX_DIRTS];
 	int num_dirts;
-	struct evdi_framebuffer *recent_fb;
+	struct evdi_framebuffer *new_scanout_fb;
+	struct evdi_framebuffer *scanout_fb;
 
 	struct drm_file *drm_filp;
 
@@ -297,14 +298,21 @@ static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
 }
 
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
-			     struct evdi_framebuffer *fb,
 			     const struct drm_clip_rect *dirty_rect)
 {
-	struct drm_clip_rect rect = evdi_framebuffer_sanitize_rect(
-								fb, dirty_rect);
+	struct drm_clip_rect rect;
+	struct evdi_framebuffer *efb = NULL;
 	struct evdi_painter *painter = evdi->painter;
 
 	painter_lock(evdi->painter);
+	efb = evdi->painter->scanout_fb;
+	if (!efb) {
+		EVDI_WARN("Skip clip rect. Scanout buffer not set.\n");
+		return;
+	}
+
+	rect = evdi_framebuffer_sanitize_rect(efb, dirty_rect);
+
 	EVDI_VERBOSE("(dev=%d) %d,%d-%d,%d\n", evdi->dev_index, rect.x1,
 		     rect.y1, rect.x2, rect.y2);
 
@@ -318,13 +326,6 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 
 	memcpy(&painter->dirty_rects[painter->num_dirts], &rect, sizeof(rect));
 	painter->num_dirts++;
-
-	if (painter->recent_fb != fb) {
-		if (painter->recent_fb)
-			drm_framebuffer_unreference(&painter->recent_fb->base);
-		drm_framebuffer_reference(&fb->base);
-		painter->recent_fb = fb;
-	}
 
 	if (painter->was_update_requested) {
 		evdi_painter_send_update_ready(painter);
@@ -464,9 +465,14 @@ void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
 		return;
 	}
 
-	if (painter->recent_fb) {
-		drm_framebuffer_unreference(&painter->recent_fb->base);
-		painter->recent_fb = NULL;
+	if (painter->new_scanout_fb) {
+		drm_framebuffer_unreference(&painter->new_scanout_fb->base);
+		painter->new_scanout_fb = NULL;
+	}
+
+	if (painter->scanout_fb) {
+		drm_framebuffer_unreference(&painter->scanout_fb->base);
+		painter->scanout_fb = NULL;
 	}
 
 	painter->is_connected = false;
@@ -525,6 +531,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	struct evdi_painter *painter = evdi->painter;
 	struct drm_evdi_grabpix *cmd = data;
 	struct drm_framebuffer *fb = NULL;
+	struct evdi_framebuffer *efb = NULL;
 	struct evdi_cursor *cursor_copy = NULL;
 	int err = 0;
 
@@ -533,58 +540,84 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	if (!painter)
 		return -ENODEV;
 
-	if (!painter->recent_fb)
-		return -EAGAIN;
-
 	mutex_lock(&drm_dev->struct_mutex);
 	if (evdi_cursor_alloc(&cursor_copy) == 0)
 		evdi_cursor_copy(cursor_copy, evdi->cursor);
 	mutex_unlock(&drm_dev->struct_mutex);
-	painter_lock(evdi->painter);
+
+	painter_lock(painter);
+
+	efb = painter->scanout_fb;
+
+	if (!efb) {
+		EVDI_ERROR("Scanout buffer not set\n");
+		err = -EAGAIN;
+		goto unlock;
+	}
 
 	if (painter->was_update_requested) {
 		EVDI_WARN("(dev=%d) Update ready not sent,",
-			   evdi->dev_index);
+			  evdi->dev_index);
 		EVDI_WARN(" but pixels are grabbed.\n");
 	}
 
-	fb = &painter->recent_fb->base;
-
-	if (cmd->buf_width != fb->width || cmd->buf_height != fb->height
-		|| cmd->num_rects < 1) {
-		EVDI_CHECKPT();
-		err = -EINVAL;
-	} else if (cmd->mode == EVDI_GRABPIX_MODE_DIRTY) {
-		EVDI_CHECKPT();
-		if (painter->num_dirts < 0) {
-			err = -EAGAIN;
-		} else {
-			merge_dirty_rects(&painter->dirty_rects[0],
-					  &painter->num_dirts);
-			if (painter->num_dirts > cmd->num_rects)
-				collapse_dirty_rects(&painter->dirty_rects[0],
-						     &painter->num_dirts);
-
-			cmd->num_rects = painter->num_dirts;
-
-			if (copy_to_user(cmd->rects, painter->dirty_rects,
-				cmd->num_rects * sizeof(cmd->rects[0])))
-				err = -EFAULT;
-			else
-				err = copy_pixels(painter->recent_fb,
-						  cmd->buffer,
-						  cmd->buf_byte_stride,
-						  painter->num_dirts,
-						  painter->dirty_rects,
-						  cmd->buf_width,
-						  cmd->buf_height,
-						  cursor_copy);
-
-			painter->num_dirts = 0;
+	fb = &efb->base;
+	if (!efb->obj->vmapping) {
+		if (evdi_gem_vmap(efb->obj) == -ENOMEM) {
+			EVDI_ERROR("Failed to map scanout buffer\n");
+			err = -EFAULT;
+			goto unlock;
+		}
+		if (!efb->obj->vmapping) {
+			EVDI_ERROR("Failed to map scanout buffer\n");
+			err = -EFAULT;
+			goto unlock;
 		}
 	}
 
-	painter_unlock(evdi->painter);
+	if (cmd->buf_width != fb->width ||
+		cmd->buf_height != fb->height) {
+		EVDI_ERROR("Invalid buffer dimension\n");
+		err = -EINVAL;
+		goto unlock;
+	}
+	
+	if (cmd->num_rects < 1) {
+		EVDI_ERROR("No space for clip rects\n");
+		err = -EINVAL;
+		goto unlock;
+	}
+
+	if (cmd->mode == EVDI_GRABPIX_MODE_DIRTY) {
+		if (painter->num_dirts < 0) {
+			err = -EAGAIN;
+			goto unlock;
+		}
+		merge_dirty_rects(&painter->dirty_rects[0],
+				  &painter->num_dirts);
+		if (painter->num_dirts > cmd->num_rects)
+			collapse_dirty_rects(&painter->dirty_rects[0],
+						 &painter->num_dirts);
+
+		cmd->num_rects = painter->num_dirts;
+
+		if (copy_to_user(cmd->rects, painter->dirty_rects,
+			cmd->num_rects * sizeof(cmd->rects[0])))
+			err = -EFAULT;
+		else
+			err = copy_pixels(efb,
+					  cmd->buffer,
+					  cmd->buf_byte_stride,
+					  painter->num_dirts,
+					  painter->dirty_rects,
+					  cmd->buf_width,
+					  cmd->buf_height,
+					  cursor_copy);
+
+		painter->num_dirts = 0;
+	}
+unlock:
+	painter_unlock(painter);
 	if (cursor_copy)
 		evdi_cursor_free(cursor_copy);
 
@@ -649,3 +682,31 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	}
 }
 
+void evdi_set_new_scanout_buffer(struct evdi_device *evdi,
+				 struct evdi_framebuffer *efb)
+{
+	struct evdi_painter *painter = evdi->painter;
+
+	if (efb)
+		drm_framebuffer_reference(&efb->base);
+
+	if (painter->new_scanout_fb)
+		drm_framebuffer_unreference(&painter->new_scanout_fb->base);
+
+	painter->new_scanout_fb = efb;
+}
+
+void evdi_flip_scanout_buffer(struct evdi_device *evdi)
+{
+	struct evdi_painter *painter = evdi->painter;
+
+	painter_lock(painter);
+	if (painter->new_scanout_fb)
+		drm_framebuffer_reference(&painter->new_scanout_fb->base);
+
+	if (painter->scanout_fb)
+		drm_framebuffer_unreference(&painter->scanout_fb->base);
+
+	painter->scanout_fb = painter->new_scanout_fb;
+	painter_unlock(painter);
+}

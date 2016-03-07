@@ -106,9 +106,6 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj);
 int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 
-int evdi_handle_damage(struct evdi_framebuffer *fb,
-		       int x, int y, int width, int height);
-
 void evdi_stats_init(struct evdi_device *evdi);
 void evdi_stats_cleanup(struct evdi_device *evdi);
 
@@ -116,7 +113,6 @@ bool evdi_painter_is_connected(struct evdi_device *evdi);
 void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file);
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
-			     struct evdi_framebuffer *fb,
 			     const struct drm_clip_rect *rect);
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
@@ -138,6 +134,9 @@ int evdi_painter_request_update_ioctl(struct drm_device *drm_dev, void *data,
 
 int evdi_painter_init(struct evdi_device *evdi);
 void evdi_painter_cleanup(struct evdi_device *evdi);
+void evdi_set_new_scanout_buffer(struct evdi_device *evdi,
+				  struct evdi_framebuffer *buffer);
+void evdi_flip_scanout_buffer(struct evdi_device *evdi);
 
 struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 			const struct evdi_framebuffer *fb,

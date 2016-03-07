@@ -83,37 +83,14 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 		evdi_framebuffer_sanitize_rect(fb, &dirty_rect);
 	struct drm_device *dev = fb->base.dev;
 	struct evdi_device *evdi = dev->dev_private;
-	int line_offset = 0;
-	int byte_offset = 0;
-	unsigned char *pix = NULL;
 
 	EVDI_CHECKPT();
 
 	if (!fb->active)
 		return 0;
-
-	if (!fb->obj->vmapping) {
-		if (evdi_gem_vmap(fb->obj) == -ENOMEM) {
-			DRM_ERROR("failed to vmap fb\n");
-			return 0;
-		}
-		if (!fb->obj->vmapping) {
-			DRM_ERROR("failed to vmapping\n");
-			return 0;
-		}
-	}
-
-	line_offset = fb->base.pitches[0] * y;
-	byte_offset = line_offset + (rect.x1 * 4); /*RGB32*/
-
-	pix = (unsigned char *)fb->obj->vmapping + byte_offset;
-
-	EVDI_VERBOSE("%p %d,%d-%dx%d %02x%02x%02x%02x%02x%02x%02x%02x\n",
-		fb, rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1,
-		pix[0], pix[1], pix[2], pix[3],
-		pix[4], pix[5], pix[6], pix[7]);
-
-	evdi_painter_mark_dirty(evdi, fb, &rect);
+	evdi_set_new_scanout_buffer(evdi, fb);
+	evdi_flip_scanout_buffer(evdi);
+	evdi_painter_mark_dirty(evdi, &rect);
 
 	return 0;
 }
@@ -253,7 +230,6 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 	int ret = 0;
 
 	EVDI_CHECKPT();
-
 	drm_modeset_lock_all(fb->dev);
 
 	if (!ufb->active)
