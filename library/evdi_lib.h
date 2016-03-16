@@ -48,7 +48,7 @@ typedef struct {
   void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);
   void (*crtc_state_handler)(int state, void* user_data);
   void* user_data;
-} evdi_event_context; 
+} evdi_event_context;
 
 #define EVDI_INVALID_HANDLE NULL
 
@@ -58,12 +58,6 @@ int evdi_add_device();
 void evdi_close(evdi_handle handle);
 void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length);
 void evdi_disconnect(evdi_handle handle);
-int evdi_poll_dirty_pixels(evdi_handle handle,
-                           unsigned char* buf,
-                           int byteStride,
-                           int num_rects,
-                           evdi_rect *rects,
-                           int timeout);
 void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects);
 void evdi_register_buffer(evdi_handle handle, evdi_buffer buffer);
 void evdi_unregister_buffer(evdi_handle handle, int bufferId);

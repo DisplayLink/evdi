@@ -1,0 +1,48 @@
+#! /usr/bin/env bash
+
+if [ "${1}" = "" ]; then
+  cat << EOF
+Usage: ${0} KVER
+
+where:
+  KVER      kernel version to build against (e.g. 3.19)
+EOF
+  exit 123
+fi
+
+KVER=${1}
+
+get_sources() { # version
+  wget https://github.com/torvalds/linux/archive/v${1}.tar.gz
+  tar -xzf v${1}.tar.gz
+  echo "$(pwd)/linux-${1}"
+}
+
+get_latest_kernel_tag() {
+  tag=$(wget https://api.github.com/repos/torvalds/linux/tags -q -O - \
+      | grep tarball_url | head -1 | cut -f4 -d'"')
+  tag=$(basename ${tag})
+  echo ${tag:1}
+}
+
+prepare_kernel() { # srcDir
+  oldDir=$(pwd)
+
+  cd ${1}
+  make olddefconfig
+  make prepare
+  make scripts
+  make kernel
+
+  cd ${oldDir}
+}
+
+if [ "${KVER}" = "latest" ]; then
+  KVER=$(get_latest_kernel_tag)
+fi
+
+srcDir=$(get_sources ${KVER})
+
+prepare_kernel ${srcDir}
+make KDIR=${srcDir}
+

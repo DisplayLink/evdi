@@ -44,7 +44,10 @@ ifeq ($(KVER),)
 	KVER := $(shell uname -r)
 endif
 
-KDIR := /lib/modules/$(KVER)/build
+ifeq ($(KDIR),)
+	KDIR := /lib/modules/$(KVER)/build
+endif
+
 CFLAGS := -std=c99 -g -fPIC
 
 default: module
