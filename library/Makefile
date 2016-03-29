@@ -3,7 +3,7 @@
 #
 
 DEPS = evdi_ioctl.h
-CFLAGS := -std=gnu99 -fPIC $(CFLAGS)
+CFLAGS := -I../module -std=gnu99 -fPIC $(CFLAGS)
 
 default: libevdi.so
 
