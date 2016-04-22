@@ -17,7 +17,7 @@
 #define EVDI_LOGLEVEL_DEBUG   5
 #define EVDI_LOGLEVEL_VERBOSE 6
 
-extern unsigned evdi_loglevel;
+extern unsigned int evdi_loglevel;
 
 #define EVDI_PRINTK(kLEVEL, lEVEL, FORMAT_STR, ...)	do { \
 	if (lEVEL <= evdi_loglevel) {\

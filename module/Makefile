@@ -33,7 +33,8 @@ ifneq ($(KERNELRELEASE),)
 # inside kbuild
 # Note: this can be removed once it is in kernel tree and Kconfig is properly used
 CONFIG_DRM_EVDI := m
-ccflags-y := -Iinclude/drm
+LINUXINCLUDE := $(subst -I,-isystem,$(LINUXINCLUDE))
+ccflags-y := -isystem include/drm $(CFLAGS)
 evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o evdi_cursor.o
 obj-$(CONFIG_DRM_EVDI) := evdi.o
 
@@ -47,8 +48,6 @@ endif
 ifeq ($(KDIR),)
 	KDIR := /lib/modules/$(KVER)/build
 endif
-
-CFLAGS := -std=c99 -g -fPIC
 
 default: module
 

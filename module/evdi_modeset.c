@@ -13,12 +13,9 @@
 #include <linux/version.h>
 
 #include <drm/drmP.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-#include <drm/drm_atomic.h>
-#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_plane_helper.h>
 #endif
 #include "evdi_drm.h"
@@ -46,9 +43,10 @@ static void evdi_crtc_dpms(struct drm_crtc *crtc, int mode)
 	evdi_painter_dpms_notify(evdi, mode);
 }
 
-static bool evdi_crtc_mode_fixup(struct drm_crtc *crtc,
-				 const struct drm_display_mode *mode,
-				 struct drm_display_mode *adjusted_mode)
+static bool evdi_crtc_mode_fixup(
+			__always_unused struct drm_crtc *crtc,
+			__always_unused const struct drm_display_mode *mode,
+			__always_unused struct drm_display_mode *adjusted_mode)
 {
 	return true;
 }
@@ -57,7 +55,9 @@ static bool evdi_crtc_mode_fixup(struct drm_crtc *crtc,
 static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 			      struct drm_display_mode *mode,
 			      struct drm_display_mode *adjusted_mode,
-			      int x, int y, struct drm_framebuffer *old_fb)
+			     __always_unused int x,
+			     __always_unused int y,
+			     struct drm_framebuffer *old_fb)
 {
 	struct drm_device *dev = NULL;
 	struct evdi_device *evdi = NULL;
@@ -65,7 +65,7 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 	struct evdi_flip_queue *flip_queue = NULL;
 	struct drm_clip_rect rect;
 
-	if (NULL == crtc->primary) {
+	if (crtc->primary == NULL) {
 		EVDI_DEBUG("evdi_crtc_mode_set primary plane is NULL");
 		return 0;
 	}
@@ -160,7 +160,7 @@ static void evdi_sched_page_flip(struct work_struct *work)
 static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 			       struct drm_framebuffer *fb,
 			       struct drm_pending_vblank_event *event,
-			       uint32_t page_flip_flags)
+			       __always_unused uint32_t page_flip_flags)
 {
 	struct drm_device *dev = crtc->dev;
 	struct evdi_device *evdi = dev->dev_private;
@@ -233,8 +233,10 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 		return ret;
 	}
 
-	/* For now we don't care whether the application wanted the mouse set,
-	   or not. */
+	/*
+	 * For now we don't care whether the application wanted the mouse set,
+	 * or not.
+	 */
 	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
 }
 
@@ -259,7 +261,7 @@ error:
 	return ret;
 }
 
-static void evdi_crtc_prepare(struct drm_crtc *crtc)
+static void evdi_crtc_prepare(__always_unused struct drm_crtc *crtc)
 {
 }
 
@@ -282,9 +284,6 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 
 static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.set_config = drm_crtc_helper_set_config,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-	.set_property = drm_atomic_crtc_set_property,
-#endif
 	.destroy = evdi_crtc_destroy,
 	.page_flip = evdi_crtc_page_flip,
 	.cursor_set = evdi_crtc_cursor_set,
@@ -367,9 +366,9 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	drm_mode_create_dirty_info_property(dev);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, dev_name(dev->dev));
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
+#elif KERNEL_VERSION(3, 16, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
 #endif
 	evdi_crtc_init(dev);

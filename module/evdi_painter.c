@@ -254,9 +254,10 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 	}
 }
 
-/* @return \c true if the mode was truly replaced/changed
-		   (comparing to previously set)
-*/
+/*
+ * @return \c true if the mode was truly replaced/changed
+ * (comparing to previously set)
+ */
 static bool evdi_painter_replace_mode(struct evdi_painter *painter,
 				      const struct drm_display_mode *new_mode)
 {
@@ -525,7 +526,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 }
 
 int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
-			       struct drm_file *file)
+			       __always_unused struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
 	struct evdi_painter *painter = evdi->painter;
@@ -581,7 +582,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		err = -EINVAL;
 		goto unlock;
 	}
-	
+
 	if (cmd->num_rects < 1) {
 		EVDI_ERROR("No space for clip rects\n");
 		err = -EINVAL;
@@ -624,8 +625,9 @@ unlock:
 	return err;
 }
 
-int evdi_painter_request_update_ioctl(struct drm_device *drm_dev, void *data,
-				      struct drm_file *file)
+int evdi_painter_request_update_ioctl(struct drm_device *drm_dev,
+				      __always_unused void *data,
+				      __always_unused struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
 	struct evdi_painter *painter = evdi->painter;

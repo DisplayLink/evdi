@@ -41,7 +41,7 @@ struct evdi_device_context
   int device_index;
 };
 
-static int do_ioctl(int fd, int request, void* data, const char* msg)
+static int do_ioctl(int fd, unsigned int request, void* data, const char* msg)
 {
   const int err = ioctl(fd, request, data);
   if (err < 0) {
@@ -80,7 +80,7 @@ static void addFrameBuffer(evdi_handle context, evdi_buffer const* frame_buffer)
 }
 
 /// @brief Removes all frame buffers matching the given id
-/// @param id of frame buffer to remove, NULL matches every buffer, thus all 
+/// @param id of frame buffer to remove, NULL matches every buffer, thus all
 /// will be removed
 /// @return number of buffers removed
 /// @todo Return value doesn't seem to be used anywhere
@@ -114,7 +114,7 @@ static int removeFrameBuffer(
 
 static int is_evdi(int fd)
 {
-  char name[64]={}, date[64]={}, desc[64]={};
+  char name[64]={ 0 }, date[64]={ 0 }, desc[64]={ 0 };
   struct drm_version ver = {
     .name_len = sizeof(name),
     .name = name,
@@ -133,7 +133,7 @@ static int is_evdi(int fd)
 static void invalidate(evdi_handle handle)
 {
   evdi_frame_buffer_node* node = NULL;
-  
+
   for (node = handle->frameBuffersListHead;
        node != NULL;
        node = (evdi_frame_buffer_node*)node->next)
@@ -193,7 +193,7 @@ static int device_has_master(const char* device_file_path)
       return 1;
     }
   }
-  
+
   return 0;
 }
 
@@ -292,10 +292,12 @@ void evdi_close(evdi_handle handle)
 
 void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length)
 {
-  struct drm_evdi_connect cmd = { 1 };
-  cmd.dev_index = handle->device_index;
-  cmd.edid = edid;
-  cmd.edid_length = edid_length;
+  struct drm_evdi_connect cmd = {
+    .connected = 1,
+    .dev_index = handle->device_index,
+    .edid = edid,
+    .edid_length = edid_length
+  };
 
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");
 }
@@ -308,7 +310,7 @@ void evdi_disconnect(evdi_handle handle)
 
 void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
 {
-  struct drm_clip_rect kernelDirts[MAX_DIRTS] = {};
+  struct drm_clip_rect kernelDirts[MAX_DIRTS] = { { 0 } };
   evdi_frame_buffer_node* destinationNode = NULL;
   evdi_buffer* destinationBuffer = NULL;
 
@@ -373,7 +375,7 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
   evdi_frame_buffer_node* front_buffer = NULL;
 
   assert(handle);
-  
+
   front_buffer = findBuffer(handle, bufferId);
   if (!front_buffer) {
     printf("[libevdi] Buffer %d is not registered! Ignoring update request.\n", bufferId);
@@ -391,13 +393,13 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
     struct drm_evdi_request_update cmd;
     const int requestResult = do_ioctl(handle->fd, DRM_IOCTL_EVDI_REQUEST_UPDATE, &cmd, "request_update");
     const bool grabImmediately = requestResult == 1;
-    
+
     return grabImmediately;
   }
 }
 
 evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed* event)
-{ 
+{
   evdi_mode e;
   e.width = event->hdisplay;
   e.height = event->vdisplay;
@@ -443,12 +445,12 @@ void evdi_handle_events(evdi_handle handle, evdi_event_context* evtctx)
       {
       if (evtctx && evtctx->crtc_state_handler) {
         struct drm_evdi_event_crtc_state* event = (struct drm_evdi_event_crtc_state*)e;
-        evtctx->crtc_state_handler(event->state, evtctx->user_data); 
+        evtctx->crtc_state_handler(event->state, evtctx->user_data);
       }
       break;
       }
     } // switch
-    
+
     i += e->length;
   }
 }

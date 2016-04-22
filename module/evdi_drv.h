@@ -19,7 +19,7 @@
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)
+#if KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_gem.h>
 #endif
 #include "evdi_debug.h"
@@ -83,10 +83,14 @@ void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 int evdi_fbdev_init(struct drm_device *dev);
 void evdi_fbdev_cleanup(struct drm_device *dev);
 void evdi_fbdev_unplug(struct drm_device *dev);
-struct drm_framebuffer *evdi_fb_user_fb_create(struct drm_device *dev,
-					       struct drm_file *file,
-					       struct drm_mode_fb_cmd2
-					       *mode_cmd);
+struct drm_framebuffer *evdi_fb_user_fb_create(
+				struct drm_device *dev,
+				struct drm_file *file,
+#if KERNEL_VERSION(4, 4, 0) >= LINUX_VERSION_CODE
+				struct drm_mode_fb_cmd2 *mode_cmd);
+#else
+				const struct drm_mode_fb_cmd2 *mode_cmd);
+#endif
 
 int evdi_dumb_create(struct drm_file *file_priv,
 		     struct drm_device *dev, struct drm_mode_create_dumb *args);

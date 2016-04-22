@@ -11,7 +11,7 @@
 
 #include "evdi_debug.h"
 
-unsigned evdi_loglevel = EVDI_LOGLEVEL_DEBUG;
+unsigned int evdi_loglevel = EVDI_LOGLEVEL_DEBUG;
 
 module_param_named(initial_loglevel, evdi_loglevel, int, 0400);
 MODULE_PARM_DESC(initial_loglevel, "Initial log level");

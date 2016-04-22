@@ -12,6 +12,7 @@ env:
   - KVER=4.2
   - KVER=4.3
   - KVER=4.4
+  - KVER=4.5
   - KVER=latest
 
 addons:

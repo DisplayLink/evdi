@@ -17,8 +17,10 @@
 #include <linux/version.h>
 #include "evdi_drv.h"
 
-/* dummy connector to just get EDID,
-   all EVDI appear to have a DVI-D */
+/*
+ * dummy connector to just get EDID,
+ * all EVDI appear to have a DVI-D
+ */
 
 static int evdi_get_modes(struct drm_connector *connector)
 {
@@ -58,7 +60,7 @@ static int evdi_mode_valid(struct drm_connector *connector,
 }
 
 static enum drm_connector_status
-evdi_detect(struct drm_connector *connector, bool force)
+evdi_detect(struct drm_connector *connector, __always_unused bool force)
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
 
@@ -88,16 +90,17 @@ static struct drm_encoder *evdi_best_single_encoder(struct drm_connector
 	return encoder;
 }
 
-static int evdi_connector_set_property(struct drm_connector *connector,
-				       struct drm_property *property,
-				       uint64_t val)
+static int evdi_connector_set_property(
+				__always_unused struct drm_connector *connector,
+			       __always_unused struct drm_property *property,
+			       __always_unused uint64_t val)
 {
 	return 0;
 }
 
 static void evdi_connector_destroy(struct drm_connector *connector)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 	drm_connector_unregister(connector);
 #else
 	drm_sysfs_connector_remove(connector);
@@ -134,7 +137,7 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 	drm_connector_helper_add(connector, &evdi_connector_helper_funcs);
 	connector->polled = DRM_CONNECTOR_POLL_HPD;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 	drm_connector_register(connector);
 #else
 	drm_sysfs_connector_add(connector);

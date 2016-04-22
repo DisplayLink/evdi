@@ -15,7 +15,8 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 
-int evdi_driver_load(struct drm_device *dev, unsigned long flags)
+int evdi_driver_load(struct drm_device *dev,
+		     __always_unused unsigned long flags)
 {
 	struct platform_device *platdev = NULL;
 	struct evdi_device *evdi;

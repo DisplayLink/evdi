@@ -2,9 +2,11 @@
 # Copyright (c) 2015 DisplayLink (UK) Ltd.
 #
 
+FLAGS=-Werror -Wextra -Wall
+
 all:
-	$(MAKE) -C module $(MFLAGS)
-	CFLAGS="-I../module $(CFLAGS)" $(MAKE) -C library $(MFLAGS)
+	CFLAGS="$(FLAGS)" $(MAKE) -C module $(MFLAGS)
+	CFLAGS="-I../module $(FLAGS) $(CFLAGS)" $(MAKE) -C library $(MFLAGS)
 
 clean:
 	$(MAKE) clean -C module $(MFLAGS)

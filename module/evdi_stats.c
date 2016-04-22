@@ -8,7 +8,8 @@
 
 #include "evdi_drv.h"
 
-static ssize_t frame_count_show(struct device *dev, struct device_attribute *a,
+static ssize_t frame_count_show(struct device *dev,
+				__always_unused struct device_attribute *attr,
 				char *buf)
 {
 	struct drm_minor *drm_minor = dev_get_drvdata(dev);

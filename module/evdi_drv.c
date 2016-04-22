@@ -24,7 +24,7 @@ MODULE_LICENSE("GPL");
 
 static struct evdi_context {
 	struct device *root_dev;
-	unsigned dev_count;
+	unsigned int dev_count;
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
 } evdi_context;
 
@@ -157,21 +157,23 @@ static struct platform_driver evdi_platform_driver = {
 	}
 };
 
-static ssize_t version_show(struct device *dev, struct device_attribute *attr,
+static ssize_t version_show(__always_unused struct device *dev,
+			    __always_unused struct device_attribute *attr,
 			    char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u.%u.%u\n", DRIVER_MAJOR,
 			DRIVER_MINOR, DRIVER_PATCHLEVEL);
 }
 
-static ssize_t count_show(struct device *dev, struct device_attribute *attr,
+static ssize_t count_show(__always_unused struct device *dev,
+			  __always_unused struct device_attribute *attr,
 			  char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u\n", evdi_context.dev_count);
 }
 
-static ssize_t add_store(struct device *dev,
-			 struct device_attribute *attr,
+static ssize_t add_store(__always_unused struct device *dev,
+			 __always_unused struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
 	unsigned int val;
@@ -197,23 +199,26 @@ static ssize_t add_store(struct device *dev,
 	return count;
 }
 
-static ssize_t remove_all_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf, size_t count)
+static ssize_t remove_all_store(__always_unused struct device *dev,
+				__always_unused struct device_attribute *attr,
+				__always_unused const char *buf,
+				size_t count)
 {
 	evdi_remove_all();
 	return count;
 }
 
-static ssize_t loglevel_show(struct device *dev, struct device_attribute *a,
+static ssize_t loglevel_show(__always_unused struct device *dev,
+			     __always_unused struct device_attribute *attr,
 			     char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u\n", evdi_loglevel);
 }
 
-static ssize_t loglevel_store(struct device *dev,
-			      struct device_attribute *attr,
-			      const char *buf, size_t count)
+static ssize_t loglevel_store(__always_unused struct device *dev,
+			      __always_unused struct device_attribute *attr,
+			      const char *buf,
+			      size_t count)
 {
 	unsigned int val;
 
@@ -221,8 +226,7 @@ static ssize_t loglevel_store(struct device *dev,
 		EVDI_ERROR("Unable to parse %u\n", val);
 		return -EINVAL;
 	}
-	if (val < EVDI_LOGLEVEL_ALWAYS ||
-	    val > EVDI_LOGLEVEL_VERBOSE) {
+	if (val > EVDI_LOGLEVEL_VERBOSE) {
 		EVDI_ERROR("Invalid loglevel %u\n", val);
 		return -EINVAL;
 	}
