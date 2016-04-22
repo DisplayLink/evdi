@@ -44,5 +44,5 @@ fi
 srcDir=$(get_sources ${KVER})
 
 prepare_kernel ${srcDir}
-make KDIR=${srcDir}
+make KDIR=${srcDir} CC=gcc-4.8
 

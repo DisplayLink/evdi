@@ -17,8 +17,11 @@ env:
 
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
       - bc
+      - g++-4.8
 
 script:
   - ./ci/build_against_kernel ${KVER}
