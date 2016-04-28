@@ -249,11 +249,11 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	mutex_lock(&dev->struct_mutex);
 	if (!evdi_cursor_enabled(evdi->cursor))
 		goto error;
-		ret = evdi_cursor_move(crtc, x, y, evdi->cursor);
-		if (ret) {
-			DRM_ERROR("Failed to move evdi cursor\n");
-			goto error;
-		}
+	ret = evdi_cursor_move(crtc, x, y, evdi->cursor);
+	if (ret) {
+		DRM_ERROR("Failed to move evdi cursor\n");
+		goto error;
+	}
 	mutex_unlock(&dev->struct_mutex);
 	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
 error:
