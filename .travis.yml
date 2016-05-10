@@ -15,6 +15,11 @@ env:
   - KVER=4.5
   - KVER=master
 
+matrix:
+  include:
+    - env: StyleCheck
+      script: ./ci/run_style_check
+
 addons:
   apt:
     sources:

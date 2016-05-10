@@ -1,0 +1,8 @@
+#! /usr/bin/env bash
+
+wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
+wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
+
+chmod +x checkpatch.pl
+
+./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE -f ./module/*
