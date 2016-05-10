@@ -239,7 +239,7 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 		ret =
 			dma_buf_begin_cpu_access(
 					ufb->obj->base.import_attach->dmabuf,
-#if KERNEL_VERSION(4, 5, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE
 					0, ufb->obj->base.size,
 #endif
 					DMA_FROM_DEVICE);
@@ -257,7 +257,7 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 
 	if (ufb->obj->base.import_attach)
 		dma_buf_end_cpu_access(ufb->obj->base.import_attach->dmabuf,
-#if KERNEL_VERSION(4, 5, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE
 				       0, ufb->obj->base.size,
 #endif
 				       DMA_FROM_DEVICE);
