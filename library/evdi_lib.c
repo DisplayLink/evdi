@@ -241,7 +241,7 @@ evdi_handle evdi_open(int device)
   fd = open_device(device);
   if (fd > 0) {
     if (is_evdi(fd)) {
-      h = calloc(sizeof(struct evdi_device_context), 1);
+      h = calloc(1, sizeof(struct evdi_device_context));
       if (h) {
         h->fd = fd;
         h->device_index = device;
