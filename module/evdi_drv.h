@@ -26,11 +26,11 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20160510"
+#define DRIVER_DATE   "20160512"
 
 #define DRIVER_MAJOR      1
 #define DRIVER_MINOR      1
-#define DRIVER_PATCHLEVEL 61
+#define DRIVER_PATCHLEVEL 65
 
 struct evdi_fbdev;
 struct evdi_painter;
