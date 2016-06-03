@@ -79,7 +79,7 @@ static int evdi_cursor_download(struct evdi_cursor *cursor,
 	return 0;
 }
 
-int evdi_cursor_set(struct drm_crtc *crtc, struct drm_file *file,
+int evdi_cursor_set(__maybe_unused struct drm_crtc *crtc, struct drm_file *file,
 		uint32_t handle, uint32_t width, uint32_t height,
 		struct evdi_cursor *cursor)
 {
@@ -92,7 +92,12 @@ int evdi_cursor_set(struct drm_crtc *crtc, struct drm_file *file,
 					EVDI_CURSOR_W, EVDI_CURSOR_H);
 			return -EINVAL;
 		}
-		obj = drm_gem_object_lookup(crtc->dev, file, handle);
+		#if KERNEL_VERSION(4, 6, 0) >= LINUX_VERSION_CODE
+			obj = drm_gem_object_lookup(crtc->dev, file, handle);
+		#else
+			obj = drm_gem_object_lookup(file, handle);
+		#endif
+
 		if (!obj) {
 			DRM_ERROR("failed to lookup gem object.\n");
 			return -EINVAL;
