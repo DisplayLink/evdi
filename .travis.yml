@@ -30,4 +30,4 @@ addons:
       - g++-4.8
 
 script:
-  - ./ci/build_against_kernel ${KVER}
+  - CC=gcc-4.8 ./ci/build_against_kernel ${KVER}

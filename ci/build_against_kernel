@@ -43,5 +43,5 @@ else
 fi
 
 prepare_kernel "${srcDir}"
-make KDIR="${srcDir}" CC=gcc-4.8
+make KDIR="${srcDir}" CC=${CC:-gcc}
 
