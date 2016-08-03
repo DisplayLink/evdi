@@ -79,7 +79,7 @@ int evdi_driver_unload(struct drm_device *dev)
 
 	drm_vblank_cleanup(dev);
 	drm_kms_helper_poll_fini(dev);
-	#if KERNEL_VERSION(4, 6, 0) >= LINUX_VERSION_CODE
+	#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 		drm_connector_unplug_all(dev);
 	#else
 		drm_connector_unregister_all(dev);
