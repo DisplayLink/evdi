@@ -500,11 +500,11 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 		return ERR_PTR(-EINVAL);
 	}
 
-	#if KERNEL_VERSION(4, 6, 0) >= LINUX_VERSION_CODE
-		obj = drm_gem_object_lookup(dev, file, mode_cmd->handles[0]);
-	#else
-		obj = drm_gem_object_lookup(file, mode_cmd->handles[0]);
-	#endif
+#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
+	obj = drm_gem_object_lookup(dev, file, mode_cmd->handles[0]);
+#else
+	obj = drm_gem_object_lookup(file, mode_cmd->handles[0]);
+#endif
 	if (obj == NULL)
 		return ERR_PTR(-ENOENT);
 

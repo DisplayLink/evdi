@@ -20,7 +20,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #if KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE
-#include <drm/drm_gem.h>
+# include <drm/drm_gem.h>
 #endif
 #include "evdi_debug.h"
 
