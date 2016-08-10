@@ -25,7 +25,7 @@
 #define SLEEP_INTERVAL_US   100000L
 #define OPEN_TOTAL_WAIT_US  5000000L
 #define MAX_FILEPATH        256
-#define MAX_DIRTS	    16
+#define MAX_DIRTS       16
 
 typedef struct _evdi_frame_buffer_node {
   evdi_buffer frame_buffer;
@@ -319,6 +319,7 @@ void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
 
   if (destinationNode->isInvalidated) {
     printf("[libevdi] Buffer was invalidated due to mode change. Not grabbing.\n");
+    *num_rects = 0;
     return;
   }
 
@@ -348,6 +349,7 @@ void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
     *num_rects = grab.num_rects;
   } else {
     printf("[libevdi] Grabbing pixels for buffer %d failed. Should be ignored if caused by change of mode in kernel.\n", destinationBuffer->id);
+    *num_rects = 0;
   }
 }
 
