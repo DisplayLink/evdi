@@ -304,13 +304,13 @@ void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned 
 
 void evdi_disconnect(evdi_handle handle)
 {
-  struct drm_evdi_connect cmd = { 0 };
+  struct drm_evdi_connect cmd = { 0, 0, 0, 0 };
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
 }
 
 void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
 {
-  struct drm_clip_rect kernelDirts[MAX_DIRTS] = { { 0 } };
+  struct drm_clip_rect kernelDirts[MAX_DIRTS] = { { 0, 0, 0, 0 } };
   evdi_frame_buffer_node* destinationNode = NULL;
   evdi_buffer* destinationBuffer = NULL;
 
