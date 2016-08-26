@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <title>Detailed description - EVDI Docs</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Detailed description";
+    var mkdocs_page_input_path = "details.md";
+    var mkdocs_page_url = "/details/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> EVDI Docs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Quick Start</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Detailed description</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#api-details">API Details</a></li>
+                
+                    <li><a class="toctree-l4" href="#functions-by-group">Functions by group</a></li>
+                
+                    <li><a class="toctree-l4" href="#types">Types</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">EVDI Docs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Detailed description</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <div class="toc">
+<ul>
+<li><a href="#api-details">API Details</a><ul>
+<li><a href="#functions-by-group">Functions by group</a><ul>
+<li><a href="#evdi-nodes">EVDI nodes</a><ul>
+<li><a href="#finding-an-available-evdi-node-to-use">Finding an available EVDI node to use</a></li>
+<li><a href="#adding-new-evdi-node">Adding new EVDI node</a></li>
+<li><a href="#opening-device-nodes">Opening device nodes</a></li>
+<li><a href="#closing-devices">Closing devices</a></li>
+</ul>
+</li>
+<li><a href="#connection">Connection</a><ul>
+<li><a href="#opening-connections">Opening connections</a></li>
+<li><a href="#disconnecting">Disconnecting</a></li>
+</ul>
+</li>
+<li><a href="#buffers">Buffers</a><ul>
+<li><a href="#registering">Registering</a></li>
+<li><a href="#unregistering">Unregistering</a></li>
+</ul>
+</li>
+<li><a href="#screen-updates">Screen updates</a><ul>
+<li><a href="#requesting-an-update">Requesting an update</a></li>
+<li><a href="#grabbing-pixels">Grabbing pixels</a></li>
+</ul>
+</li>
+<li><a href="#events-and-handlers">Events and handlers</a><ul>
+<li><a href="#dpms-mode-change">DPMS mode change</a></li>
+<li><a href="#mode-change-notification">Mode change notification</a></li>
+<li><a href="#update-ready-notification">Update ready notification</a></li>
+<li><a href="#crtc-state-change">CRTC state change</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#types">Types</a><ul>
+<li><a href="#evdi_handle">evdi_handle</a></li>
+<li><a href="#evdi_selectable">evdi_selectable</a></li>
+<li><a href="#evdi_device_status">evdi_device_status</a></li>
+<li><a href="#evdi_rect">evdi_rect</a></li>
+<li><a href="#evdi_mode">evdi_mode</a></li>
+<li><a href="#evdi_buffer">evdi_buffer</a></li>
+<li><a href="#evdi_event_context">evdi_event_context</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="api-details">API Details<a class="headerlink" href="#api-details" title="Permanent link">&para;</a></h1>
+<h2 id="functions-by-group">Functions by group<a class="headerlink" href="#functions-by-group" title="Permanent link">&para;</a></h2>
+<h3 id="evdi-nodes">EVDI nodes<a class="headerlink" href="#evdi-nodes" title="Permanent link">&para;</a></h3>
+<h4 id="finding-an-available-evdi-node-to-use">Finding an available EVDI node to use<a class="headerlink" href="#finding-an-available-evdi-node-to-use" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">evdi_device_status evdi_check_device(int device);</code></pre>
+
+
+<p>Use this function to check if a particular <code>/dev/dri/cardX</code> is EVDI or not.</p>
+<p><strong>Arguments:</strong> <code>device</code> is a number of card to check, e.g. passing <code>1</code> will mean <code>/dev/dri/card1</code>.</p>
+<p><strong>Return value:</strong></p>
+<ul>
+<li><code>AVAILABLE</code> if the device node is EVDI and is available to use.</li>
+<li><code>UNRECOGNIZED</code> when a node has not been created by EVDI kernel module.</li>
+<li><code>NOT_PRESENT</code> in other cases, e.g. when the device does not exist or cannot be opened to check.</li>
+</ul>
+<h4 id="adding-new-evdi-node">Adding new EVDI node<a class="headerlink" href="#adding-new-evdi-node" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">int evdi_add_device()</code></pre>
+
+
+<p>Use this to tell the kernel module to create a new <code>cardX</code> node for your application to use.</p>
+<p><strong>Return value:</strong>
+<code>1</code> when successful, <code>0</code> otherwise.</p>
+<h4 id="opening-device-nodes">Opening device nodes<a class="headerlink" href="#opening-device-nodes" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">evdi_handle evdi_open(int device);</code></pre>
+
+
+<p>This function attempts to open a DRM device node with given number as EVDI.</p>
+<p><strong>Arguments</strong>: <code>device</code> is a number of card to open, e.g. <code>1</code> means <code>/dev/dri/card1</code>.</p>
+<p><strong>Return value:</strong> an opened device handle to use in following API calls if opening was successful, <code>EVDI_INVALID_HANDLE</code> otherwise.</p>
+<h4 id="closing-devices">Closing devices<a class="headerlink" href="#closing-devices" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_close(evdi_handle handle);</code></pre>
+
+
+<p>Closes an opened EVDI handle.</p>
+<p><strong>Arguments</strong>: <code>handle</code> to an opened device that is to be closed.</p>
+<h3 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h3>
+<h4 id="opening-connections">Opening connections<a class="headerlink" href="#opening-connections" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length);</code></pre>
+
+
+<p>Creates a connection between the EVDI and Linux DRM subsystem, resulting in kernel mode driver processing a hot plug event.</p>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>handle</code> to an opened device</li>
+<li><code>edid</code> should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel</li>
+<li><code>edid_length</code> is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)</li>
+</ul>
+<h4 id="disconnecting">Disconnecting<a class="headerlink" href="#disconnecting" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_disconnect(evdi_handle handle)</code></pre>
+
+
+<p>Breaks the connection between the device handle and DRM subsystem - resulting in an unplug event being processed.</p>
+<p><strong>Arguments</strong>: <code>handle</code> to an opened device.</p>
+<h3 id="buffers">Buffers<a class="headerlink" href="#buffers" title="Permanent link">&para;</a></h3>
+<p>Managing memory for frame buffers is left to the client applications.
+The <code>evdi_buffer</code> structure is used to let the library know details about the frame buffer your application is working with.
+For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> description.</p>
+<h4 id="registering">Registering<a class="headerlink" href="#registering" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_register_buffer(evdi_handle handle, evdi_buffer buffer);</code></pre>
+
+
+<p>This function allows to register a <code>buffer</code> of type <code>evdi_buffer</code> with an opened EVDI device <code>handle</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Registering a buffer does not allocate memory for the frame.</p>
+</div>
+<h4 id="unregistering">Unregistering<a class="headerlink" href="#unregistering" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_unregister_buffer(evdi_handle handle, int bufferId);</code></pre>
+
+
+<p>This function unregisters a buffer with a given <code>bufferId</code> from an opened EVDI device <code>handle</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Unregistering a buffer does not deallocate memory for the frame.</p>
+</div>
+<h3 id="screen-updates">Screen updates<a class="headerlink" href="#screen-updates" title="Permanent link">&para;</a></h3>
+<h4 id="requesting-an-update">Requesting an update<a class="headerlink" href="#requesting-an-update" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">bool evdi_request_update(evdi_handle handle, int bufferId);</code></pre>
+
+
+<p>Requests an update for a buffer with a given <code>bufferId</code>. The buffer must be already registered with the library.</p>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>handle</code> to an opened device.</li>
+<li><code>bufferId</code> is an indentifier for a buffer that should be updated.</li>
+</ul>
+<p><strong>Return value:</strong></p>
+<p>The function can return <code>true</code> if the data for the buffer is ready to be grabbed immediately after the call.
+If <code>false</code> is returned, then an update is not yet ready to grab and the application should wait until it gets
+notified by the kernel module - see <a href="./#events-and-handlers">Events and handlers</a>.</p>
+<h4 id="grabbing-pixels">Grabbing pixels<a class="headerlink" href="#grabbing-pixels" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects);</code></pre>
+
+
+<p>Grabs pixels following the most recent update request (see <a href="./#requesting-an-update">Requesting an update</a>).</p>
+<p>This should be called either after a call to <code>evdi_request_update</code> (if it returns <code>true</code> which means pixels can be grabbed immediately),
+or while handling the <code>update_ready</code> notification.</p>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>handle</code> to an opened device.</li>
+<li><code>rects</code> is a pointer to the first <code>evdi_rect</code> that the library fills, based on what the kernel tells.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is expected that this pointer is a beginning of an array of <code>evdi_rect</code>s, and current implementation assumes
+the array does not contain more than 16 slots for rects.</p>
+</div>
+<ul>
+<li><code>num_rects</code> is a pointer to an integer that will be modified to tell how many dirty rectangles are valid in the list,
+   and the client should only care about as many. In particular, a failed grab will be indicated by <code>0</code> valid rectangles
+   to take into account (this can happen when there was a mode change between the request and the grab).</li>
+</ul>
+<h3 id="events-and-handlers">Events and handlers<a class="headerlink" href="#events-and-handlers" title="Permanent link">&para;</a></h3>
+<h4 id="dpms-mode-change"><abbr title="Display Power Management Signaling">DPMS</abbr> mode change<a class="headerlink" href="#dpms-mode-change" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void (*dpms_handler)(int dpms_mode, void* user_data);</code></pre>
+
+
+<p>This notification is sent when a <abbr title="Display Power Management Signaling">DPMS</abbr> mode changes.
+The possible modes are as defined by the standard, and values are bit-compatible with DRM and Xorg:</p>
+<pre class="codehilite"><code>/* DPMS flags */
+#define DRM_MODE_DPMS_ON        0
+#define DRM_MODE_DPMS_STANDBY   1
+#define DRM_MODE_DPMS_SUSPEND   2
+#define DRM_MODE_DPMS_OFF       3</code></pre>
+
+
+<h4 id="mode-change-notification">Mode change notification<a class="headerlink" href="#mode-change-notification" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void (*mode_changed_handler)(evdi_mode mode, void* user_data);</code></pre>
+
+
+<p>This notification is sent when a display mode changes. Details of the new mode are sent in the <code>mode</code> argument.
+See <a href="./#evdi_mode">evdi_mode</a> for description of the structure.</p>
+<h4 id="update-ready-notification">Update ready notification<a class="headerlink" href="#update-ready-notification" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);</code></pre>
+
+
+<p>This notification is sent when an update for a buffer, that had been earlier requested is ready to be consumed.
+The buffer number to be updated is <code>buffer_to_be_updated</code>.</p>
+<h4 id="crtc-state-change">CRTC state change<a class="headerlink" href="#crtc-state-change" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-c linenums">void (*crtc_state_handler)(int state, void* user_data);</code></pre>
+
+
+<p>Sent when DRM's CRTC changes state. The <code>state</code> is a value that's forwarded from the kernel.</p>
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<h3 id="evdi_handle">evdi_handle<a class="headerlink" href="#evdi_handle" title="Permanent link">&para;</a></h3>
+<p>This is a handle to an opened device node that you get from an <code>evdi_open</code> call,
+and use in all following API calls to indicate which EVDI device you communicate with.</p>
+<h3 id="evdi_selectable">evdi_selectable<a class="headerlink" href="#evdi_selectable" title="Permanent link">&para;</a></h3>
+<p>A typedef denoting a file descriptor you can watch to know when there are events being signalled from the kernel module.
+Each opened EVDI device handle has its own descriptor to watch.
+When the descriptor becomes ready to read from, the application should call <code>evdi_handle_events</code> to dispatch notifications to its handlers.</p>
+<h3 id="evdi_device_status">evdi_device_status<a class="headerlink" href="#evdi_device_status" title="Permanent link">&para;</a></h3>
+<p>An enumerated type used while finding the DRM device node that is EVDI. Possible values are <code>AVAILABLE</code>, <code>UNRECOGNIZED</code> and <code>NOT_PRESENT</code>.</p>
+<h3 id="evdi_rect">evdi_rect<a class="headerlink" href="#evdi_rect" title="Permanent link">&para;</a></h3>
+<p>A simple structure used by the library to represent a rectangular area of a screen. Top left coordinates of the rectangle are <code>x1</code> and <code>y1</code>,
+bottom right are <code>x2</code> and <code>y2</code>.</p>
+<h3 id="evdi_mode">evdi_mode<a class="headerlink" href="#evdi_mode" title="Permanent link">&para;</a></h3>
+<p>A structure used to describe a video mode that's set for a display. Contains details of resolution set (<code>width</code>, <code>height</code>), refresh rate (<code>refresh_rate</code>),
+and details of a pixel format used to encode color value (<code>bits_per_pixel</code> and <code>pixel_format</code> - which are forwarded from kernel's DRM).</p>
+<h3 id="evdi_buffer">evdi_buffer<a class="headerlink" href="#evdi_buffer" title="Permanent link">&para;</a></h3>
+<p>A structure holding details about a buffer.</p>
+<pre class="codehilite"><code class="language-c linenums">typedef struct {
+    int id;
+    void* buffer;
+    int width;
+    int height;
+    int stride;
+
+    evdi_rect* rects;
+    int rect_count;
+} evdi_buffer;</code></pre>
+
+
+<p>Buffers have IDs, which can be arbitrarily chosen integer numbers - but typically a simple sequence of numbers starting
+from <code>0</code> is used in client applications. The pointer to the beginning of an already allocated memory block should be assigned
+to the <code>buffer</code> member of the structure. This memory will be filled by the kernel module when handling requests to grab pixels.</p>
+<p><code>width</code>, <code>height</code> and <code>stride</code> are properties of the buffer - the first two indicate what the size of the frame is,
+and <code>stride</code> is a width stride - tells what is the increment in bytes between data for lines in memory.</p>
+<p>Stride can be equal to width of a single line multiplied by the number of bytes necessary for encoding color value for one pixel (e.g. 4 for RGB32) if the data for lines are contigous in the memory,
+but you can use larger value to indicate extra space/padding between them.</p>
+<p>Last two structure members, <code>rects</code> and <code>rect_counts</code> are updated during grabbing pixels to inform about the number and coordinates of areas that are changed from the last update.</p>
+<h3 id="evdi_event_context">evdi_event_context<a class="headerlink" href="#evdi_event_context" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-c linenums">typedef struct {
+  void (*dpms_handler)(int dpms_mode, void* user_data);
+  void (*mode_changed_handler)(evdi_mode mode, void* user_data);
+  void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);
+  void (*crtc_state_handler)(int state, void* user_data);
+  void* user_data;
+} evdi_event_context;</code></pre>
+
+
+<p>The <code>evdi_device_context</code> structure is used for holding pointers to handlers for all notifications that the application may receive from
+the kernel module. The <code>user_data</code> member is a value that the library will use while dispatching the call back.
+See <a href="./#events-and-handlers">Events and handlers</a> for more information.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../quickstart/" class="btn btn-neutral" title="Quick Start"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../quickstart/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+
+</body>
+</html>
