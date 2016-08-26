@@ -1,0 +1,14 @@
+site_name: EVDI Docs
+theme: readthedocs
+pages:
+- Home: 'index.md'
+- Quick Start: 'quickstart.md'
+- Detailed description: 'details.md'
+
+markdown_extensions:
+    - toc:
+         permalink: True
+    - abbr
+    - footnotes
+    - admonition
+    - codehilite
