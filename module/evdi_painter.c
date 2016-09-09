@@ -129,6 +129,12 @@ static int copy_pixels(struct evdi_framebuffer *ufb,
 		char __user *dst = buffer + dst_offset;
 		int y = r->y2 - r->y1;
 
+		/* rect size may correspond to previous resolution */
+		if (max_x < r->x2 || max_y < r->y2) {
+			EVDI_WARN("Rect size beyond expected dimensions\n");
+			return -EFAULT;
+		}
+
 		EVDI_VERBOSE("copy rect %d,%d-%d,%d\n", r->x1, r->y1, r->x2,
 			     r->y2);
 
