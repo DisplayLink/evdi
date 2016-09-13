@@ -20,17 +20,17 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #if KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE
-#include <drm/drm_gem.h>
+# include <drm/drm_gem.h>
 #endif
 #include "evdi_debug.h"
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20160510"
+#define DRIVER_DATE   "20160912"
 
 #define DRIVER_MAJOR      1
-#define DRIVER_MINOR      1
-#define DRIVER_PATCHLEVEL 61
+#define DRIVER_MINOR      2
+#define DRIVER_PATCHLEVEL 55
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -86,7 +86,7 @@ void evdi_fbdev_unplug(struct drm_device *dev);
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
 				struct drm_file *file,
-#if KERNEL_VERSION(4, 4, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
 				struct drm_mode_fb_cmd2 *mode_cmd);
 #else
 				const struct drm_mode_fb_cmd2 *mode_cmd);

@@ -16,7 +16,7 @@
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
-#include <drm/drm_plane_helper.h>
+# include <drm/drm_plane_helper.h>
 #endif
 #include "evdi_drm.h"
 #include "evdi_drv.h"
@@ -152,7 +152,11 @@ static void evdi_sched_page_flip(struct work_struct *work)
 		unsigned long flags = 0;
 
 		spin_lock_irqsave(&dev->event_lock, flags);
+#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
 		drm_send_vblank_event(dev, 0, event);
+#else
+		drm_crtc_send_vblank_event(crtc, event);
+#endif
 		spin_unlock_irqrestore(&dev->event_lock, flags);
 	}
 }
@@ -194,7 +198,11 @@ static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 			unsigned long flags = 0;
 
 			spin_lock_irqsave(&dev->event_lock, flags);
+#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
 			drm_send_vblank_event(dev, 0, flip_queue->event);
+#else
+			drm_crtc_send_vblank_event(crtc, flip_queue->event);
+#endif
 			spin_unlock_irqrestore(&dev->event_lock, flags);
 		}
 		flip_queue->event = event;
@@ -366,7 +374,9 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	drm_mode_create_dirty_info_property(dev);
 
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+
+#elif KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, dev_name(dev->dev));
 #elif KERNEL_VERSION(3, 16, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));

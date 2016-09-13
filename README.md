@@ -10,15 +10,17 @@ This open-source project includes source code for both the `evdi` kernel module 
 
 ## How to use
 
+See [libevdi API documentation](https://displaylink.github.io/evdi) for details.
+
 EVDI is a driver compatible with a standard Linux DRM subsystem. Due to this, displays can be controlled by standard tools, eg. `xrandr` or display settings applets in graphical environments eg. Unity, Gnome or KDE.
 
-Minimum supported kernel version required is 3.16. DisplayLink have checked the module compiles and works with Ubuntu variants of kernels up to 3.19. Newer kernel versions, or kernel variants used by other distributions may require extra development. Please see below to see how you can help.
+Minimum supported kernel version required is 3.16. DisplayLink have checked the module compiles and works with Ubuntu variants of kernels up to 4.4 used in Ubuntu 16.04. Although other vanilla Linux kernel sources are used for Travis CI job, newer kernels, or kernel variants used by other distributions may require extra development. Please see below to see how you can help.
 
 ## Future Development
 
 This is a first release. DisplayLink are open to suggestions and feedback on improving the proposed architecture and will gladly review patches or proposals from the developer community. Please find a current list of areas we identify as requiring attention below.
 
-- Compatibility with distributions other than Ubuntu 14.04 LTS have not been verified. Please let us know if you make it work on other distros - pull requests are welcome!
+- Compatibility with distributions other than Ubuntu 14.04/16.04 LTS is not verified. Please let us know if you make it work on other distros - pull requests are welcome!
 
 - The communication between the EVDI kernel module and the wrapper libevdi library is not access-controlled or authenticated. This could be improved in future releases, making it harder to compromise the data EVDI is sending and receiving.
 
@@ -32,6 +34,6 @@ Please refer to the LICENSE information in `module` and `library` subfolders of 
 
 For more information, see our [support page](http://support.displaylink.com). Visit [displaylink.com](http://displaylink.com) to learn more about DisplayLink technology.
 
-&copy; Copyright 2015 DisplayLink (UK) Ltd.
+&copy; Copyright 2015-2016 DisplayLink (UK) Ltd.
 
 Linux is a registered trademark of Linus Torvalds in the U.S. and other countries.

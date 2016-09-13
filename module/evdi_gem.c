@@ -51,7 +51,7 @@ evdi_gem_create(struct drm_file *file,
 		return ret;
 	}
 
-	drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference_unlocked(&obj->base);
 	*handle_p = handle;
 	return 0;
 }
@@ -208,7 +208,13 @@ int evdi_gem_mmap(struct drm_file *file,
 	int ret = 0;
 
 	mutex_lock(&dev->struct_mutex);
+
+#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 	obj = drm_gem_object_lookup(dev, file, handle);
+#else
+	obj = drm_gem_object_lookup(file, handle);
+#endif
+
 	if (obj == NULL) {
 		ret = -ENOENT;
 		goto unlock;

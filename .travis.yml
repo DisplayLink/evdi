@@ -13,6 +13,8 @@ env:
   - KVER=4.3
   - KVER=4.4
   - KVER=4.5
+  - KVER=4.6
+  - KVER=4.7
   - KVER=master
 
 matrix:
@@ -29,4 +31,4 @@ addons:
       - g++-4.8
 
 script:
-  - ./ci/build_against_kernel ${KVER}
+  - CC=gcc-4.8 ./ci/build_against_kernel ${KVER}

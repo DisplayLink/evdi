@@ -290,7 +290,7 @@ static const struct drm_framebuffer_funcs evdifb_funcs = {
 static int
 evdi_framebuffer_init(struct drm_device *dev,
 		      struct evdi_framebuffer *ufb,
-#if KERNEL_VERSION(4, 4, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
 		      struct drm_mode_fb_cmd2 *mode_cmd,
 #else
 		      const struct drm_mode_fb_cmd2 *mode_cmd,
@@ -382,7 +382,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 	return ret;
  out_gfree:
-	drm_gem_object_unreference(&ufbdev->ufb.obj->base);
+	drm_gem_object_unreference_unlocked(&ufbdev->ufb.obj->base);
  out:
 	return ret;
 }
@@ -480,7 +480,7 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
-#if KERNEL_VERSION(4, 4, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
 					struct drm_mode_fb_cmd2 *mode_cmd)
 #else
 					const struct drm_mode_fb_cmd2 *mode_cmd)
@@ -500,7 +500,11 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 		return ERR_PTR(-EINVAL);
 	}
 
+#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 	obj = drm_gem_object_lookup(dev, file, mode_cmd->handles[0]);
+#else
+	obj = drm_gem_object_lookup(file, mode_cmd->handles[0]);
+#endif
 	if (obj == NULL)
 		return ERR_PTR(-ENOENT);
 
