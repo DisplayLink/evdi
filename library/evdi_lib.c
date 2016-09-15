@@ -315,9 +315,8 @@ void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects)
   evdi_buffer* destinationBuffer = NULL;
 
   destinationNode = findBuffer(handle, handle->bufferToUpdate);
-  assert(destinationNode);
 
-  if (destinationNode->isInvalidated) {
+  if (!destinationNode || destinationNode->isInvalidated) {
     printf("[libevdi] Buffer was invalidated due to mode change. Not grabbing.\n");
     *num_rects = 0;
     return;
