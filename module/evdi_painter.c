@@ -210,7 +210,7 @@ static void evdi_painter_send_update_ready(struct evdi_painter *painter)
 	if (painter->drm_filp) {
 		event = kzalloc(sizeof(*event), GFP_KERNEL);
 		event->update_ready.base.type = DRM_EVDI_EVENT_UPDATE_READY;
-		event->update_ready.base.length = sizeof(*event);
+		event->update_ready.base.length = sizeof(event->update_ready);
 		event->base.event = &event->update_ready.base;
 		event->base.file_priv = painter->drm_filp;
 #if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
@@ -231,7 +231,7 @@ static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
 	if (painter->drm_filp) {
 		event = kzalloc(sizeof(*event), GFP_KERNEL);
 		event->dpms.base.type = DRM_EVDI_EVENT_DPMS;
-		event->dpms.base.length = sizeof(*event);
+		event->dpms.base.length = sizeof(event->dpms);
 		event->dpms.mode = mode;
 		event->base.event = &event->dpms.base;
 		event->base.file_priv = painter->drm_filp;
@@ -253,7 +253,7 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 	if (painter->drm_filp) {
 		event = kzalloc(sizeof(*event), GFP_KERNEL);
 		event->crtc_state.base.type = DRM_EVDI_EVENT_CRTC_STATE;
-		event->crtc_state.base.length = sizeof(*event);
+		event->crtc_state.base.length = sizeof(event->crtc_state);
 		event->crtc_state.state = state;
 		event->base.event = &event->crtc_state.base;
 		event->base.file_priv = painter->drm_filp;
@@ -292,7 +292,7 @@ static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
 	if (painter->drm_filp) {
 		event = kzalloc(sizeof(*event), GFP_KERNEL);
 		event->mode_changed.base.type = DRM_EVDI_EVENT_MODE_CHANGED;
-		event->mode_changed.base.length = sizeof(*event);
+		event->mode_changed.base.length = sizeof(event->mode_changed);
 
 		event->mode_changed.hdisplay = painter->current_mode.hdisplay;
 		event->mode_changed.vdisplay = painter->current_mode.vdisplay;
