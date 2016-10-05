@@ -267,6 +267,15 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 	return ret;
 }
 
+static int evdi_user_framebuffer_create_handle(struct drm_framebuffer *fb,
+					       struct drm_file *file_priv,
+					       unsigned int *handle)
+{
+	struct evdi_framebuffer *efb = to_evdi_fb(fb);
+
+	return drm_gem_handle_create(file_priv, &efb->obj->base, handle);
+}
+
 static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 {
 	struct evdi_framebuffer *ufb = to_evdi_fb(fb);
@@ -283,6 +292,7 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 }
 
 static const struct drm_framebuffer_funcs evdifb_funcs = {
+	.create_handle = evdi_user_framebuffer_create_handle,
 	.destroy = evdi_user_framebuffer_destroy,
 	.dirty = evdi_user_framebuffer_dirty,
 };
