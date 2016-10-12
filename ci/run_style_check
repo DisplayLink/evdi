@@ -1,7 +1,8 @@
 #! /usr/bin/env bash
 
-wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
-wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
+wget -N -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
+wget -N -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/const_structs.checkpatch
+wget -N -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
 
 chmod +x checkpatch.pl
 

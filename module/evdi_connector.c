@@ -115,7 +115,7 @@ static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
 	.best_encoder = evdi_best_single_encoder,
 };
 
-static struct drm_connector_funcs evdi_connector_funcs = {
+static const struct drm_connector_funcs evdi_connector_funcs = {
 	.dpms = drm_helper_connector_dpms,
 	.detect = evdi_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,

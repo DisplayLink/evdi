@@ -19,7 +19,7 @@ get_master_sources() {
 }
 
 get_tagged_sources() { # version
-  wget "https://github.com/torvalds/linux/archive/v${1}.tar.gz"
+  wget -N "https://github.com/torvalds/linux/archive/v${1}.tar.gz"
   tar -xzf "v${1}.tar.gz"
   echo "$(pwd)/linux-${1}"
 }
