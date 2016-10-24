@@ -144,7 +144,10 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 #endif
 	drm_mode_connector_attach_encoder(connector, encoder);
 
+#if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_object_attach_property(&connector->base,
 				   dev->mode_config.dirty_info_property, 1);
+#endif
+
 	return 0;
 }
