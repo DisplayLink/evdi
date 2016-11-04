@@ -275,7 +275,7 @@ int evdi_add_device()
   if (add_devices != NULL) {
     const char devices_to_add[] = "1";
     const size_t elem_bytes = 1;
-    written = fwrite(devices_to_add, elem_bytes, sizeof(devices_to_add), add_devices);
+    written = fwrite(devices_to_add, elem_bytes, sizeof(char), add_devices);
     fclose(add_devices);
   }
 
