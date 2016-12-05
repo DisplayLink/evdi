@@ -80,6 +80,10 @@ int evdi_driver_load(struct drm_device *dev, unsigned long flags);
 int evdi_driver_unload(struct drm_device *dev);
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 
+#ifdef CONFIG_COMPAT
+long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+#endif
+
 int evdi_fbdev_init(struct drm_device *dev);
 void evdi_fbdev_cleanup(struct drm_device *dev);
 void evdi_fbdev_unplug(struct drm_device *dev);
