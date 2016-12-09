@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
 #
 
 DEPS = evdi_ioctl.h
@@ -14,5 +14,5 @@ clean:
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 libevdi.so: evdi_lib.o
-	$(CC) $^ -o $@ -lc -lgcc -shared
+	$(CC) $^ -o $@ -lc -lgcc -shared -Wl,-soname,libevdi.so.0
 
