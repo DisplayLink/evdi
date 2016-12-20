@@ -124,6 +124,10 @@ static int evdi_gem_get_pages(struct evdi_gem_object *obj,
 
 	obj->pages = pages;
 
+#if defined(CONFIG_X86)
+	drm_clflush_pages(obj->pages, obj->base.size / PAGE_SIZE);
+#endif
+
 	return 0;
 }
 
