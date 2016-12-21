@@ -85,14 +85,24 @@ int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	unsigned int page_offset;
 	int ret = 0;
 
+#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
+	page_offset = (vmf->address - vma->vm_start) >> PAGE_SHIFT;
+#else
 	page_offset = ((unsigned long)vmf->virtual_address - vma->vm_start) >>
 	    PAGE_SHIFT;
+#endif
 
 	if (!obj->pages)
 		return VM_FAULT_SIGBUS;
 
 	page = obj->pages[page_offset];
+
+#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
+	ret = vm_insert_page(vma, vmf->address, page);
+#else
 	ret = vm_insert_page(vma, (unsigned long)vmf->virtual_address, page);
+#endif
+
 	switch (ret) {
 	case -EAGAIN:
 	case 0:
