@@ -154,17 +154,17 @@ static int copy_pixels(struct evdi_framebuffer *ufb,
 				       max_x, max_y);
 }
 
-static void painter_lock(struct evdi_painter *painter)
-{
-	EVDI_CHECKPT();
-	mutex_lock(&painter->lock);
-}
+#define painter_lock(painter)                           \
+	do {                                            \
+		EVDI_VERBOSE("Painter lock\n");         \
+		mutex_lock(&painter->lock);             \
+	} while (0)
 
-static void painter_unlock(struct evdi_painter *painter)
-{
-	EVDI_CHECKPT();
-	mutex_unlock(&painter->lock);
-}
+#define painter_unlock(painter)                         \
+	do {                                            \
+		EVDI_VERBOSE("Painter unlock\n");       \
+		mutex_unlock(&painter->lock);           \
+	} while (0)
 
 bool evdi_painter_is_connected(struct evdi_device *evdi)
 {
@@ -426,7 +426,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 		return -ENOMEM;
 
 	if (copy_from_user(new_edid, edid_data, edid_length)) {
-		EVDI_ERROR("(dev=%d) LSP Failed to read edid\n", dev_index);
+		EVDI_ERROR("(dev=%d) Failed to read edid\n", dev_index);
 		kfree(new_edid);
 		return -EFAULT;
 	}
