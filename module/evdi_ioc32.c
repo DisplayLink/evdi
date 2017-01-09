@@ -30,6 +30,8 @@ struct drm_evdi_connect32 {
 	int32_t dev_index;
 	uint32_t edid_ptr32;
 	uint32_t edid_length;
+	uint32_t supported_modes_ptr32;
+	uint32_t supported_modes_size;
 };
 
 struct drm_evdi_grabpix32 {
@@ -42,7 +44,8 @@ struct drm_evdi_grabpix32 {
 	uint32_t rects_ptr32;
 };
 
-static int compat_evdi_connect(struct file *file, unsigned int cmd,
+static int compat_evdi_connect(struct file *file,
+				unsigned int __always_unused cmd,
 				unsigned long arg)
 {
 	struct drm_evdi_connect32 req32;
@@ -57,14 +60,20 @@ static int compat_evdi_connect(struct file *file, unsigned int cmd,
 	    || __put_user(req32.dev_index, &request->dev_index)
 	    || __put_user((void __user *)(unsigned long)req32.edid_ptr32,
 			  &request->edid)
-	    || __put_user(req32.edid_length, &request->edid_length))
+	    || __put_user(req32.edid_length, &request->edid_length)
+	    || __put_user((void __user *)
+			  (unsigned long)req32.supported_modes_ptr32,
+			  &request->supported_modes)
+	    || __put_user(req32.supported_modes_size,
+			  &request->supported_modes_size))
 		return -EFAULT;
 
 	return drm_ioctl(file, DRM_IOCTL_EVDI_CONNECT,
 			 (unsigned long)request);
 }
 
-static int compat_evdi_grabpix(struct file *file, unsigned int cmd,
+static int compat_evdi_grabpix(struct file *file,
+				unsigned int __always_unused cmd,
 				unsigned long arg)
 {
 	struct drm_evdi_grabpix32 req32;

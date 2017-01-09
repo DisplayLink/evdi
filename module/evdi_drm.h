@@ -38,11 +38,19 @@ struct drm_evdi_event_crtc_state {
 	int32_t state;
 };
 
+struct drm_evdi_mode {
+	int32_t vdisplay;
+	int32_t hdisplay;
+	int32_t vrefresh;
+};
+
 struct drm_evdi_connect {
 	int32_t connected;
 	int32_t dev_index;
 	const unsigned char * __user edid;
-	unsigned int edid_length;
+	uint32_t edid_length;
+	const struct drm_evdi_mode * __user supported_modes;
+	uint32_t supported_modes_size;
 };
 
 struct drm_evdi_mapfifo {

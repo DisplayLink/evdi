@@ -290,21 +290,36 @@ void evdi_close(evdi_handle handle)
   }
 }
 
-void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length)
+void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length, const evdi_mode* modes, const int modes_length)
 {
+  struct drm_evdi_mode* kernel_mode = calloc(modes_length, sizeof(struct drm_evdi_mode));
+  int mode_idx = 0;
+
+  if (kernel_mode != NULL) {
+    for (; mode_idx < modes_length; mode_idx++) {
+      kernel_mode[mode_idx].hdisplay = modes[mode_idx].width;
+      kernel_mode[mode_idx].vdisplay = modes[mode_idx].height;
+      kernel_mode[mode_idx].vrefresh = modes[mode_idx].refresh_rate;
+    }
+  }
+
   struct drm_evdi_connect cmd = {
     .connected = 1,
     .dev_index = handle->device_index,
     .edid = edid,
-    .edid_length = edid_length
+    .edid_length = edid_length,
+    .supported_modes = kernel_mode,
+    .supported_modes_size = kernel_mode == NULL ? 0 : modes_length
   };
 
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");
+
+  free(kernel_mode);
 }
 
 void evdi_disconnect(evdi_handle handle)
 {
-  struct drm_evdi_connect cmd = { 0, 0, 0, 0 };
+  struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0, 0 };
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
 }
 
