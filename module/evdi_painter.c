@@ -53,7 +53,6 @@ struct evdi_painter {
 	struct drm_file *drm_filp;
 
 	bool was_update_requested;
-	struct drm_display_mode current_mode;
 
 	struct list_head supported_modes;
 };
@@ -352,25 +351,11 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 	}
 }
 
-/*
- * @return \c true if the mode was truly replaced/changed
- * (comparing to previously set)
- */
-static bool evdi_painter_replace_mode(struct evdi_painter *painter,
-				      const struct drm_display_mode *new_mode)
-{
-	struct drm_display_mode *current_mode = &painter->current_mode;
-
-	if (drm_mode_equal(current_mode, new_mode))
-		return false;
-
-	drm_mode_copy(current_mode, new_mode);
-	return true;
-}
-
-static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
-					   int32_t bits_per_pixel,
-					   uint32_t pixel_format)
+static void evdi_painter_send_mode_changed(
+	struct evdi_painter *painter,
+	struct drm_display_mode *current_mode,
+	int32_t bits_per_pixel,
+	uint32_t pixel_format)
 {
 	struct evdi_event_mode_changed_pending *event;
 
@@ -379,10 +364,10 @@ static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
 		event->mode_changed.base.type = DRM_EVDI_EVENT_MODE_CHANGED;
 		event->mode_changed.base.length = sizeof(event->mode_changed);
 
-		event->mode_changed.hdisplay = painter->current_mode.hdisplay;
-		event->mode_changed.vdisplay = painter->current_mode.vdisplay;
+		event->mode_changed.hdisplay = current_mode->hdisplay;
+		event->mode_changed.vdisplay = current_mode->vdisplay;
 		event->mode_changed.vrefresh =
-			drm_mode_vrefresh(&painter->current_mode);
+			drm_mode_vrefresh(current_mode);
 		event->mode_changed.bits_per_pixel = bits_per_pixel;
 		event->mode_changed.pixel_format = pixel_format;
 
@@ -469,20 +454,16 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 
-	if (evdi_painter_replace_mode(painter, new_mode)) {
-		EVDI_DEBUG(
+	EVDI_DEBUG(
 		"(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",
-		     evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
-		     drm_mode_vrefresh(new_mode), fb->bits_per_pixel);
-		EVDI_DEBUG("pixel format %d\n", fb->pixel_format);
+		evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
+		drm_mode_vrefresh(new_mode), fb->bits_per_pixel);
+	EVDI_DEBUG("pixel format %d\n", fb->pixel_format);
 
-		evdi_painter_send_mode_changed(painter,
-					       fb->bits_per_pixel,
-					       fb->pixel_format);
-	} else {
-		EVDI_WARN("(dev=%d) Change mode duplicated - ignoring\n",
-			  evdi->dev_index);
-	}
+	evdi_painter_send_mode_changed(painter,
+				       new_mode,
+				       fb->bits_per_pixel,
+				       fb->pixel_format);
 }
 
 int
@@ -593,7 +574,6 @@ void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
 	painter->drm_filp = NULL;
 	evdi->dev_index = -1;
 
-	memset(&painter->current_mode, '\0', sizeof(struct drm_display_mode));
 	painter->was_update_requested = false;
 
 	painter_unlock(painter);
