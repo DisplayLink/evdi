@@ -52,7 +52,11 @@ Closes an opened EVDI handle.
 #### Opening connections
 
     #!c
-	void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length);
+	void evdi_connect(evdi_handle handle,
+			  const unsigned char* edid,
+			  const unsigned edid_length,
+			  const evdi_mode* modes,
+			  const int modes_length);
 
 Creates a connection between the EVDI and Linux DRM subsystem, resulting in kernel mode driver processing a hot plug event.
 
@@ -61,6 +65,8 @@ Creates a connection between the EVDI and Linux DRM subsystem, resulting in kern
 * `handle` to an opened device
 * `edid` should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel
 * `edid_length` is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)
+* `modes` It is a pointer to c-style table with display modes that are supported by client but not listed in edid. Can be NULL
+* `modes_length` is the number of modes in modes table
 
 #### Disconnecting
 
