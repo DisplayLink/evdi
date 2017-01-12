@@ -512,9 +512,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 		EVDI_WARN("(dev=%d) Double connect - replacing %p with %p\n",
 			  dev_index, painter->drm_filp, file);
 
-	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
-		   painter->drm_filp);
-
 	painter_lock(painter);
 
 	evdi->dev_index = dev_index;
@@ -532,6 +529,9 @@ evdi_painter_connect(struct evdi_device *evdi,
 	evdi_set_pixel_clock_limit(evdi);
 	painter_unlock(painter);
 
+	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
+		   painter->drm_filp);
+    
 	drm_helper_hpd_irq_event(evdi->ddev);
 	drm_helper_resume_force_mode(evdi->ddev);
 
