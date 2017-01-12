@@ -1,4 +1,4 @@
-// Copyright (c) 2015 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
 
 #ifndef EVDI_LIB_H
 #define EVDI_LIB_H

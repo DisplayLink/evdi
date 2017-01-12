@@ -1,4 +1,4 @@
-// Copyright (c) 2015 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
 #include <stddef.h>
 #include <stdint.h>
 #include <libdrm/drm.h>
