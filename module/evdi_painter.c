@@ -530,8 +530,8 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
-		   painter->drm_filp);
-    
+			painter->drm_filp);
+
 	drm_helper_hpd_irq_event(evdi->ddev);
 	drm_helper_resume_force_mode(evdi->ddev);
 
