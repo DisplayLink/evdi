@@ -36,12 +36,10 @@ static int evdi_get_modes(struct drm_connector *connector)
 	}
 
 	ret = drm_mode_connector_update_edid_property(connector, edid);
-	if (!ret) {
+	if (!ret)
 		drm_add_edid_modes(connector, edid);
-		evdi_add_inferred_modes(connector, evdi);
-	} else {
+	else
 		EVDI_ERROR("Failed to set edid modes! error: %d", ret);
-	}
 
 	kfree(edid);
 	return ret;
@@ -51,14 +49,12 @@ static int evdi_mode_valid(struct drm_connector *connector,
 			   struct drm_display_mode *mode)
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
-	uint32_t mode_pixel_clock = mode->hdisplay *
-				    mode->vdisplay *
-				    drm_mode_vrefresh(mode);
+	uint32_t mode_area = mode->hdisplay * mode->vdisplay;
 
-	if (evdi->pixel_clock_limit == 0)
+	if (evdi->sku_area_limit == 0)
 		return MODE_OK;
 
-	if (mode_pixel_clock > evdi->pixel_clock_limit) {
+	if (mode_area > evdi->sku_area_limit) {
 		EVDI_WARN("Mode %dx%d@%d rejected\n",
 			mode->hdisplay,
 			mode->vdisplay,

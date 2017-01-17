@@ -26,11 +26,11 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20170112"
+#define DRIVER_DATE   "20170117"
 
 #define DRIVER_MAJOR      1
 #define DRIVER_MINOR      3
-#define DRIVER_PATCHLEVEL 42
+#define DRIVER_PATCHLEVEL 43
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -40,7 +40,7 @@ struct evdi_device {
 	struct device *dev;
 	struct drm_device *ddev;
 	struct evdi_cursor *cursor;
-	uint32_t pixel_clock_limit;
+	uint32_t sku_area_limit;
 
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
@@ -127,10 +127,6 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_framebuffer *fb,
 				      struct drm_display_mode *mode);
 void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state);
-void evdi_add_inferred_modes(
-	struct drm_connector *connector,
-	struct evdi_device *evdi);
-
 unsigned int evdi_painter_poll(struct file *filp,
 			       struct poll_table_struct *wait);
 

@@ -56,7 +56,9 @@ evdi_device_status evdi_check_device(int device);
 evdi_handle evdi_open(int device);
 int evdi_add_device();
 void evdi_close(evdi_handle handle);
-void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length, const evdi_mode* modes, const int modes_length);
+void evdi_connect(evdi_handle handle, const unsigned char* edid,
+		  const unsigned edid_length,
+		  const uint32_t sku_area_limit);
 void evdi_disconnect(evdi_handle handle);
 void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects);
 void evdi_register_buffer(evdi_handle handle, evdi_buffer buffer);

@@ -53,8 +53,6 @@ struct evdi_painter {
 	struct drm_file *drm_filp;
 
 	bool was_update_requested;
-
-	struct list_head supported_modes;
 };
 
 static void expand_rect(struct drm_clip_rect *a, const struct drm_clip_rect *b)
@@ -173,88 +171,6 @@ bool evdi_painter_is_connected(struct evdi_device *evdi)
 	if (evdi && evdi->painter)
 		return evdi->painter->is_connected;
 	return false;
-}
-
-static void evdi_set_pixel_clock_limit(struct evdi_device *evdi)
-{
-	struct evdi_painter *painter = evdi->painter;
-	struct drm_display_mode *supported_mode = NULL;
-
-	evdi->pixel_clock_limit = 0;
-	list_for_each_entry(supported_mode, &painter->supported_modes, head) {
-		uint32_t pixel_clock =
-			supported_mode->hdisplay *
-			supported_mode->vdisplay *
-			drm_mode_vrefresh(supported_mode);
-
-		evdi->pixel_clock_limit =
-			max(pixel_clock, evdi->pixel_clock_limit);
-	}
-}
-
-static void evdi_painter_clean_supported_modes_list(
-	struct evdi_painter *painter,
-	struct drm_device *dev)
-{
-	struct drm_display_mode *mode = NULL, *temp = NULL;
-
-	list_for_each_entry_safe(mode, temp, &painter->supported_modes, head) {
-		list_del(&mode->head);
-		drm_mode_destroy(dev, mode);
-	}
-}
-
-static void evdi_painter_set_supported_modes_list(
-	struct evdi_painter *painter,
-	struct drm_device *dev,
-	const struct drm_evdi_mode __user *usr_supported_modes,
-	unsigned int usr_supported_modes_size)
-{
-	int mode = 0;
-
-	evdi_painter_clean_supported_modes_list(painter, dev);
-
-	for (mode = 0; mode < usr_supported_modes_size; ++mode) {
-		struct drm_evdi_mode user_mode = {0};
-		struct drm_display_mode *supported_mode = NULL;
-
-		if (copy_from_user(&user_mode,
-			&usr_supported_modes[mode], sizeof(user_mode))) {
-			EVDI_ERROR("Failed to read user mode\n");
-			continue;
-		}
-
-		supported_mode = drm_cvt_mode(dev,
-				     user_mode.hdisplay,
-				     user_mode.vdisplay,
-				     user_mode.vrefresh,
-				     1, 0, 0);
-
-		list_add_tail(&supported_mode->head,
-			&painter->supported_modes);
-	}
-}
-
-void evdi_add_inferred_modes(
-	struct drm_connector *connector,
-	struct evdi_device *evdi)
-{
-	struct evdi_painter *painter = evdi->painter;
-	struct drm_display_mode *supported_mode = NULL;
-
-	if (painter == NULL)
-		return;
-
-	list_for_each_entry(supported_mode, &painter->supported_modes, head) {
-		struct drm_display_mode *inferred_mode =
-			drm_mode_duplicate(connector->dev, supported_mode);
-
-		drm_mode_probed_add(connector, inferred_mode);
-		EVDI_VERBOSE("Inferred mode %dx%d@%d added\n",
-			inferred_mode->hdisplay,
-			inferred_mode->vdisplay,
-			drm_mode_vrefresh(inferred_mode));
-	}
 }
 
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
@@ -469,8 +385,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
-		     const struct drm_evdi_mode __user *usr_supported_modes,
-		     unsigned int usr_supported_modes_size,
+		     uint32_t sku_area_limit,
 		     struct drm_file *file, int dev_index)
 {
 	struct evdi_painter *painter = evdi->painter;
@@ -515,18 +430,13 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter_lock(painter);
 
 	evdi->dev_index = dev_index;
+	evdi->sku_area_limit = sku_area_limit;
 	painter->drm_filp = file;
 	kfree(painter->edid);
 	painter->edid_length = edid_length;
 	painter->edid = new_edid;
 	painter->is_connected = true;
 
-	evdi_painter_set_supported_modes_list(
-		painter,
-		evdi->ddev,
-		usr_supported_modes,
-		usr_supported_modes_size);
-	evdi_set_pixel_clock_limit(evdi);
 	painter_unlock(painter);
 
 	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
@@ -604,8 +514,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 			evdi_painter_connect(evdi,
 					     cmd->edid,
 					     cmd->edid_length,
-					     cmd->supported_modes,
-					     cmd->supported_modes_size,
+					     cmd->sku_area_limit,
 					     file,
 					     cmd->dev_index);
 		else
@@ -755,7 +664,6 @@ int evdi_painter_init(struct evdi_device *dev)
 		mutex_init(&dev->painter->lock);
 		dev->painter->edid = NULL;
 		dev->painter->edid_length = 0;
-		INIT_LIST_HEAD(&dev->painter->supported_modes);
 		return 0;
 	}
 	return -ENOMEM;
@@ -768,7 +676,6 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
-		evdi_painter_clean_supported_modes_list(painter, evdi->ddev);
 		kfree(painter->edid);
 		painter->edid_length = 0;
 		painter->edid = 0;
