@@ -199,8 +199,7 @@
 <pre class="codehilite"><code class="language-c linenums">void evdi_connect(evdi_handle handle,
           const unsigned char* edid,
           const unsigned edid_length,
-          const evdi_mode* modes,
-          const int modes_length);</code></pre>
+          const uint32_t sku_area_limit);</code></pre>
 
 
 <p>Creates a connection between the EVDI and Linux DRM subsystem, resulting in kernel mode driver processing a hot plug event.</p>
@@ -209,8 +208,7 @@
 <li><code>handle</code> to an opened device</li>
 <li><code>edid</code> should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel</li>
 <li><code>edid_length</code> is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)</li>
-<li><code>modes</code> It is a pointer to c-style table with display modes that are supported by client but not listed in edid. Can be NULL</li>
-<li><code>modes_length</code> is the number of modes in modes table</li>
+<li><code>sku_area_limit</code> is maximum supported pixel count for connected device</li>
 </ul>
 <h4 id="disconnecting">Disconnecting<a class="headerlink" href="#disconnecting" title="Permanent link">&para;</a></h4>
 <pre class="codehilite"><code class="language-c linenums">void evdi_disconnect(evdi_handle handle)</code></pre>
