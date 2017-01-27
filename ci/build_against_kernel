@@ -3,17 +3,21 @@
 set -e
 set -u
 
-if [ "${1}" = "" ]; then
+if [ "${#}" = "0" ]; then
   cat << EOF
-Usage: ${0} KVER
+Usage: ${0} [all|KVER ...]
 
 where:
-  KVER      kernel version to build against (e.g. 3.19)
+  all       build against all KVER specified in '.travis.yml' file
+  KVER ...  list of kernel versions to build against (e.g. 3.19)
 EOF
   exit 123
 fi
 
-KVER=${1}
+get_versions_from_file() { # file
+  local PREFIX="^  \- KVER="
+  grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
+}
 
 get_master_sources() {
   wget -O master.tar.gz https://github.com/torvalds/linux/tarball/master
@@ -43,13 +47,21 @@ prepare_kernel() { # srcDir
   cd "${oldDir}"
 }
 
-if [ "${KVER}" = "master" ]; then
-  srcDir=$(get_master_sources)
+if [ "${1}" = "all" ]; then
+  KVERS="$(get_versions_from_file '.travis.yml')"
 else
-  srcDir=$(get_tagged_sources "${KVER}")
+  KVERS="${@}"
 fi
 
-prepare_kernel "${srcDir}"
-make KDIR="${srcDir}" CC=${CC:-gcc}
+for KVER in ${KVERS}; do
+  if [ "${KVER}" = "master" ]; then
+    srcDir=$(get_master_sources)
+  else
+    srcDir=$(get_tagged_sources "${KVER}")
+  fi
 
-rm -r "${srcDir}"
+  prepare_kernel "${srcDir}"
+  make KDIR="${srcDir}" CC="${CC:-gcc}"
+
+  rm -r "${srcDir}"
+done
