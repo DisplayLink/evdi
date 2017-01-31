@@ -29,7 +29,6 @@
 
 struct evdi_frame_buffer_node {
 	struct evdi_buffer frame_buffer;
-	bool isInvalidated;
 	struct evdi_frame_buffer_node *next;
 };
 
@@ -132,17 +131,6 @@ static int is_evdi(int fd)
 		return 1;
 	}
 	return 0;
-}
-
-static void invalidate(evdi_handle handle)
-{
-	struct evdi_frame_buffer_node *node = NULL;
-
-	for (node = handle->frameBuffersListHead;
-	     node != NULL;
-	     node = (struct evdi_frame_buffer_node *)node->next) {
-		node->isInvalidated = true;
-	}
 }
 
 static int device_exists(int device)
@@ -329,8 +317,9 @@ void evdi_grab_pixels(evdi_handle handle,
 
 	destinationNode = findBuffer(handle, handle->bufferToUpdate);
 
-	if (!destinationNode || destinationNode->isInvalidated) {
-		printf("[libevdi] Buffer was invalidated. Not grabbing.\n");
+	if (!destinationNode) {
+		printf("[libevdi] Buffer %d not found. Not grabbing.\n",
+			handle->bufferToUpdate);
 		*num_rects = 0;
 		return;
 	}
@@ -394,25 +383,8 @@ void evdi_unregister_buffer(evdi_handle handle, int bufferId)
 
 bool evdi_request_update(evdi_handle handle, int bufferId)
 {
-	struct evdi_frame_buffer_node *front_buffer = NULL;
-
 	assert(handle);
-
-	front_buffer = findBuffer(handle, bufferId);
-	if (!front_buffer) {
-		printf("[libevdi] Buffer %d is not registered.", bufferId);
-		printf("[libevdi] Ignoring update request.");
-		return false;
-	}
-
-	if (front_buffer->isInvalidated) {
-		printf("[libevdi] Buffer %d was invalidated.", bufferId);
-		printf("[libevdi] Ignoring update request.");
-		return false;
-	}
-
 	handle->bufferToUpdate = bufferId;
-
 	{
 		struct drm_evdi_request_update cmd;
 		const int requestResult = do_ioctl(
@@ -469,7 +441,6 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx)
 			struct drm_evdi_event_mode_changed *event =
 				(struct drm_evdi_event_mode_changed *) e;
 
-			invalidate(handle);
 			if (evtctx && evtctx->mode_changed_handler)
 				evtctx->mode_changed_handler(
 					to_evdi_mode(event),
