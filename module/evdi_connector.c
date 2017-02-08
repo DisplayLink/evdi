@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -49,14 +49,20 @@ static int evdi_mode_valid(struct drm_connector *connector,
 			   struct drm_display_mode *mode)
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
+	uint32_t mode_area = mode->hdisplay * mode->vdisplay;
 
-	if (!evdi->sku_pixel_limit)
-		return 0;
+	if (evdi->sku_area_limit == 0)
+		return MODE_OK;
 
-	if (mode->vdisplay * mode->hdisplay > evdi->sku_pixel_limit)
-		return MODE_VIRTUAL_Y;
+	if (mode_area > evdi->sku_area_limit) {
+		EVDI_WARN("Mode %dx%d@%d rejected\n",
+			mode->hdisplay,
+			mode->vdisplay,
+			drm_mode_vrefresh(mode));
+		return MODE_BAD;
+	}
 
-	return 0;
+	return MODE_OK;
 }
 
 static enum drm_connector_status
@@ -115,7 +121,7 @@ static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
 	.best_encoder = evdi_best_single_encoder,
 };
 
-static struct drm_connector_funcs evdi_connector_funcs = {
+static const struct drm_connector_funcs evdi_connector_funcs = {
 	.dpms = drm_helper_connector_dpms,
 	.detect = evdi_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,
@@ -144,7 +150,10 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 #endif
 	drm_mode_connector_attach_encoder(connector, encoder);
 
+#if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_object_attach_property(&connector->base,
 				   dev->mode_config.dirty_info_property, 1);
+#endif
+
 	return 0;
 }

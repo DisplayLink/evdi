@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
 #
 # This file is subject to the terms and conditions of the GNU General Public
 # License v2. See the file COPYING in the main directory of this archive for
@@ -13,6 +13,7 @@ KERN_DIR := /lib/modules/$(KERNELRELEASE)/build
 
 ccflags-y := -Iinclude/drm
 evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o evdi_cursor.o
+evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-m := evdi.o
 
 KBUILD_VERBOSE ?= 1
@@ -36,6 +37,7 @@ CONFIG_DRM_EVDI := m
 LINUXINCLUDE := $(subst -I,-isystem,$(LINUXINCLUDE))
 ccflags-y := -isystem include/drm $(CFLAGS)
 evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_debug.o evdi_cursor.o
+evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-$(CONFIG_DRM_EVDI) := evdi.o
 
 else

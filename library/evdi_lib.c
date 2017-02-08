@@ -1,4 +1,4 @@
-// Copyright (c) 2015 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
 #include <stddef.h>
 #include <stdint.h>
 #include <libdrm/drm.h>
@@ -290,13 +290,17 @@ void evdi_close(evdi_handle handle)
   }
 }
 
-void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned edid_length)
+void evdi_connect(evdi_handle handle,
+		  const unsigned char* edid,
+		  const unsigned edid_length,
+		  const uint32_t sku_area_limit)
 {
   struct drm_evdi_connect cmd = {
     .connected = 1,
     .dev_index = handle->device_index,
     .edid = edid,
-    .edid_length = edid_length
+    .edid_length = edid_length,
+    .sku_area_limit = sku_area_limit,
   };
 
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");
@@ -304,7 +308,7 @@ void evdi_connect(evdi_handle handle, const unsigned char* edid, const unsigned 
 
 void evdi_disconnect(evdi_handle handle)
 {
-  struct drm_evdi_connect cmd = { 0, 0, 0, 0 };
+  struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0 };
   do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
 }
 

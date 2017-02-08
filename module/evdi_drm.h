@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -38,11 +38,18 @@ struct drm_evdi_event_crtc_state {
 	int32_t state;
 };
 
+struct drm_evdi_mode {
+	int32_t vdisplay;
+	int32_t hdisplay;
+	int32_t vrefresh;
+};
+
 struct drm_evdi_connect {
 	int32_t connected;
 	int32_t dev_index;
 	const unsigned char * __user edid;
-	unsigned int edid_length;
+	uint32_t edid_length;
+	uint32_t sku_area_limit;
 };
 
 struct drm_evdi_mapfifo {

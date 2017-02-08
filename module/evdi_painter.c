@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2013 - 2017 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -13,6 +13,7 @@
 #include "evdi_cursor.h"
 #include <linux/mutex.h>
 #include <linux/compiler.h>
+#include <linux/list.h>
 
 struct evdi_event_update_ready_pending {
 	struct drm_pending_event base;
@@ -52,7 +53,6 @@ struct evdi_painter {
 	struct drm_file *drm_filp;
 
 	bool was_update_requested;
-	struct drm_display_mode current_mode;
 };
 
 static void expand_rect(struct drm_clip_rect *a, const struct drm_clip_rect *b)
@@ -154,17 +154,17 @@ static int copy_pixels(struct evdi_framebuffer *ufb,
 				       max_x, max_y);
 }
 
-static void painter_lock(struct evdi_painter *painter)
-{
-	EVDI_CHECKPT();
-	mutex_lock(&painter->lock);
-}
+#define painter_lock(painter)                           \
+	do {                                            \
+		EVDI_VERBOSE("Painter lock\n");         \
+		mutex_lock(&painter->lock);             \
+	} while (0)
 
-static void painter_unlock(struct evdi_painter *painter)
-{
-	EVDI_CHECKPT();
-	mutex_unlock(&painter->lock);
-}
+#define painter_unlock(painter)                         \
+	do {                                            \
+		EVDI_VERBOSE("Painter unlock\n");       \
+		mutex_unlock(&painter->lock);           \
+	} while (0)
 
 bool evdi_painter_is_connected(struct evdi_device *evdi)
 {
@@ -267,25 +267,11 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 	}
 }
 
-/*
- * @return \c true if the mode was truly replaced/changed
- * (comparing to previously set)
- */
-static bool evdi_painter_replace_mode(struct evdi_painter *painter,
-				      const struct drm_display_mode *new_mode)
-{
-	struct drm_display_mode *current_mode = &painter->current_mode;
-
-	if (drm_mode_equal(current_mode, new_mode))
-		return false;
-
-	drm_mode_copy(current_mode, new_mode);
-	return true;
-}
-
-static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
-					   int32_t bits_per_pixel,
-					   uint32_t pixel_format)
+static void evdi_painter_send_mode_changed(
+	struct evdi_painter *painter,
+	struct drm_display_mode *current_mode,
+	int32_t bits_per_pixel,
+	uint32_t pixel_format)
 {
 	struct evdi_event_mode_changed_pending *event;
 
@@ -294,10 +280,10 @@ static void evdi_painter_send_mode_changed(struct evdi_painter *painter,
 		event->mode_changed.base.type = DRM_EVDI_EVENT_MODE_CHANGED;
 		event->mode_changed.base.length = sizeof(event->mode_changed);
 
-		event->mode_changed.hdisplay = painter->current_mode.hdisplay;
-		event->mode_changed.vdisplay = painter->current_mode.vdisplay;
+		event->mode_changed.hdisplay = current_mode->hdisplay;
+		event->mode_changed.vdisplay = current_mode->vdisplay;
 		event->mode_changed.vrefresh =
-			drm_mode_vrefresh(&painter->current_mode);
+			drm_mode_vrefresh(current_mode);
 		event->mode_changed.bits_per_pixel = bits_per_pixel;
 		event->mode_changed.pixel_format = pixel_format;
 
@@ -384,25 +370,22 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 
-	if (evdi_painter_replace_mode(painter, new_mode)) {
-		EVDI_DEBUG(
+	EVDI_DEBUG(
 		"(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",
-		     evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
-		     drm_mode_vrefresh(new_mode), fb->bits_per_pixel);
-		EVDI_DEBUG("pixel format %d\n", fb->pixel_format);
+		evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
+		drm_mode_vrefresh(new_mode), fb->bits_per_pixel);
+	EVDI_DEBUG("pixel format %d\n", fb->pixel_format);
 
-		evdi_painter_send_mode_changed(painter,
-					       fb->bits_per_pixel,
-					       fb->pixel_format);
-	} else {
-		EVDI_WARN("(dev=%d) Change mode duplicated - ignoring\n",
-			  evdi->dev_index);
-	}
+	evdi_painter_send_mode_changed(painter,
+				       new_mode,
+				       fb->bits_per_pixel,
+				       fb->pixel_format);
 }
 
 int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
+		     uint32_t sku_area_limit,
 		     struct drm_file *file, int dev_index)
 {
 	struct evdi_painter *painter = evdi->painter;
@@ -426,7 +409,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 		return -ENOMEM;
 
 	if (copy_from_user(new_edid, edid_data, edid_length)) {
-		EVDI_ERROR("(dev=%d) LSP Failed to read edid\n", dev_index);
+		EVDI_ERROR("(dev=%d) Failed to read edid\n", dev_index);
 		kfree(new_edid);
 		return -EFAULT;
 	}
@@ -444,12 +427,10 @@ evdi_painter_connect(struct evdi_device *evdi,
 		EVDI_WARN("(dev=%d) Double connect - replacing %p with %p\n",
 			  dev_index, painter->drm_filp, file);
 
-	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
-		   painter->drm_filp);
-
 	painter_lock(painter);
 
 	evdi->dev_index = dev_index;
+	evdi->sku_area_limit = sku_area_limit;
 	painter->drm_filp = file;
 	kfree(painter->edid);
 	painter->edid_length = edid_length;
@@ -457,6 +438,9 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter->is_connected = true;
 
 	painter_unlock(painter);
+
+	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
+			painter->drm_filp);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
 	drm_helper_resume_force_mode(evdi->ddev);
@@ -500,7 +484,6 @@ void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
 	painter->drm_filp = NULL;
 	evdi->dev_index = -1;
 
-	memset(&painter->current_mode, '\0', sizeof(struct drm_display_mode));
 	painter->was_update_requested = false;
 
 	painter_unlock(painter);
@@ -531,6 +514,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 			evdi_painter_connect(evdi,
 					     cmd->edid,
 					     cmd->edid_length,
+					     cmd->sku_area_limit,
 					     file,
 					     cmd->dev_index);
 		else

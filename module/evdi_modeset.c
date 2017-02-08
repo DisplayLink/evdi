@@ -372,7 +372,9 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	dev->mode_config.funcs = &evdi_mode_funcs;
 
+#if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_mode_create_dirty_info_property(dev);
+#endif
 
 #if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
 

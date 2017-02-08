@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -26,11 +26,11 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20161003"
+#define DRIVER_DATE   "20170117"
 
 #define DRIVER_MAJOR      1
-#define DRIVER_MINOR      2
-#define DRIVER_PATCHLEVEL 64
+#define DRIVER_MINOR      3
+#define DRIVER_PATCHLEVEL 43
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -40,7 +40,7 @@ struct evdi_device {
 	struct device *dev;
 	struct drm_device *ddev;
 	struct evdi_cursor *cursor;
-	int sku_pixel_limit;
+	uint32_t sku_area_limit;
 
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
@@ -79,6 +79,10 @@ struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
 int evdi_driver_unload(struct drm_device *dev);
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
+
+#ifdef CONFIG_COMPAT
+long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+#endif
 
 int evdi_fbdev_init(struct drm_device *dev);
 void evdi_fbdev_cleanup(struct drm_device *dev);
@@ -123,7 +127,6 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_framebuffer *fb,
 				      struct drm_display_mode *mode);
 void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state);
-
 unsigned int evdi_painter_poll(struct file *filp,
 			       struct poll_table_struct *wait);
 
