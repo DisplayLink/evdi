@@ -17,6 +17,7 @@ env:
   - KVER=4.7
   - KVER=4.8
   - KVER=4.9
+  - KVER=4.10
   - KVER=master
 
 matrix:
