@@ -77,7 +77,11 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
+#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 int evdi_driver_unload(struct drm_device *dev);
+#else
+void evdi_driver_unload(struct drm_device *dev);
+#endif
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 
 #ifdef CONFIG_COMPAT
@@ -112,7 +116,12 @@ struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
 int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);
 int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
+
+#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
+#else
+int evdi_gem_fault(struct vm_fault *vmf);
+#endif
 
 void evdi_stats_init(struct evdi_device *evdi);
 void evdi_stats_cleanup(struct evdi_device *evdi);
