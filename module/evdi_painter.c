@@ -571,7 +571,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 			goto unlock;
 		}
 		if (!efb->obj->vmapping) {
-			EVDI_ERROR("Failed to map scanout buffer\n");
+			EVDI_ERROR("Inexistent vmapping\n");
 			err = -EFAULT;
 			goto unlock;
 		}

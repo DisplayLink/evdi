@@ -280,47 +280,6 @@ static int evdi_prime_create(struct drm_device *dev,
 	return 0;
 }
 
-struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
-					     struct dma_buf *dma_buf)
-{
-	struct dma_buf_attachment *attach;
-	struct sg_table *sg;
-	struct evdi_gem_object *uobj;
-	int ret;
-
-	/* need to attach */
-	get_device(dev->dev);
-	attach = dma_buf_attach(dma_buf, dev->dev);
-	if (IS_ERR(attach)) {
-		put_device(dev->dev);
-		return ERR_CAST(attach);
-	}
-
-	get_dma_buf(dma_buf);
-
-	sg = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
-	if (IS_ERR(sg)) {
-		ret = PTR_ERR(sg);
-		goto fail_detach;
-	}
-
-	ret = evdi_prime_create(dev, dma_buf->size, sg, &uobj);
-	if (ret)
-		goto fail_unmap;
-
-	uobj->base.import_attach = attach;
-
-	return &uobj->base;
-
- fail_unmap:
-	dma_buf_unmap_attachment(attach, sg, DMA_BIDIRECTIONAL);
- fail_detach:
-	dma_buf_detach(dma_buf, attach);
-	dma_buf_put(dma_buf);
-	put_device(dev->dev);
-	return ERR_PTR(ret);
-}
-
 struct evdi_drm_dmabuf_attachment {
 	struct sg_table sgt;
 	enum dma_data_direction dir;
@@ -486,6 +445,56 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.mmap = evdi_dmabuf_mmap,
 	.release = drm_gem_dmabuf_release,
 };
+
+struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
+					     struct dma_buf *dma_buf)
+{
+	struct dma_buf_attachment *attach;
+	struct sg_table *sg;
+	struct evdi_gem_object *uobj;
+	int ret;
+
+	/* check if our object */
+	if (dma_buf->ops == &evdi_dmabuf_ops) {
+		uobj = to_evdi_bo(dma_buf->priv);
+		if (uobj->base.dev == dev) {
+			drm_gem_object_reference(&uobj->base);
+			return &uobj->base;
+		}
+	}
+
+	/* need to attach */
+	get_device(dev->dev);
+	attach = dma_buf_attach(dma_buf, dev->dev);
+	if (IS_ERR(attach)) {
+		put_device(dev->dev);
+		return ERR_CAST(attach);
+	}
+
+	get_dma_buf(dma_buf);
+
+	sg = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+	if (IS_ERR(sg)) {
+		ret = PTR_ERR(sg);
+		goto fail_detach;
+	}
+
+	ret = evdi_prime_create(dev, dma_buf->size, sg, &uobj);
+	if (ret)
+		goto fail_unmap;
+
+	uobj->base.import_attach = attach;
+
+	return &uobj->base;
+
+ fail_unmap:
+	dma_buf_unmap_attachment(attach, sg, DMA_BIDIRECTIONAL);
+ fail_detach:
+	dma_buf_detach(dma_buf, attach);
+	dma_buf_put(dma_buf);
+	put_device(dev->dev);
+	return ERR_PTR(ret);
+}
 
 struct dma_buf *evdi_gem_prime_export(__always_unused struct drm_device *dev,
 				      struct drm_gem_object *obj, int flags)
