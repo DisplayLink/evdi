@@ -370,16 +370,24 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 
+#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
+	int bits_per_pixel = fb->bits_per_pixel;
+	uint32_t pixel_format = fb->pixel_format;
+#else
+	int bits_per_pixel = fb->format->cpp[0] * 8;
+	uint32_t pixel_format = fb->format->format;
+#endif
+
 	EVDI_DEBUG(
 		"(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",
 		evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
-		drm_mode_vrefresh(new_mode), fb->bits_per_pixel);
-	EVDI_DEBUG("pixel format %d\n", fb->pixel_format);
+		drm_mode_vrefresh(new_mode), bits_per_pixel);
+	EVDI_DEBUG("pixel format %d\n", pixel_format);
 
 	evdi_painter_send_mode_changed(painter,
 				       new_mode,
-				       fb->bits_per_pixel,
-				       fb->pixel_format);
+				       bits_per_pixel,
+				       pixel_format);
 }
 
 int

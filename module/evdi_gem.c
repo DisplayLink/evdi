@@ -12,6 +12,9 @@
 #include <linux/shmem_fs.h>
 #include <linux/dma-buf.h>
 #include <linux/version.h>
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_cache.h>
+#endif
 
 struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size)
@@ -78,8 +81,15 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	return ret;
 }
 
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+int evdi_gem_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#else
 int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
+#endif
+
 	struct evdi_gem_object *obj = to_evdi_bo(vma->vm_private_data);
 	struct page *page;
 	unsigned int page_offset;
