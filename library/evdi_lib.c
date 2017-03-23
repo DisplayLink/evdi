@@ -115,6 +115,28 @@ static int removeFrameBuffer(evdi_handle context, int const *id)
 	return removedCount;
 }
 
+static int is_evdi_compatible(int fd)
+{
+	struct drm_version ver = {
+		.version_major = 0,
+		.version_minor = 0,
+		.version_patchlevel = 0
+	};
+	if (do_ioctl(fd, DRM_IOCTL_VERSION, &ver, "version") == 0 &&
+		ver.version_major ==  EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR &&
+		ver.version_minor ==  EVDI_MODULE_COMPATIBILITY_VERSION_MINOR) {
+		return 1;
+	}
+	printf("[libevdi] evdi version:%d.%d.%d",
+		ver.version_major, ver.version_minor, ver.version_patchlevel);
+	printf("[libevdi] doesn't match libevdi compatibility one %d.%d.%d\n",
+		EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
+		EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
+		EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
+
+	return 0;
+}
+
 static int is_evdi(int fd)
 {
 	char name[64] = { 0 }, date[64] = { 0 }, desc[64] = { 0 };
@@ -231,7 +253,7 @@ evdi_handle evdi_open(int device)
 
 	fd = open_device(device);
 	if (fd > 0) {
-		if (is_evdi(fd)) {
+		if (is_evdi(fd) && is_evdi_compatible(fd)) {
 			h = calloc(1, sizeof(struct evdi_device_context));
 			if (h) {
 				h->fd = fd;
@@ -468,5 +490,14 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx)
 evdi_selectable evdi_get_event_ready(evdi_handle handle)
 {
 	return handle->fd;
+}
+
+void evdi_get_lib_version(struct evdi_lib_version *version)
+{
+	if (version != NULL) {
+		version->version_major = LIBEVDI_VERSION_MAJOR;
+		version->version_minor = LIBEVDI_VERSION_MINOR;
+		version->version_patchlevel = LIBEVDI_VERSION_PATCHLEVEL;
+	}
 }
 
