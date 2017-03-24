@@ -4,6 +4,19 @@
 
 ## Functions by group
 
+### Versioning
+Library uses semantic versioning to mark compatibility changes.
+Version consists of 3 components formatted as MAJOR.MINOR.PATCH
+
+ * `MAJOR` number is changed for incompatibile API changes
+ * `MINOR` number is changed for backwards-compatible changes
+ * `PATCH` number is changed for backwards-compatibile bug fixes
+#
+    #!c
+    evdi_get_lib_version(struct evdi_lib_version device);
+
+Function returns library version.
+
 ### EVDI nodes
 
 #### Finding an available EVDI node to use
@@ -34,6 +47,8 @@ Use this to tell the kernel module to create a new `cardX` node for your applica
 	evdi_handle evdi_open(int device);
 
 This function attempts to open a DRM device node with given number as EVDI.
+Function performs compatibility check with underlying drm device. If version of the
+library and module does not match then the device will not be opened.
 
 **Arguments**: `device` is a number of card to open, e.g. `1` means `/dev/dri/card1`.
 
@@ -64,7 +79,7 @@ Creates a connection between the EVDI and Linux DRM subsystem, resulting in kern
 * `handle` to an opened device
 * `edid` should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel
 * `edid_length` is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)
-* `sku_area_limit` is maximum supported pixel count for connected device
+* `sku_area_limit` is maximum pixel area (width x height) connected device can display
 
 #### Disconnecting
 
@@ -255,3 +270,15 @@ Last two structure members, `rects` and `rect_counts` are updated during grabbin
 The `evdi_device_context` structure is used for holding pointers to handlers for all notifications that the application may receive from
 the kernel module. The `user_data` member is a value that the library will use while dispatching the call back.
 See [Events and handlers](details.md#events-and-handlers) for more information.
+
+### evdi_lib_version
+
+    #!c
+	struct evdi_lib_version {
+		int version_major;
+		int version_minor;
+		int version_patchlevel;
+	};
+
+The `evdi_lib_version` structure contains libevdi version.
+Version can be used to check compatibility between library and a client application.
