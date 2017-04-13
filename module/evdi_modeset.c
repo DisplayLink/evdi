@@ -232,19 +232,50 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 				struct drm_file *file,
 				uint32_t handle,
 				uint32_t width,
-				uint32_t height)
+				uint32_t height,
+				int32_t hot_x,
+				int32_t hot_y)
 {
 	struct drm_device *dev = crtc->dev;
 	struct evdi_device *evdi = dev->dev_private;
+	struct drm_gem_object *obj = NULL;
+	struct evdi_gem_object *eobj = NULL;
 	int ret;
+	/*
+	 * evdi_crtc_cursor_set is callback function using
+	 * deprecated cursor entry point.
+	 * There is no info about underlaying pixel format.
+	 * Hence we are assuming that it is in RGB 32bpp format.
+	 * This format it the only one supported in cursor composition
+	 * function.
+	 * This format is also enforced during framebuffer creation.
+	 *
+	 * Proper format will be available when driver start support
+	 * universal planes for cursor.
+	 */
+	uint32_t format = DRM_FORMAT_XRGB8888;
+
 
 	EVDI_CHECKPT();
-	mutex_lock(&dev->struct_mutex);
-	ret = evdi_cursor_set(crtc, file, handle, width, height, evdi->cursor);
-	mutex_unlock(&dev->struct_mutex);
-	EVDI_VERBOSE("evdi_crtc_cursor_set unlock\n");
+	if (handle) {
+		mutex_lock(&dev->struct_mutex);
+#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
+		obj = drm_gem_object_lookup(crtc->dev, file, handle);
+#else
+		obj = drm_gem_object_lookup(file, handle);
+#endif
+		if (obj)
+			eobj = to_evdi_bo(obj);
+		else
+			EVDI_ERROR("Failed to lookup gem object.\n");
+		mutex_unlock(&dev->struct_mutex);
+	}
+
+	ret = evdi_cursor_set(evdi->cursor,
+			      eobj, width, height, hot_x, hot_y, format);
+	drm_gem_object_unreference_unlocked(obj);
 	if (ret) {
-		DRM_ERROR("Failed to set evdi cursor\n");
+		EVDI_ERROR("Failed to set evdi cursor\n");
 		return ret;
 	}
 
@@ -252,11 +283,14 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * For now we don't care whether the application wanted the mouse set,
 	 * or not.
 	 */
+	if (evdi_enable_cursor_blending)
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+		return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
 #else
-	return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
+		return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
 #endif
+	evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
+	return 0;
 }
 
 static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
@@ -274,12 +308,15 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 		goto error;
 	}
 	mutex_unlock(&dev->struct_mutex);
+	if (evdi_enable_cursor_blending)
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+		return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
 #else
-	return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
+		return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
 #endif
 
+	evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
+	return ret;
 error:
 	mutex_unlock(&dev->struct_mutex);
 	return ret;
@@ -310,7 +347,7 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.set_config = drm_crtc_helper_set_config,
 	.destroy = evdi_crtc_destroy,
 	.page_flip = evdi_crtc_page_flip,
-	.cursor_set = evdi_crtc_cursor_set,
+	.cursor_set2 = evdi_crtc_cursor_set,
 	.cursor_move = evdi_crtc_cursor_move,
 };
 

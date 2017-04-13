@@ -27,25 +27,29 @@
 
 struct evdi_cursor;
 struct evdi_framebuffer;
-struct evdi_cursor_hline {
-	uint32_t *buffer;
-	int width;
-	int offset;
-};
+struct evdi_gem_object;
 
 extern int evdi_cursor_alloc(struct evdi_cursor **cursor);
 extern void evdi_cursor_free(struct evdi_cursor *cursor);
 extern void evdi_cursor_copy(struct evdi_cursor *dst, struct evdi_cursor *src);
 extern bool evdi_cursor_enabled(struct evdi_cursor *cursor);
-extern void evdi_cursor_get_hline(struct evdi_cursor *cursor, int x, int y,
-		struct evdi_cursor_hline *hline);
-extern int evdi_cursor_set(struct drm_crtc *crtc, struct drm_file *file,
-		uint32_t handle, uint32_t width, uint32_t height,
+void evdi_cursor_enable(struct evdi_cursor *cursor, bool enabled);
+int evdi_cursor_set(struct evdi_cursor *cursor,
+		    struct evdi_gem_object *obj,
+		    uint32_t width, uint32_t height,
+		    int32_t hot_x, int32_t hot_y,
+		    uint32_t pixel_format);
+extern int evdi_cursor_move(struct drm_crtc *crtc, int32_t x, int32_t y,
 		struct evdi_cursor *cursor);
-extern int evdi_cursor_move(struct drm_crtc *crtc, int x, int y,
-		struct evdi_cursor *cursor);
-extern void evdi_get_cursor_position(int *x, int *y,
+extern void evdi_get_cursor_position(int32_t *x, int32_t *y,
 				     struct evdi_cursor *cursor);
+void evdi_cursor_hotpoint(struct evdi_cursor *cursor,
+			  int32_t *hot_x, int32_t *hot_y);
+void evdi_cursor_size(struct evdi_cursor *cursor,
+		      uint32_t *width, uint32_t *height);
+void evdi_cursor_format(struct evdi_cursor *cursor, uint32_t *format);
+struct evdi_gem_object *evdi_cursor_gem(struct evdi_cursor *cursor);
+
 extern int evdi_cursor_composing_pixel(char *buffer,
 				       int const cursor_value,
 				       int const fb_value,

@@ -35,9 +35,31 @@
 struct evdi_cursor {
 	uint32_t buffer[EVDI_CURSOR_BUF];
 	bool enabled;
-	int x;
-	int y;
+	int32_t x;
+	int32_t y;
+	uint32_t width;
+	uint32_t height;
+	int32_t hot_x;
+	int32_t hot_y;
+	uint32_t pixel_format;
+	struct evdi_gem_object *obj;
 };
+
+static void evdi_cursor_set_gem(struct evdi_cursor *cursor,
+				struct evdi_gem_object *obj)
+{
+	if (obj)
+		drm_gem_object_reference(&obj->base);
+	if (cursor->obj)
+		drm_gem_object_unreference_unlocked(&cursor->obj->base);
+
+	cursor->obj = obj;
+}
+
+struct evdi_gem_object *evdi_cursor_gem(struct evdi_cursor *cursor)
+{
+	return cursor->obj;
+}
 
 int evdi_cursor_alloc(struct evdi_cursor **cursor)
 {
@@ -53,17 +75,29 @@ void evdi_cursor_free(struct evdi_cursor *cursor)
 {
 	if (WARN_ON(!cursor))
 		return;
+	evdi_cursor_set_gem(cursor, NULL);
 	kfree(cursor);
 }
 
 void evdi_cursor_copy(struct evdi_cursor *dst, struct evdi_cursor *src)
 {
+	struct evdi_gem_object *obj = evdi_cursor_gem(src);
+
 	memcpy(dst, src, sizeof(struct evdi_cursor));
+	dst->obj = NULL;
+	evdi_cursor_set_gem(dst, obj);
 }
 
 bool evdi_cursor_enabled(struct evdi_cursor *cursor)
 {
 	return cursor->enabled;
+}
+
+void evdi_cursor_enable(struct evdi_cursor *cursor, bool enable)
+{
+	cursor->enabled = enable;
+	if (!enable)
+		evdi_cursor_set_gem(cursor, NULL);
 }
 
 static int evdi_cursor_download(struct evdi_cursor *cursor,
@@ -86,44 +120,46 @@ static int evdi_cursor_download(struct evdi_cursor *cursor,
 	return 0;
 }
 
-int evdi_cursor_set(__maybe_unused struct drm_crtc *crtc, struct drm_file *file,
-		uint32_t handle, uint32_t width, uint32_t height,
-		struct evdi_cursor *cursor)
+int evdi_cursor_set(struct evdi_cursor *cursor,
+		    struct evdi_gem_object *obj,
+		    uint32_t width, uint32_t height,
+		    int32_t hot_x, int32_t hot_y,
+		    uint32_t pixel_format)
 {
-	if (handle) {
-		struct drm_gem_object *obj;
-		int err;
-		/* Currently we only support 64x64 cursors */
-		if (width != EVDI_CURSOR_W || height != EVDI_CURSOR_H) {
-			DRM_ERROR("we currently only support %dx%d cursors\n",
-					EVDI_CURSOR_W, EVDI_CURSOR_H);
-			return -EINVAL;
-		}
-#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
-		obj = drm_gem_object_lookup(crtc->dev, file, handle);
-#else
-		obj = drm_gem_object_lookup(file, handle);
-#endif
-		if (!obj) {
-			DRM_ERROR("failed to lookup gem object.\n");
-			return -EINVAL;
-		}
-		err = evdi_cursor_download(cursor, obj);
-		drm_gem_object_unreference(obj);
-		if (err != 0) {
-			DRM_ERROR("failed to copy cursor.\n");
-			return err;
-		}
-		cursor->enabled = true;
-	} else {
+	int err = 0;
+
+	/* Currently we only support 64x64 cursors */
+	if (width != EVDI_CURSOR_W || height != EVDI_CURSOR_H) {
+		EVDI_ERROR("We currently only support %dx%d cursors\n",
+				EVDI_CURSOR_W, EVDI_CURSOR_H);
 		cursor->enabled = false;
+		evdi_cursor_set_gem(cursor, NULL);
+		return -EINVAL;
 	}
 
-	return 0;
+	if (obj)
+		err = evdi_cursor_download(cursor, &obj->base);
+
+	if (err != 0) {
+		EVDI_ERROR("failed to copy cursor.\n");
+		evdi_cursor_set_gem(cursor, NULL);
+		return err;
+	}
+
+	cursor->enabled = obj != NULL;
+	cursor->width = width;
+	cursor->height = height;
+	cursor->hot_x = hot_x;
+	cursor->hot_y = hot_y;
+	cursor->pixel_format = pixel_format;
+	evdi_cursor_set_gem(cursor, obj);
+
+	return err;
 }
 
-int evdi_cursor_move(__always_unused struct drm_crtc *crtc,
-		     int x, int y, struct evdi_cursor *cursor)
+int evdi_cursor_move(__maybe_unused struct drm_crtc *crtc,
+		     int32_t x, int32_t y,
+		     struct evdi_cursor *cursor)
 {
 	cursor->x = x;
 	cursor->y = y;
@@ -220,8 +256,29 @@ int evdi_cursor_composing_and_copy(struct evdi_cursor *cursor,
 	return 0;
 }
 
-void evdi_get_cursor_position(int *x, int *y, struct evdi_cursor *cursor)
+void evdi_get_cursor_position(int32_t *x, int32_t *y,
+			      struct evdi_cursor *cursor)
 {
 	*x = cursor->x;
 	*y = cursor->y;
 }
+
+void evdi_cursor_hotpoint(struct evdi_cursor *cursor,
+			  int32_t *hot_x, int32_t *hot_y)
+{
+	*hot_x = cursor->hot_x;
+	*hot_y = cursor->hot_y;
+}
+
+void evdi_cursor_size(struct evdi_cursor *cursor,
+		      uint32_t *width, uint32_t *height)
+{
+	*width = cursor->width;
+	*height = cursor->height;
+}
+
+void evdi_cursor_format(struct evdi_cursor *cursor, uint32_t *format)
+{
+	*format = cursor->pixel_format;
+}
+
