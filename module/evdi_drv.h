@@ -110,6 +110,9 @@ int evdi_gem_mmap(struct drm_file *file_priv,
 void evdi_gem_free_object(struct drm_gem_object *gem_obj);
 struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size);
+uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
+				      struct drm_gem_object *obj);
+
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
 struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
@@ -162,4 +165,10 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 
 int evdi_driver_setup_early(struct drm_device *dev);
 void evdi_driver_setup_late(struct drm_device *dev);
+void evdi_painter_send_cursor_set(struct evdi_painter *painter,
+				  struct evdi_cursor *cursor);
+void evdi_painter_send_cursor_move(struct evdi_painter *painter,
+				   struct evdi_cursor *cursor);
+
 #endif
+

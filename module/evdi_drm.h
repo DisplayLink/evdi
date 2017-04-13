@@ -14,6 +14,9 @@
 #define DRM_EVDI_EVENT_DPMS          0x80000001
 #define DRM_EVDI_EVENT_MODE_CHANGED  0x80000002
 #define DRM_EVDI_EVENT_CRTC_STATE    0x80000003
+#define DRM_EVDI_EVENT_CURSOR_SET    0x80000004
+#define DRM_EVDI_EVENT_CURSOR_MOVE   0x80000005
+
 
 struct drm_evdi_event_update_ready {
 	struct drm_event base;
@@ -63,6 +66,24 @@ struct drm_evdi_grabpix {
 	unsigned char __user *buffer;
 	int32_t num_rects;
 	struct drm_clip_rect __user *rects;
+};
+
+struct drm_evdi_event_cursor_set {
+	struct drm_event base;
+	int32_t hot_x;
+	int32_t hot_y;
+	uint32_t width;
+	uint32_t height;
+	uint8_t enabled;
+	uint32_t buffer_handle;
+	uint32_t buffer_length;
+	uint32_t pixel_format;
+};
+
+struct drm_evdi_event_cursor_move {
+	struct drm_event base;
+	int32_t x;
+	int32_t y;
 };
 
 /* Input ioctls from evdi lib to driver */
