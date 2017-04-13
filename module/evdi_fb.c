@@ -490,16 +490,23 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 	}
 }
 
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
-static int evdi_fb_get_bpp(u32 format)
+int evdi_fb_get_bpp(uint32_t format)
 {
+#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	const struct drm_format_info *info = drm_format_info(format);
 
 	if (!info)
 		return 0;
 	return info->cpp[0] * 8;
-}
+#else
+	unsigned int depth;
+	int bpp;
+
+	drm_fb_get_bpp_depth(format, &depth, &bpp);
+	return bpp;
 #endif
+}
+
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
@@ -513,15 +520,8 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 	struct evdi_framebuffer *ufb;
 	int ret;
 	uint32_t size;
-
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	int bpp = evdi_fb_get_bpp(mode_cmd->pixel_format);
-#else
-	unsigned int depth;
-	int bpp;
 
-	drm_fb_get_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
-#endif
 	if (bpp != 32) {
 		EVDI_ERROR("Unsupported bpp (%d)\n", bpp);
 		return ERR_PTR(-EINVAL);

@@ -165,10 +165,11 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 
 int evdi_driver_setup_early(struct drm_device *dev);
 void evdi_driver_setup_late(struct drm_device *dev);
+
 void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 				  struct evdi_cursor *cursor);
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
-
+int evdi_fb_get_bpp(uint32_t format);
 #endif
 
