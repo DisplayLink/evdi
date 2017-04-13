@@ -147,11 +147,14 @@ static int copy_pixels(struct evdi_framebuffer *ufb,
 		}
 	}
 
-	return evdi_cursor_composing_and_copy(cursor_copy,
+	if (evdi_enable_cursor_blending) {
+		return evdi_cursor_composing_and_copy(cursor_copy,
 				       ufb,
 				       buffer,
 				       buf_byte_stride,
 				       max_x, max_y);
+	}
+	return 0;
 }
 
 #define painter_lock(painter)                           \
