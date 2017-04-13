@@ -318,3 +318,9 @@ static void __exit evdi_exit(void)
 
 module_init(evdi_init);
 module_exit(evdi_exit);
+
+bool evdi_enable_cursor_blending __read_mostly = true;
+module_param_named(enable_cursor_blending,
+		   evdi_enable_cursor_blending, bool, 0644);
+MODULE_PARM_DESC(enable_cursor_blending, "Enables cursor compositing on user supplied framebuffer via EVDI_GRABPIX ioctl. (default: true)");
+
