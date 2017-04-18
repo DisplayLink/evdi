@@ -90,7 +90,6 @@ void evdi_driver_unload(struct drm_device *dev)
 #else
 	drm_connector_unplug_all(dev);
 #endif
-
 	evdi_fbdev_unplug(dev);
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
@@ -100,7 +99,6 @@ void evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
-
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	return 0;
 #endif

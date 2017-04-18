@@ -420,7 +420,7 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
 	}
 }
 
-struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
+static struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
 {
 	struct evdi_mode e;
 

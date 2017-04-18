@@ -97,9 +97,9 @@ static struct drm_encoder *evdi_best_single_encoder(struct drm_connector
 }
 
 static int evdi_connector_set_property(
-				__always_unused struct drm_connector *connector,
-			       __always_unused struct drm_property *property,
-			       __always_unused uint64_t val)
+			__always_unused struct drm_connector *connector,
+			__always_unused struct drm_property *property,
+			__always_unused uint64_t val)
 {
 	return 0;
 }

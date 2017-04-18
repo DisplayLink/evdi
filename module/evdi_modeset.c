@@ -11,12 +11,11 @@
  */
 
 #include <linux/version.h>
-
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
-# include <drm/drm_plane_helper.h>
+#include <drm/drm_plane_helper.h>
 #endif
 #include "evdi_drm.h"
 #include "evdi_drv.h"
@@ -93,8 +92,8 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 	}
 
 	/* damage all of it */
-	evdi_set_new_scanout_buffer(evdi, efb);
-	evdi_flip_scanout_buffer(evdi);
+	evdi_painter_set_new_scanout_buffer(evdi, efb);
+	evdi_painter_commit_scanout_buffer(evdi);
 
 	rect.x1 = 0;
 	rect.y1 = 0;
@@ -129,7 +128,6 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	struct drm_device *dev;
 	struct drm_pending_vblank_event *event;
 	struct drm_framebuffer *fb;
-	struct evdi_device *evdi = NULL;
 
 	mutex_lock(&flip_queue->lock);
 	crtc = flip_queue->crtc;
@@ -138,14 +136,14 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	fb = crtc->primary->fb;
 	flip_queue->event = NULL;
 	mutex_unlock(&flip_queue->lock);
-	evdi = dev->dev_private;
 
 	EVDI_CHECKPT();
 	if (fb) {
+		struct evdi_device *evdi = dev->dev_private;
 		const struct drm_clip_rect rect = {
 			0, 0, fb->width, fb->height };
 
-		evdi_flip_scanout_buffer(evdi);
+		evdi_painter_commit_scanout_buffer(evdi);
 		evdi_painter_mark_dirty(evdi, &rect);
 	}
 	if (event) {
@@ -191,7 +189,7 @@ static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 		}
 		efb->active = true;
 		crtc->primary->fb = fb;
-		evdi_set_new_scanout_buffer(evdi, efb);
+		evdi_painter_set_new_scanout_buffer(evdi, efb);
 	}
 	if (event) {
 		if (flip_queue->event) {
@@ -235,7 +233,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	mutex_lock(&dev->struct_mutex);
 	ret = evdi_cursor_set(crtc, file, handle, width, height, evdi->cursor);
 	mutex_unlock(&dev->struct_mutex);
-	EVDI_DEBUG("evdi_crtc_cursor_set unlock\n");
+	EVDI_VERBOSE("evdi_crtc_cursor_set unlock\n");
 	if (ret) {
 		DRM_ERROR("Failed to set evdi cursor\n");
 		return ret;
@@ -315,21 +313,28 @@ static int evdi_crtc_init(struct drm_device *dev)
 	return 0;
 }
 
-static void evdi_flip_workqueue_init(struct drm_device *dev)
+static int evdi_flip_workqueue_init(struct drm_device *dev)
 {
 	struct evdi_device *evdi = dev->dev_private;
 	struct evdi_flip_queue *flip_queue =
 		kzalloc(sizeof(struct evdi_flip_queue), GFP_KERNEL);
 
 	EVDI_CHECKPT();
-	BUG_ON(!flip_queue);
+	if (WARN_ON(!flip_queue))
+		return -ENOMEM;
 	mutex_init(&flip_queue->lock);
 	flip_queue->wq = create_singlethread_workqueue("flip");
-	BUG_ON(!flip_queue->wq);
+	if (WARN_ON(!flip_queue->wq)) {
+		mutex_destroy(&flip_queue->lock);
+		kfree(flip_queue);
+		return -ENOMEM;
+	}
 	INIT_DELAYED_WORK(&flip_queue->work, evdi_sched_page_flip);
 	flip_queue->flip_time = jiffies;
 	flip_queue->vblank_interval = HZ / 60;
 	evdi->flip_queue = flip_queue;
+
+	return 0;
 }
 
 static void evdi_flip_workqueue_cleanup(struct drm_device *dev)
@@ -389,9 +394,7 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	evdi_connector_init(dev, encoder);
 
-	evdi_flip_workqueue_init(dev);
-
-	return 0;
+	return evdi_flip_workqueue_init(dev);
 }
 
 void evdi_modeset_cleanup(struct drm_device *dev)
