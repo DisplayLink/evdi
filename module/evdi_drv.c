@@ -186,7 +186,7 @@ static ssize_t add_store(__always_unused struct device *dev,
 		EVDI_WARN("Adding 0 devices has no effect\n");
 		return count;
 	}
-	if (evdi_context.dev_count + val >= EVDI_DEVICE_COUNT_MAX) {
+	if (val > EVDI_DEVICE_COUNT_MAX - evdi_context.dev_count) {
 		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
 		return -EINVAL;
 	}

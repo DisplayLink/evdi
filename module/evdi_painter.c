@@ -13,7 +13,6 @@
 #include "evdi_cursor.h"
 #include <linux/mutex.h>
 #include <linux/compiler.h>
-#include <linux/list.h>
 
 struct evdi_event_update_ready_pending {
 	struct drm_pending_event base;
@@ -45,6 +44,7 @@ struct evdi_painter {
 	unsigned int edid_length;
 
 	struct mutex lock;
+	struct mutex new_scanout_fb_lock;
 	struct drm_clip_rect dirty_rects[MAX_DIRTS];
 	int num_dirts;
 	struct evdi_framebuffer *new_scanout_fb;
@@ -217,7 +217,6 @@ static void evdi_painter_send_update_ready(struct evdi_painter *painter)
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
-
 		evdi_painter_send_event(painter->drm_filp, &event->base.link);
 	} else {
 		EVDI_WARN("Painter is not connected!");
@@ -390,7 +389,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				       pixel_format);
 }
 
-int
+static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
 		     uint32_t sku_area_limit,
@@ -448,15 +447,17 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
-			painter->drm_filp);
+		   painter->drm_filp);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
+
 	drm_helper_resume_force_mode(evdi->ddev);
 
 	return 0;
 }
 
-void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
+static void evdi_painter_disconnect(struct evdi_device *evdi,
+	struct drm_file *file)
 {
 	struct evdi_painter *painter = evdi->painter;
 
@@ -475,10 +476,7 @@ void evdi_painter_disconnect(struct evdi_device *evdi, struct drm_file *file)
 		return;
 	}
 
-	if (painter->new_scanout_fb) {
-		drm_framebuffer_unreference(&painter->new_scanout_fb->base);
-		painter->new_scanout_fb = NULL;
-	}
+	evdi_painter_set_new_scanout_buffer(evdi, NULL);
 
 	if (painter->scanout_fb) {
 		drm_framebuffer_unreference(&painter->scanout_fb->base);
@@ -670,6 +668,7 @@ int evdi_painter_init(struct evdi_device *dev)
 	dev->painter = kzalloc(sizeof(*dev->painter), GFP_KERNEL);
 	if (dev->painter) {
 		mutex_init(&dev->painter->lock);
+		mutex_init(&dev->painter->new_scanout_fb_lock);
 		dev->painter->edid = NULL;
 		dev->painter->edid_length = 0;
 		return 0;
@@ -693,31 +692,52 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	}
 }
 
-void evdi_set_new_scanout_buffer(struct evdi_device *evdi,
-				 struct evdi_framebuffer *efb)
+/*
+ * This can be called from multiple threads so we need to lock during
+ * *new_scanout_fb* assignment.
+ * It is called from *evdi_crtc_page_flip* which must return immediately.
+ * If we lock here whole painter object it will interfere with grab_pics
+ * ioctl (which can take some time).
+ * Because of that we lock only on the *new_scanout_fb*.
+ */
+void evdi_painter_set_new_scanout_buffer(struct evdi_device *evdi,
+					 struct evdi_framebuffer *newfb)
 {
 	struct evdi_painter *painter = evdi->painter;
+	struct evdi_framebuffer *oldfb = NULL;
 
-	if (efb)
-		drm_framebuffer_reference(&efb->base);
+	if (newfb)
+		drm_framebuffer_reference(&newfb->base);
 
-	if (painter->new_scanout_fb)
-		drm_framebuffer_unreference(&painter->new_scanout_fb->base);
+	mutex_lock(&painter->new_scanout_fb_lock);
+	oldfb = painter->new_scanout_fb;
+	painter->new_scanout_fb = newfb;
+	mutex_unlock(&painter->new_scanout_fb_lock);
 
-	painter->new_scanout_fb = efb;
+	if (oldfb)
+		drm_framebuffer_unreference(&oldfb->base);
 }
 
-void evdi_flip_scanout_buffer(struct evdi_device *evdi)
+void evdi_painter_commit_scanout_buffer(struct evdi_device *evdi)
 {
 	struct evdi_painter *painter = evdi->painter;
+	struct evdi_framebuffer *newfb = NULL;
+	struct evdi_framebuffer *oldfb = NULL;
 
 	painter_lock(painter);
-	if (painter->new_scanout_fb)
-		drm_framebuffer_reference(&painter->new_scanout_fb->base);
+	mutex_lock(&painter->new_scanout_fb_lock);
 
-	if (painter->scanout_fb)
-		drm_framebuffer_unreference(&painter->scanout_fb->base);
+	newfb = painter->new_scanout_fb;
 
-	painter->scanout_fb = painter->new_scanout_fb;
+	if (newfb)
+		drm_framebuffer_reference(&newfb->base);
+
+	oldfb = painter->scanout_fb;
+	painter->scanout_fb = newfb;
+
+	mutex_unlock(&painter->new_scanout_fb_lock);
 	painter_unlock(painter);
+
+	if (oldfb)
+		drm_framebuffer_unreference(&oldfb->base);
 }

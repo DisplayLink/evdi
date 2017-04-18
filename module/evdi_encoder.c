@@ -85,7 +85,6 @@ struct drm_encoder *evdi_encoder_init(struct drm_device *dev)
 	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
 			       DRM_MODE_ENCODER_TMDS);
 #endif
-
 	if (ret) {
 		EVDI_ERROR("Failed to initialize encoder: %d\n", ret);
 		goto err_encoder;

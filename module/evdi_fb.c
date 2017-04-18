@@ -14,7 +14,6 @@
 #include <linux/fb.h>
 #include <linux/dma-buf.h>
 #include <linux/version.h>
-
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
@@ -75,7 +74,7 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 	return rect;
 }
 
-int evdi_handle_damage(struct evdi_framebuffer *fb,
+static int evdi_handle_damage(struct evdi_framebuffer *fb,
 		       int x, int y, int width, int height)
 {
 	const struct drm_clip_rect dirty_rect = { x, y, x + width, y + height };
@@ -88,8 +87,8 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 
 	if (!fb->active)
 		return 0;
-	evdi_set_new_scanout_buffer(evdi, fb);
-	evdi_flip_scanout_buffer(evdi);
+	evdi_painter_set_new_scanout_buffer(evdi, fb);
+	evdi_painter_commit_scanout_buffer(evdi);
 	evdi_painter_mark_dirty(evdi, &rect);
 
 	return 0;
@@ -97,39 +96,30 @@ int evdi_handle_damage(struct evdi_framebuffer *fb,
 
 static int evdi_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
-	unsigned long vma_start = vma->vm_start;
-	unsigned long vma_size = vma->vm_end - vma->vm_start;
-	unsigned long vma_page_cnt = vma_size >> PAGE_SHIFT;
-	unsigned long smem_page_cnt = info->fix.smem_len >> PAGE_SHIFT;
-	unsigned long smem_offset = vma->vm_pgoff << PAGE_SHIFT;
-	unsigned long smem_pos;
+	unsigned long start = vma->vm_start;
+	unsigned long size = vma->vm_end - vma->vm_start;
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+	unsigned long page, pos;
 
-	if (smem_page_cnt < vma->vm_pgoff)
+	if (offset > info->fix.smem_len ||
+	    size > info->fix.smem_len - offset)
 		return -EINVAL;
 
-	if (vma_page_cnt > smem_page_cnt - vma->vm_pgoff)
-		return -EINVAL;
+	pos = (unsigned long)info->fix.smem_start + offset;
 
-	smem_pos = (unsigned long)info->fix.smem_start + smem_offset;
+	pr_notice("mmap() framebuffer addr:%lu size:%lu\n", pos, size);
 
-	pr_notice("mmap() framebuffer addr:%lu size:%lu\n", smem_pos, vma_size);
-
-	while (vma_size > 0) {
-		unsigned long page = vmalloc_to_pfn((void *)smem_pos);
-
-		if (remap_pfn_range(vma,
-				    vma_start,
-				    page,
-				    PAGE_SIZE,
-				    PAGE_SHARED))
+	while (size > 0) {
+		page = vmalloc_to_pfn((void *)pos);
+		if (remap_pfn_range(vma, start, page, PAGE_SIZE, PAGE_SHARED))
 			return -EAGAIN;
 
-		vma_start += PAGE_SIZE;
-		smem_pos += PAGE_SIZE;
-		if (vma_size > PAGE_SIZE)
-			vma_size -= PAGE_SIZE;
+		start += PAGE_SIZE;
+		pos += PAGE_SIZE;
+		if (size > PAGE_SIZE)
+			size -= PAGE_SIZE;
 		else
-			vma_size = 0;
+			size = 0;
 	}
 
 	return 0;
@@ -237,12 +227,12 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 
 	if (ufb->obj->base.import_attach) {
 		ret =
-			dma_buf_begin_cpu_access(
-					ufb->obj->base.import_attach->dmabuf,
+		    dma_buf_begin_cpu_access(
+			ufb->obj->base.import_attach->dmabuf,
 #if KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE
-					0, ufb->obj->base.size,
+			0, ufb->obj->base.size,
 #endif
-					DMA_FROM_DEVICE);
+			DMA_FROM_DEVICE);
 		if (ret)
 			goto unlock;
 	}
@@ -445,6 +435,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 	drm_fb_helper_prepare(dev, &ufbdev->helper, &evdi_fb_helper_funcs);
 #else
 	ufbdev->helper.funcs = &evdi_fb_helper_funcs;
+	ufbdev->helper.dev = dev;
 #endif
 
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
@@ -452,7 +443,6 @@ int evdi_fbdev_init(struct drm_device *dev)
 #else
 	ret = drm_fb_helper_init(dev, &ufbdev->helper, 1);
 #endif
-
 	if (ret) {
 		kfree(ufbdev);
 		return ret;
@@ -510,7 +500,6 @@ static int evdi_fb_get_bpp(u32 format)
 	return info->cpp[0] * 8;
 }
 #endif
-
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
@@ -533,7 +522,6 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 
 	drm_fb_get_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
 #endif
-
 	if (bpp != 32) {
 		EVDI_ERROR("Unsupported bpp (%d)\n", bpp);
 		return ERR_PTR(-EINVAL);
