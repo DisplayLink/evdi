@@ -10,11 +10,11 @@ extern "C" {
 #endif
 
 #define LIBEVDI_VERSION_MAJOR 1
-#define LIBEVDI_VERSION_MINOR 4
+#define LIBEVDI_VERSION_MINOR 5
 #define LIBEVDI_VERSION_PATCHLEVEL 0
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
-#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 4
+#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
 #define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
 
 struct evdi_lib_version {
@@ -77,11 +77,11 @@ struct evdi_event_context {
 	void (*mode_changed_handler)(struct evdi_mode mode, void *user_data);
 	void (*update_ready_handler)(int buffer_to_be_updated, void *user_data);
 	void (*crtc_state_handler)(int state, void *user_data);
-	void *user_data;
 	void (*cursor_set_handler)(struct evdi_cursor_set cursor_set,
 				   void *user_data);
 	void (*cursor_move_handler)(struct evdi_cursor_move cursor_set,
 				    void *user_data);
+	void *user_data;
 };
 
 #define EVDI_INVALID_HANDLE NULL
