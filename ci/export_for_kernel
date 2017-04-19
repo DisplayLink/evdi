@@ -78,6 +78,17 @@ eval_line() { # line
   eval_condition "$(get_condition "${1}")"
 }
 
+#
+#          |
+#          V
+#      OUT_OF_IF <----+
+#       ^|    |^      |
+#       |V    V|      |
+# IN_FALSE -> IN_TRUE |
+#               |     |
+#               V     |
+#            WAS_IN_TRUE
+#
 export_file() { # file
   local file="${1}"
 
