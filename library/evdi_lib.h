@@ -64,7 +64,7 @@ struct evdi_cursor_set {
 	uint8_t enabled;
 	uint32_t buffer_length;
 	uint32_t *buffer;
-	uint32_t buffer_format;
+	uint32_t pixel_format;
 };
 
 struct evdi_cursor_move {
