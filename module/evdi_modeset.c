@@ -250,8 +250,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * universal planes for cursor.
 	 */
 	uint32_t format = DRM_FORMAT_ARGB8888;
-	uint32_t stride = 4;
-
+	uint32_t stride = 4 * width;
 
 	EVDI_CHECKPT();
 	if (handle) {
