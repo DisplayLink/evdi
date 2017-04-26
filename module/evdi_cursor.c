@@ -38,6 +38,7 @@ struct evdi_cursor {
 	int32_t hot_x;
 	int32_t hot_y;
 	uint32_t pixel_format;
+	uint32_t stride;
 	struct evdi_gem_object *obj;
 	struct mutex lock;
 };
@@ -107,7 +108,7 @@ int evdi_cursor_set(struct evdi_cursor *cursor,
 		    struct evdi_gem_object *obj,
 		    uint32_t width, uint32_t height,
 		    int32_t hot_x, int32_t hot_y,
-		    uint32_t pixel_format)
+		    uint32_t pixel_format, uint32_t stride)
 {
 	int err = 0;
 
@@ -126,6 +127,7 @@ int evdi_cursor_set(struct evdi_cursor *cursor,
 	cursor->hot_x = hot_x;
 	cursor->hot_y = hot_y;
 	cursor->pixel_format = pixel_format;
+	cursor->stride = stride;
 	evdi_cursor_set_gem(cursor, obj);
 	evdi_cursor_unlock(cursor);
 
@@ -271,5 +273,10 @@ void evdi_cursor_size(struct evdi_cursor *cursor,
 void evdi_cursor_format(struct evdi_cursor *cursor, uint32_t *format)
 {
 	*format = cursor->pixel_format;
+}
+
+void evdi_cursor_stride(struct evdi_cursor *cursor, uint32_t *stride)
+{
+	*stride = cursor->stride;
 }
 

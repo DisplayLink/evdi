@@ -290,6 +290,8 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 			&event->cursor_set.height);
 		evdi_cursor_format(cursor,
 			&event->cursor_set.pixel_format);
+		evdi_cursor_stride(cursor,
+			&event->cursor_set.stride);
 		eobj = evdi_cursor_gem(cursor);
 		event->cursor_set.buffer_handle =
 			evdi_painter_get_gem_handle(painter, eobj);

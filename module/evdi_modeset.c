@@ -241,7 +241,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * evdi_crtc_cursor_set is callback function using
 	 * deprecated cursor entry point.
 	 * There is no info about underlaying pixel format.
-	 * Hence we are assuming that it is in RGB 32bpp format.
+	 * Hence we are assuming that it is in ARGB 32bpp format.
 	 * This format it the only one supported in cursor composition
 	 * function.
 	 * This format is also enforced during framebuffer creation.
@@ -249,7 +249,8 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * Proper format will be available when driver start support
 	 * universal planes for cursor.
 	 */
-	uint32_t format = DRM_FORMAT_XRGB8888;
+	uint32_t format = DRM_FORMAT_ARGB8888;
+	uint32_t stride = 4;
 
 
 	EVDI_CHECKPT();
@@ -268,7 +269,8 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	}
 
 	ret = evdi_cursor_set(evdi->cursor,
-			      eobj, width, height, hot_x, hot_y, format);
+			      eobj, width, height, hot_x, hot_y,
+			      format, stride);
 	drm_gem_object_unreference_unlocked(obj);
 	if (ret) {
 		EVDI_ERROR("Failed to set evdi cursor\n");
