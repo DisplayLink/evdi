@@ -15,8 +15,7 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 
-int evdi_driver_load(struct drm_device *dev,
-		     __always_unused unsigned long flags)
+int evdi_driver_setup_early(struct drm_device *dev)
 {
 	struct platform_device *platdev = NULL;
 	struct evdi_device *evdi;
@@ -52,8 +51,6 @@ int evdi_driver_load(struct drm_device *dev,
 	if (ret)
 		goto err_fb;
 
-	evdi_stats_init(evdi);
-
 	drm_kms_helper_poll_init(dev);
 
 	platdev = to_platform_device(dev->dev);
@@ -70,6 +67,27 @@ err:
 		evdi_cursor_free(evdi->cursor);
 	return ret;
 }
+
+void evdi_driver_setup_late(struct drm_device *dev)
+{
+	evdi_stats_init(dev->dev_private);
+}
+
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+int evdi_driver_load(struct drm_device *dev,
+		     __always_unused unsigned long flags)
+{
+	int ret;
+
+	ret =  evdi_driver_setup_early(dev);
+	if (ret)
+		return ret;
+
+	evdi_driver_setup_late(dev);
+	return 0;
+
+}
+#endif
 
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 int evdi_driver_unload(struct drm_device *dev)

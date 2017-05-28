@@ -61,7 +61,10 @@ static const struct file_operations evdi_driver_fops = {
 
 static struct drm_driver driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME,
+	/* In 4.12+, loading moves from .load() to open-coding */
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	.load = evdi_driver_load,
+#endif
 	.unload = evdi_driver_unload,
 	.preclose = evdi_driver_preclose,
 
@@ -114,11 +117,48 @@ static void evdi_add_device(void)
 	evdi_context.dev_count++;
 }
 
+/*
+ * In 4.12+, the DRM core moves from the load() callback to requiring drivers
+ * to open-code their registration in their probe callback.
+ *
+ * Most of our setup happens before registration but the stats require
+ * registration first.
+ */
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+static int evdi_platform_probe(struct platform_device *pdev)
+{
+	struct drm_device *dev;
+	int ret;
+
+	EVDI_CHECKPT();
+
+	dev = drm_dev_alloc(&driver, &pdev->dev);
+	if (IS_ERR(dev))
+		return PTR_ERR(dev);
+
+	ret = evdi_driver_setup_early(dev);
+	if (ret)
+		goto err_free;
+
+	ret = drm_dev_register(dev, 0);
+	if (ret)
+		goto err_free;
+
+	evdi_driver_setup_late(dev);
+
+	return 0;
+
+err_free:
+	drm_dev_unref(dev);
+	return ret;
+}
+#else
 static int evdi_platform_probe(struct platform_device *pdev)
 {
 	EVDI_CHECKPT();
 	return drm_platform_init(&driver, pdev);
 }
+#endif
 
 static int evdi_platform_remove(struct platform_device *pdev)
 {
