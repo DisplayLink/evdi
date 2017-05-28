@@ -443,10 +443,17 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.detach = evdi_detach_dma_buf,
 	.map_dma_buf = evdi_map_dma_buf,
 	.unmap_dma_buf = evdi_unmap_dma_buf,
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	.kmap = evdi_dmabuf_kmap,
 	.kmap_atomic = evdi_dmabuf_kmap_atomic,
 	.kunmap = evdi_dmabuf_kunmap,
 	.kunmap_atomic = evdi_dmabuf_kunmap_atomic,
+#else
+	.map = evdi_dmabuf_kmap,
+	.map_atomic = evdi_dmabuf_kmap_atomic,
+	.unmap = evdi_dmabuf_kunmap,
+	.unmap_atomic = evdi_dmabuf_kunmap_atomic,
+#endif
 	.mmap = evdi_dmabuf_mmap,
 	.release = drm_gem_dmabuf_release,
 };
