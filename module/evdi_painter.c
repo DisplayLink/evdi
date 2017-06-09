@@ -262,7 +262,7 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 #endif
 		evdi_painter_send_event(painter->drm_filp, &event->base.link);
 	} else {
-		 EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!");
 	}
 }
 
@@ -294,7 +294,7 @@ static void evdi_painter_send_mode_changed(
 #endif
 		evdi_painter_send_event(painter->drm_filp, &event->base.link);
 	} else {
-		 EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!");
 	}
 }
 

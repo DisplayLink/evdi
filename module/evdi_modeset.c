@@ -159,10 +159,19 @@ static void evdi_sched_page_flip(struct work_struct *work)
 	}
 }
 
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 static int evdi_crtc_page_flip(struct drm_crtc *crtc,
 			       struct drm_framebuffer *fb,
 			       struct drm_pending_vblank_event *event,
 			       __always_unused uint32_t page_flip_flags)
+#else
+static int evdi_crtc_page_flip(
+	struct drm_crtc *crtc,
+	struct drm_framebuffer *fb,
+	struct drm_pending_vblank_event *event,
+	__always_unused uint32_t page_flip_flags,
+	__always_unused struct drm_modeset_acquire_ctx *ctx)
+#endif
 {
 	struct drm_device *dev = crtc->dev;
 	struct evdi_device *evdi = dev->dev_private;
@@ -243,7 +252,11 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * For now we don't care whether the application wanted the mouse set,
 	 * or not.
 	 */
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+#else
+	return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
+#endif
 }
 
 static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
@@ -261,7 +274,12 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 		goto error;
 	}
 	mutex_unlock(&dev->struct_mutex);
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
+#else
+	return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
+#endif
+
 error:
 	mutex_unlock(&dev->struct_mutex);
 	return ret;
