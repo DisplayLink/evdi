@@ -10,8 +10,7 @@ modules.order
 module/.tmp_versions/
 module/evdi.mod.c
 
-linux-*
-v*.tar.gz
+tmp/
 
 checkpatch.pl
 const_structs.checkpatch
