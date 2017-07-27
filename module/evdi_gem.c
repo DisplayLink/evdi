@@ -543,7 +543,7 @@ struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags);
 #elif KERNEL_VERSION(4, 1, 0) > LINUX_VERSION_CODE
 	return dma_buf_export(obj, &evdi_dmabuf_ops, obj->size, flags, NULL);
-#endif
+#else
 	struct dma_buf_export_info exp_info = {
 		.exp_name = "evdi",
 		.ops = &evdi_dmabuf_ops,
@@ -552,9 +552,10 @@ struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 		.resv = NULL,
 		.priv = obj
 	};
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+#	if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	return drm_gem_dmabuf_export(dev, &exp_info);
-#else
+#	else
 	return dma_buf_export(&exp_info);
+#	endif
 #endif
 }
