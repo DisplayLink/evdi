@@ -271,9 +271,6 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 	struct evdi_framebuffer *ufb = to_evdi_fb(fb);
 
 	EVDI_CHECKPT();
-	if (ufb->obj->vmapping)
-		evdi_gem_vunmap(ufb->obj);
-
 	if (ufb->obj)
 		drm_gem_object_unreference_unlocked(&ufb->obj->base);
 
