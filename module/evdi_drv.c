@@ -166,7 +166,11 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
+#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
 	drm_unplug_dev(drm_dev);
+#else
+	drm_dev_unplug(drm_dev);
+#endif
 
 	return 0;
 }
