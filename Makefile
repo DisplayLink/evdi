@@ -4,8 +4,12 @@
 
 FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes
 
-all:
+all: module library
+
+module:
 	CFLAGS="$(FLAGS)" $(MAKE) -C module $(MFLAGS)
+
+library:
 	CFLAGS="-I../module $(FLAGS) $(CFLAGS)" $(MAKE) -C library $(MFLAGS)
 
 clean:
