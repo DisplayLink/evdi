@@ -4,6 +4,7 @@
 
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC $(CFLAGS)
+LDFLAGS := -Wl,-soname,libevdi.so.0 $(LDFLAGS)
 
 default: libevdi.so
 
@@ -14,7 +15,7 @@ clean:
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 libevdi.so: evdi_lib.o
-	$(CC) $^ -o $@ -lc -lgcc -shared -Wl,-soname,libevdi.so.0
+	$(CC) $^ -o $@ -lc -lgcc -shared $(LDFLAGS)
 
 install: libevdi.so evdi_lib.h
 	mkdir -p $(PREFIX)/include $(PREFIX)/lib
