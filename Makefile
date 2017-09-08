@@ -3,6 +3,8 @@
 #
 
 FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes
+PREFIX?=/usr/local
+VERSION=1.4.1
 
 all: module library
 
@@ -16,3 +18,5 @@ clean:
 	$(MAKE) clean -C module $(MFLAGS)
 	$(MAKE) clean -C library $(MFLAGS)
 
+install:
+	VERSION=$(VERSION) $(MAKE) -C library install
