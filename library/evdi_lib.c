@@ -23,7 +23,6 @@
 
 // ********************* Private part **************************
 
-#define MAX_FILEPATH        256
 #define MAX_DIRTS           16
 
 struct evdi_frame_buffer_node {
@@ -163,15 +162,15 @@ static int path_exists(const char *path)
 
 static int device_exists(int device)
 {
-	char dev[MAX_FILEPATH] = "";
+	char dev[PATH_MAX] = "";
 
-	snprintf(dev, MAX_FILEPATH, "/dev/dri/card%d", device);
+	snprintf(dev, PATH_MAX, "/dev/dri/card%d", device);
 	return path_exists(dev);
 }
 
 static int does_path_links_to(const char *link, const char *substr)
 {
-	char real_path[MAX_FILEPATH];
+	char real_path[PATH_MAX];
 	ssize_t r;
 
 	r = readlink(link, real_path, sizeof(real_path));
@@ -184,12 +183,12 @@ static int does_path_links_to(const char *link, const char *substr)
 
 static int process_opened_device(const char *pid, const char *device_file_path)
 {
-	char maps_path[MAX_FILEPATH];
+	char maps_path[PATH_MAX];
 	FILE *maps = NULL;
 	char line[BUFSIZ];
 	int result = 0;
 
-	snprintf(maps_path, MAX_FILEPATH, "/proc/%s/maps", pid);
+	snprintf(maps_path, PATH_MAX, "/proc/%s/maps", pid);
 
 	maps = fopen(maps_path, "r");
 	if (maps == NULL)
@@ -208,12 +207,12 @@ static int process_opened_device(const char *pid, const char *device_file_path)
 
 static int process_opened_files(const char *pid, const char *device_file_path)
 {
-	char fd_path[MAX_FILEPATH];
+	char fd_path[PATH_MAX];
 	DIR *fd_dir;
 	struct dirent *fd_entry;
 	int result = 0;
 
-	snprintf(fd_path, MAX_FILEPATH, "/proc/%s/fd", pid);
+	snprintf(fd_path, PATH_MAX, "/proc/%s/fd", pid);
 
 	fd_dir = opendir(fd_path);
 	if (fd_dir == NULL)
@@ -221,9 +220,9 @@ static int process_opened_files(const char *pid, const char *device_file_path)
 
 	while ((fd_entry = readdir(fd_dir)) != NULL) {
 		char *d_name = fd_entry->d_name;
-		char path[MAX_FILEPATH];
+		char path[PATH_MAX];
 
-		snprintf(path, MAX_FILEPATH, "/proc/%s/fd/%s", pid, d_name);
+		snprintf(path, PATH_MAX, "/proc/%s/fd/%s", pid, d_name);
 
 		if (does_path_links_to(path, device_file_path)) {
 			result = 1;
@@ -283,10 +282,10 @@ static void wait_for_master(const char *device_path)
 
 static int open_device(int device)
 {
-	char dev[MAX_FILEPATH] = "";
+	char dev[PATH_MAX] = "";
 	int dev_fd = 0;
 
-	snprintf(dev, MAX_FILEPATH, "/dev/dri/card%d", device);
+	snprintf(dev, PATH_MAX, "/dev/dri/card%d", device);
 
 #ifndef CHROMEOS
 	wait_for_master(dev);
@@ -326,7 +325,7 @@ enum evdi_device_status evdi_check_device(int device)
 	struct dirent *fd_entry;
 	DIR *fd_dir;
 	enum evdi_device_status status = UNRECOGNIZED;
-	char path[MAX_FILEPATH];
+	char path[PATH_MAX];
 
 	if (!device_exists(device))
 		return NOT_PRESENT;
@@ -341,7 +340,7 @@ enum evdi_device_status evdi_check_device(int device)
 		if (strncmp(fd_entry->d_name, "evdi", 4) != 0)
 			continue;
 
-		snprintf(path, MAX_FILEPATH,
+		snprintf(path, PATH_MAX,
 			"/sys/devices/platform/%s/drm/card%d",
 			fd_entry->d_name,
 			device);
