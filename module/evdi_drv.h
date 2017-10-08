@@ -26,15 +26,17 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20170417"
+#define DRIVER_DATE   "20170419"
 
 #define DRIVER_MAJOR      1
-#define DRIVER_MINOR      4
-#define DRIVER_PATCHLEVEL 1
+#define DRIVER_MINOR      5
+#define DRIVER_PATCHLEVEL 0
 
 struct evdi_fbdev;
 struct evdi_painter;
 struct evdi_flip_queue;
+
+extern bool evdi_enable_cursor_blending __read_mostly;
 
 struct evdi_device {
 	struct device *dev;
@@ -108,6 +110,9 @@ int evdi_gem_mmap(struct drm_file *file_priv,
 void evdi_gem_free_object(struct drm_gem_object *gem_obj);
 struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size);
+uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
+				      struct drm_gem_object *obj);
+
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
 struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
@@ -160,4 +165,11 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 
 int evdi_driver_setup_early(struct drm_device *dev);
 void evdi_driver_setup_late(struct drm_device *dev);
+
+void evdi_painter_send_cursor_set(struct evdi_painter *painter,
+				  struct evdi_cursor *cursor);
+void evdi_painter_send_cursor_move(struct evdi_painter *painter,
+				   struct evdi_cursor *cursor);
+int evdi_fb_get_bpp(uint32_t format);
 #endif
+
