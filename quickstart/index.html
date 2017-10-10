@@ -45,47 +45,47 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Home</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Quick Start</a>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Quick Start</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#quick-start">Quick Start</a></li>
+    
+
+    <li class="toctree-l2"><a href="#typical-application">Typical application</a></li>
+    
+        <ul>
         
-            <ul>
-            
-                <li class="toctree-l3"><a href="#quick-start">Quick Start</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#typical-application">Typical application</a></li>
-                
-                    <li><a class="toctree-l4" href="#evdi-nodes">EVDI nodes</a></li>
-                
-                    <li><a class="toctree-l4" href="#connecting-and-disconnecting">Connecting and disconnecting</a></li>
-                
-                    <li><a class="toctree-l4" href="#frame-buffers">Frame buffers</a></li>
-                
-                    <li><a class="toctree-l4" href="#running-loop">Running loop</a></li>
-                
-                    <li><a class="toctree-l4" href="#events-and-notifications">Events and notifications</a></li>
-                
-            
-            </ul>
+            <li><a class="toctree-l3" href="#evdi-nodes">EVDI nodes</a></li>
         
-    </li>
-<li>
+            <li><a class="toctree-l3" href="#connecting-and-disconnecting">Connecting and disconnecting</a></li>
+        
+            <li><a class="toctree-l3" href="#frame-buffers">Frame buffers</a></li>
+        
+            <li><a class="toctree-l3" href="#cursor">Cursor</a></li>
+        
+            <li><a class="toctree-l3" href="#running-loop">Running loop</a></li>
+        
+            <li><a class="toctree-l3" href="#events-and-notifications">Events and notifications</a></li>
+        
+        </ul>
+    
+
+    </ul>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../details/">Detailed description</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../details/">Detailed description</a>
+	    </li>
           
         </ul>
       </div>
@@ -130,6 +130,7 @@
 </li>
 <li><a href="#connecting-and-disconnecting">Connecting and disconnecting</a></li>
 <li><a href="#frame-buffers">Frame buffers</a></li>
+<li><a href="#cursor">Cursor</a></li>
 <li><a href="#running-loop">Running loop</a></li>
 <li><a href="#events-and-notifications">Events and notifications</a><ul>
 <li><a href="#types-of-events">Types of events</a></li>
@@ -178,6 +179,15 @@ Think of this as something similar to plugging a monitor with a cable to a port 
 Therefore, before you request screen updates for the screens you're managing, an appropriate amount of memory must be allocated to hold screen data within your application.
 The application can register as many buffers as you like, and subsequent update requests can refer to any buffer that was previously registered.</p>
 <p>Allocated memory is made available for EVDI library to use by calling <code>evdi_register_buffer</code>. Symetrically, <code>evdi_unregister_buffer</code> is used to tell the library not to use the buffer anymore.</p>
+<h2 id="cursor">Cursor<a class="headerlink" href="#cursor" title="Permanent link">&para;</a></h2>
+<p>Mouse cursor is an important part of the desktop. Because of this, evdi provides special control over it.</p>
+<p>There are two ways to handle cursor:</p>
+<ul>
+<li>Automatic cursor compositing on framebuffer(default). Every cursor change causes <code>update_ready</code> event to be raised. In the following grab pixels operation evdi will compose cursor
+on the user supplied framebuffer. This option is enabled by <code>enable_cursor_blending</code> module parameter.</li>
+<li>Cursor change notifications. Enabled when <code>enable_cursor_blending</code> is set to N(no).
+In that mode the responsibility for cursor blending is passed to the library client. Instead of <code>update_ready</code> event the <code>cursor_set</code> and <code>cursor_move</code> notifications are sent.</li>
+</ul>
 <h2 id="running-loop">Running loop<a class="headerlink" href="#running-loop" title="Permanent link">&para;</a></h2>
 <p>After registering buffers, the application should start requesting updates for them. This is done using <code>evdi_request_update</code>.
 You should call it when you intend to consume pixels for the screen.</p>
@@ -195,6 +205,7 @@ call <code>evdi_handle_events</code> to dispatch events that are being signalled
 <li>Mode changed notification (sent from DRM after screen mode is changed)</li>
 <li>DPMS notifications (telling the new power state of a connector)</li>
 <li>CRTC state change event (exposing DRM CRTC state)</li>
+<li>Cursor events (send when cursor position or state changes)</li>
 </ul>
 <p>You will start receiving first notifications from the kernel module right after connecting to EVDI.
 Your application should use this information before you ask for screen updates to make sure the buffers are the right size.</p>

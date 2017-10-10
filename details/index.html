@@ -45,38 +45,36 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Home</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Home</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../quickstart/">Quick Start</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../quickstart/">Quick Start</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Detailed description</a>
-        
-            <ul>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Detailed description</a>
+    <ul class="subnav">
             
-                <li class="toctree-l3"><a href="#api-details">API Details</a></li>
-                
-                    <li><a class="toctree-l4" href="#functions-by-group">Functions by group</a></li>
-                
-                    <li><a class="toctree-l4" href="#types">Types</a></li>
-                
-            
-            </ul>
+    <li class="toctree-l2"><a href="#api-details">API Details</a></li>
+    
+        <ul>
         
-    </li>
-<li>
+            <li><a class="toctree-l3" href="#functions-by-group">Functions by group</a></li>
+        
+            <li><a class="toctree-l3" href="#types">Types</a></li>
+        
+        </ul>
+    
+
+    </ul>
+	    </li>
           
         </ul>
       </div>
@@ -114,6 +112,8 @@
 <ul>
 <li><a href="#api-details">API Details</a><ul>
 <li><a href="#functions-by-group">Functions by group</a><ul>
+<li><a href="#versioning">Versioning</a></li>
+<li><a href="#module-parameters">Module parameters</a></li>
 <li><a href="#evdi-nodes">EVDI nodes</a><ul>
 <li><a href="#finding-an-available-evdi-node-to-use">Finding an available EVDI node to use</a></li>
 <li><a href="#adding-new-evdi-node">Adding new EVDI node</a></li>
@@ -140,6 +140,8 @@
 <li><a href="#dpms-mode-change">DPMS mode change</a></li>
 <li><a href="#mode-change-notification">Mode change notification</a></li>
 <li><a href="#update-ready-notification">Update ready notification</a></li>
+<li><a href="#cursor-change-notification">Cursor change notification</a></li>
+<li><a href="#cursor-move-notification">Cursor move notification</a></li>
 <li><a href="#crtc-state-change">CRTC state change</a></li>
 </ul>
 </li>
@@ -153,6 +155,9 @@
 <li><a href="#evdi_mode">evdi_mode</a></li>
 <li><a href="#evdi_buffer">evdi_buffer</a></li>
 <li><a href="#evdi_event_context">evdi_event_context</a></li>
+<li><a href="#evdi_lib_version">evdi_lib_version</a></li>
+<li><a href="#evdi_cursor_set">evdi_cursor_set</a></li>
+<li><a href="#evdi_cursor_move">evdi_cursor_move</a></li>
 </ul>
 </li>
 </ul>
@@ -161,10 +166,29 @@
 </div>
 <h1 id="api-details">API Details<a class="headerlink" href="#api-details" title="Permanent link">&para;</a></h1>
 <h2 id="functions-by-group">Functions by group<a class="headerlink" href="#functions-by-group" title="Permanent link">&para;</a></h2>
+<h4 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="n">evdi_get_lib_version</span><span class="p">(</span><span class="k">struct</span> <span class="n">evdi_lib_version</span> <span class="n">device</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>Function returns library version. 
+It uses semantic versioning to mark compatibility changes.
+Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
+<ul>
+<li><code>MAJOR</code> number is changed for incompatibile API changes</li>
+<li><code>MINOR</code> number is changed for backwards-compatible changes</li>
+<li><code>PATCH</code> number is changed for backwards-compatibile bug fixes</li>
+</ul>
+<h4 id="module-parameters">Module parameters<a class="headerlink" href="#module-parameters" title="Permanent link">&para;</a></h4>
+<p>User can modify driver behaviour by its parameters that can be set at module load time or changed during runtime.</p>
+<ul>
+<li><code>enable_cursor_blending</code> Enables cursor compositing on user supplied framebuffer via <code>EVDI_GRABPIX</code> ioctl (default: true)</li>
+</ul>
 <h3 id="evdi-nodes">EVDI nodes<a class="headerlink" href="#evdi-nodes" title="Permanent link">&para;</a></h3>
 <h4 id="finding-an-available-evdi-node-to-use">Finding an available EVDI node to use<a class="headerlink" href="#finding-an-available-evdi-node-to-use" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">evdi_device_status evdi_check_device(int device);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="n">evdi_device_status</span> <span class="nf">evdi_check_device</span><span class="p">(</span><span class="kt">int</span> <span class="n">device</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Use this function to check if a particular <code>/dev/dri/cardX</code> is EVDI or not.</p>
 <p><strong>Arguments:</strong> <code>device</code> is a number of card to check, e.g. passing <code>1</code> will mean <code>/dev/dri/card1</code>.</p>
@@ -175,32 +199,41 @@
 <li><code>NOT_PRESENT</code> in other cases, e.g. when the device does not exist or cannot be opened to check.</li>
 </ul>
 <h4 id="adding-new-evdi-node">Adding new EVDI node<a class="headerlink" href="#adding-new-evdi-node" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">int evdi_add_device()</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">int</span> <span class="n">evdi_add_device</span><span class="p">()</span>
+</pre></div>
+</td></tr></table>
 
 <p>Use this to tell the kernel module to create a new <code>cardX</code> node for your application to use.</p>
 <p><strong>Return value:</strong>
 <code>1</code> when successful, <code>0</code> otherwise.</p>
 <h4 id="opening-device-nodes">Opening device nodes<a class="headerlink" href="#opening-device-nodes" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">evdi_handle evdi_open(int device);</code></pre>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="n">evdi_handle</span> <span class="nf">evdi_open</span><span class="p">(</span><span class="kt">int</span> <span class="n">device</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
-
-<p>This function attempts to open a DRM device node with given number as EVDI.</p>
+<p>This function attempts to open a DRM device node with given number as EVDI.
+Function performs compatibility check with underlying drm device. If version of the
+library and module does not match then the device will not be opened.</p>
 <p><strong>Arguments</strong>: <code>device</code> is a number of card to open, e.g. <code>1</code> means <code>/dev/dri/card1</code>.</p>
 <p><strong>Return value:</strong> an opened device handle to use in following API calls if opening was successful, <code>EVDI_INVALID_HANDLE</code> otherwise.</p>
 <h4 id="closing-devices">Closing devices<a class="headerlink" href="#closing-devices" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_close(evdi_handle handle);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_close</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Closes an opened EVDI handle.</p>
 <p><strong>Arguments</strong>: <code>handle</code> to an opened device that is to be closed.</p>
 <h3 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h3>
 <h4 id="opening-connections">Opening connections<a class="headerlink" href="#opening-connections" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_connect(evdi_handle handle,
-          const unsigned char* edid,
-          const unsigned edid_length,
-          const uint32_t sku_area_limit);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_connect</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span>
+          <span class="k">const</span> <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span> <span class="n">edid</span><span class="p">,</span>
+          <span class="k">const</span> <span class="kt">unsigned</span> <span class="n">edid_length</span><span class="p">,</span>
+          <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">sku_area_limit</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Creates a connection between the EVDI and Linux DRM subsystem, resulting in kernel mode driver processing a hot plug event.</p>
 <p><strong>Arguments</strong>:</p>
@@ -208,11 +241,12 @@
 <li><code>handle</code> to an opened device</li>
 <li><code>edid</code> should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel</li>
 <li><code>edid_length</code> is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)</li>
-<li><code>sku_area_limit</code> is maximum supported pixel count for connected device</li>
+<li><code>sku_area_limit</code> is maximum pixel area (width x height) connected device can display</li>
 </ul>
 <h4 id="disconnecting">Disconnecting<a class="headerlink" href="#disconnecting" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_disconnect(evdi_handle handle)</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="n">evdi_disconnect</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">)</span>
+</pre></div>
+</td></tr></table>
 
 <p>Breaks the connection between the device handle and DRM subsystem - resulting in an unplug event being processed.</p>
 <p><strong>Arguments</strong>: <code>handle</code> to an opened device.</p>
@@ -221,8 +255,9 @@
 The <code>evdi_buffer</code> structure is used to let the library know details about the frame buffer your application is working with.
 For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> description.</p>
 <h4 id="registering">Registering<a class="headerlink" href="#registering" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_register_buffer(evdi_handle handle, evdi_buffer buffer);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_register_buffer</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span> <span class="n">evdi_buffer</span> <span class="n">buffer</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>This function allows to register a <code>buffer</code> of type <code>evdi_buffer</code> with an opened EVDI device <code>handle</code>.</p>
 <div class="admonition warning">
@@ -230,8 +265,9 @@ For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> descriptio
 <p>Registering a buffer does not allocate memory for the frame.</p>
 </div>
 <h4 id="unregistering">Unregistering<a class="headerlink" href="#unregistering" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_unregister_buffer(evdi_handle handle, int bufferId);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_unregister_buffer</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferId</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>This function unregisters a buffer with a given <code>bufferId</code> from an opened EVDI device <code>handle</code>.</p>
 <div class="admonition warning">
@@ -240,8 +276,9 @@ For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> descriptio
 </div>
 <h3 id="screen-updates">Screen updates<a class="headerlink" href="#screen-updates" title="Permanent link">&para;</a></h3>
 <h4 id="requesting-an-update">Requesting an update<a class="headerlink" href="#requesting-an-update" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">bool evdi_request_update(evdi_handle handle, int bufferId);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">bool</span> <span class="nf">evdi_request_update</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferId</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Requests an update for a buffer with a given <code>bufferId</code>. The buffer must be already registered with the library.</p>
 <p><strong>Arguments</strong>:</p>
@@ -254,8 +291,9 @@ For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> descriptio
 If <code>false</code> is returned, then an update is not yet ready to grab and the application should wait until it gets
 notified by the kernel module - see <a href="./#events-and-handlers">Events and handlers</a>.</p>
 <h4 id="grabbing-pixels">Grabbing pixels<a class="headerlink" href="#grabbing-pixels" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void evdi_grab_pixels(evdi_handle handle, evdi_rect *rects, int *num_rects);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_grab_pixels</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span> <span class="n">evdi_rect</span> <span class="o">*</span><span class="n">rects</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">num_rects</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Grabs pixels following the most recent update request (see <a href="./#requesting-an-update">Requesting an update</a>).</p>
 <p>This should be called either after a call to <code>evdi_request_update</code> (if it returns <code>true</code> which means pixels can be grabbed immediately),
@@ -277,33 +315,51 @@ the array does not contain more than 16 slots for rects.</p>
 </ul>
 <h3 id="events-and-handlers">Events and handlers<a class="headerlink" href="#events-and-handlers" title="Permanent link">&para;</a></h3>
 <h4 id="dpms-mode-change"><abbr title="Display Power Management Signaling">DPMS</abbr> mode change<a class="headerlink" href="#dpms-mode-change" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void (*dpms_handler)(int dpms_mode, void* user_data);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">dpms_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">dpms_mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>This notification is sent when a <abbr title="Display Power Management Signaling">DPMS</abbr> mode changes.
 The possible modes are as defined by the standard, and values are bit-compatible with DRM and Xorg:</p>
-<pre class="codehilite"><code>/* DPMS flags */
-#define DRM_MODE_DPMS_ON        0
-#define DRM_MODE_DPMS_STANDBY   1
-#define DRM_MODE_DPMS_SUSPEND   2
-#define DRM_MODE_DPMS_OFF       3</code></pre>
+<div class="codehilite"><pre><span></span><span class="cm">/* DPMS flags */</span><span class="w"></span>
+<span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_ON<span class="w">        </span><span class="m">0</span><span class="w"></span>
+<span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_STANDBY<span class="w">   </span><span class="m">1</span><span class="w"></span>
+<span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_SUSPEND<span class="w">   </span><span class="m">2</span><span class="w"></span>
+<span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_OFF<span class="w">       </span><span class="m">3</span><span class="w"></span>
+</pre></div>
 
 
 <h4 id="mode-change-notification">Mode change notification<a class="headerlink" href="#mode-change-notification" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void (*mode_changed_handler)(evdi_mode mode, void* user_data);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">mode_changed_handler</span><span class="p">)(</span><span class="n">evdi_mode</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>This notification is sent when a display mode changes. Details of the new mode are sent in the <code>mode</code> argument.
 See <a href="./#evdi_mode">evdi_mode</a> for description of the structure.</p>
 <h4 id="update-ready-notification">Update ready notification<a class="headerlink" href="#update-ready-notification" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">update_ready_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">buffer_to_be_updated</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>This notification is sent when an update for a buffer, that had been earlier requested is ready to be consumed.
 The buffer number to be updated is <code>buffer_to_be_updated</code>.</p>
-<h4 id="crtc-state-change">CRTC state change<a class="headerlink" href="#crtc-state-change" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-c linenums">void (*crtc_state_handler)(int state, void* user_data);</code></pre>
+<h4 id="cursor-change-notification">Cursor change notification<a class="headerlink" href="#cursor-change-notification" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">cursor_set_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_cursor_set</span> <span class="n">cursor_set</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
+<p>This notification is sent for an update of cursor buffer or shape. It is also raised when cursor is enabled or disabled.
+Such situation happens when cursor is moved on and off the screen respectively.</p>
+<h4 id="cursor-move-notification">Cursor move notification<a class="headerlink" href="#cursor-move-notification" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">cursor_move_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_cursor_move</span> <span class="n">cursor_move</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>This notification is sent for a cursor position change. It is raised only when cursor is positioned on virtual screen.</p>
+<h4 id="crtc-state-change">CRTC state change<a class="headerlink" href="#crtc-state-change" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">crtc_state_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">state</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
 
 <p>Sent when DRM's CRTC changes state. The <code>state</code> is a value that's forwarded from the kernel.</p>
 <h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
@@ -324,17 +380,27 @@ bottom right are <code>x2</code> and <code>y2</code>.</p>
 and details of a pixel format used to encode color value (<code>bits_per_pixel</code> and <code>pixel_format</code> - which are forwarded from kernel's DRM).</p>
 <h3 id="evdi_buffer">evdi_buffer<a class="headerlink" href="#evdi_buffer" title="Permanent link">&para;</a></h3>
 <p>A structure holding details about a buffer.</p>
-<pre class="codehilite"><code class="language-c linenums">typedef struct {
-    int id;
-    void* buffer;
-    int width;
-    int height;
-    int stride;
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">id</span><span class="p">;</span>
+    <span class="kt">void</span><span class="o">*</span> <span class="n">buffer</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">width</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">height</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">stride</span><span class="p">;</span>
 
-    evdi_rect* rects;
-    int rect_count;
-} evdi_buffer;</code></pre>
-
+    <span class="n">evdi_rect</span><span class="o">*</span> <span class="n">rects</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">rect_count</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">evdi_buffer</span><span class="p">;</span>
+</pre></div>
+</td></tr></table>
 
 <p>Buffers have IDs, which can be arbitrarily chosen integer numbers - but typically a simple sequence of numbers starting
 from <code>0</code> is used in client applications. The pointer to the beginning of an already allocated memory block should be assigned
@@ -345,18 +411,88 @@ and <code>stride</code> is a width stride - tells what is the increment in bytes
 but you can use larger value to indicate extra space/padding between them.</p>
 <p>Last two structure members, <code>rects</code> and <code>rect_counts</code> are updated during grabbing pixels to inform about the number and coordinates of areas that are changed from the last update.</p>
 <h3 id="evdi_event_context">evdi_event_context<a class="headerlink" href="#evdi_event_context" title="Permanent link">&para;</a></h3>
-<pre class="codehilite"><code class="language-c linenums">typedef struct {
-  void (*dpms_handler)(int dpms_mode, void* user_data);
-  void (*mode_changed_handler)(evdi_mode mode, void* user_data);
-  void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);
-  void (*crtc_state_handler)(int state, void* user_data);
-  void* user_data;
-} evdi_event_context;</code></pre>
-
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">dpms_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">dpms_mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">mode_changed_handler</span><span class="p">)(</span><span class="n">evdi_mode</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">update_ready_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">buffer_to_be_updated</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">crtc_state_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">state</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">evdi_event_context</span><span class="p">;</span>
+</pre></div>
+</td></tr></table>
 
 <p>The <code>evdi_device_context</code> structure is used for holding pointers to handlers for all notifications that the application may receive from
 the kernel module. The <code>user_data</code> member is a value that the library will use while dispatching the call back.
 See <a href="./#events-and-handlers">Events and handlers</a> for more information.</p>
+<h3 id="evdi_lib_version">evdi_lib_version<a class="headerlink" href="#evdi_lib_version" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">struct</span> <span class="n">evdi_lib_version</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">version_major</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">version_minor</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">version_patchlevel</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</td></tr></table>
+
+<p>The <code>evdi_lib_version</code> structure contains libevdi version.
+Version can be used to check compatibility between library and a client application.</p>
+<h3 id="evdi_cursor_set">evdi_cursor_set<a class="headerlink" href="#evdi_cursor_set" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">struct</span> <span class="n">evdi_cursor_set</span> <span class="p">{</span>
+    <span class="kt">int32_t</span> <span class="n">hot_x</span><span class="p">;</span>
+    <span class="kt">int32_t</span> <span class="n">hot_y</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">width</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">height</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">enabled</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">buffer_length</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="o">*</span><span class="n">buffer</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">pixel_format</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">stride</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</td></tr></table>
+
+<p>The <code>evdi_cursor_set</code> structure contains cursor state information. <code>hot_x</code> and <code>hot_y</code> define hotspot information.
+<code>enabled</code> parameter is true when cursor bitmap is available and cursor is visible on virtual display.
+Parameters <code>width</code> and <code>height</code> define size of the cursor bitmap stored in a <code>buffer</code> memory area of size <code>buffer_length</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Event handler or library user has to free buffer memory when it is not using it.</p>
+</div>
+<p>Remaining <code>stride</code> and <code>pixel_format</code> describe data organization in the buffer. <code>stride</code> is a size of a single line in a buffer.
+Usually it is width of the cursor multiplied by bytes per pixel value plus additional extra padding. It ensures proper alignment of subsequent pixel rows.
+Pixel encoding is described by FourCC code in <code>pixel_format</code> field. Usually it is <code>ARGB_8888</code> however the value is system dependent and might change in the future.</p>
+<h3 id="evdi_cursor_move">evdi_cursor_move<a class="headerlink" href="#evdi_cursor_move" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">struct</span> <span class="n">evdi_cursor_move</span> <span class="p">{</span>
+    <span class="kt">int32_t</span> <span class="n">x</span><span class="p">;</span>
+    <span class="kt">int32_t</span> <span class="n">y</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</td></tr></table>
+
+<p>The <code>evdi_cursor_move</code> structure contains current cursor position.
+It is defined as top left corner of the cursor bitmap.</p>
               
             </div>
           </div>
