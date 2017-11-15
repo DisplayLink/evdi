@@ -235,12 +235,12 @@ static int process_opened_files(const char *pid, const char *device_file_path)
 	return result;
 }
 
-static int device_has_master(const char *device_file_path, int flags)
+static int device_has_master(const char *device_file_path)
 {
 	pid_t myself = getpid();
 	DIR *proc_dir;
 	struct dirent *proc_entry;
-	int result = -1;
+	int result = 0;
 
 	proc_dir = opendir("/proc");
 	if (proc_dir == NULL)
@@ -270,32 +270,33 @@ static int device_has_master(const char *device_file_path, int flags)
 	return result;
 }
 
-static int wait_for(int (*predicate)(const char*, int),
-		    const char *device_path,
-		    int flags)
+static void wait_for_master(const char *device_path)
 {
 	const unsigned int TOTAL_WAIT_US = 5000000L;
 	const unsigned int SLEEP_INTERVAL_US = 100000L;
 
 	unsigned int cnt = TOTAL_WAIT_US / SLEEP_INTERVAL_US;
 
-	int result = 0;
+	int has_master = 0;
 
-	while ((result = predicate(device_path, flags)) < 0 && cnt--)
+	while ((has_master = device_has_master(device_path)) != 0 && cnt--)
 		usleep(SLEEP_INTERVAL_US);
 
-	return result;
-}
-
-static void wait_for_master(const char *device_path)
-{
-	if (wait_for(device_has_master, device_path, 0) < 0)
+	if (!has_master)
 		printf("[libevdi] Wait for master timed out\n");
 }
 
 static int wait_for_device(const char *device_path)
 {
-	int fd = wait_for(open, device_path, O_RDWR);
+	const unsigned int TOTAL_WAIT_US = 5000000L;
+	const unsigned int SLEEP_INTERVAL_US = 100000L;
+
+	unsigned int cnt = TOTAL_WAIT_US / SLEEP_INTERVAL_US;
+
+	int fd = 0;
+
+	while ((fd = open(device_path, O_RDWR)) < 0 && cnt--)
+		usleep(SLEEP_INTERVAL_US);
 
 	if (fd < 0)
 		printf("[libevdi] Failed to open a device: %s\n",
