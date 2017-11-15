@@ -293,6 +293,8 @@ static int __init evdi_init(void)
 	int i;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
+	EVDI_INFO("Atomic driver:%s",
+		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
 	evdi_context.root_dev = root_device_register("evdi");
 	if (!PTR_RET(evdi_context.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
