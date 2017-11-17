@@ -70,15 +70,16 @@ get_sources() { ( # PACKAGE SOURCES
   echo "$(pwd)/${SOURCES}"
 ) }
 
-prepare_kernel() { ( # SRC_DIR
+prepare_kernel() { ( # SRC_DIR CC
     cd "${1}"
-    make olddefconfig
-    make prepare
-    make scripts
+    make olddefconfig CC="${2}"
+    make prepare CC="${2}"
+    make scripts CC="${2}"
 ) }
 
 build_one() { # KVER
   local KVER=${1}
+  local CC="${CC:-gcc}"
 
   echo "Running ${MODE} build for ${KVER} in ${TMP}"
 
@@ -89,8 +90,8 @@ build_one() { # KVER
     src_dir=$(get_sources "v${KVER}" "linux-${KVER}")
   fi
 
-  prepare_kernel "${src_dir}"
-  make KDIR="${src_dir}" CC="${CC:-gcc}"
+  prepare_kernel "${src_dir}" "${CC}"
+  make KDIR="${src_dir}" CC="${CC}"
 }
 
 MODE="CLEAN"
