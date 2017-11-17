@@ -25,6 +25,10 @@
 
 #define MAX_DIRTS           16
 
+#define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
+#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
+#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
+
 struct evdi_frame_buffer_node {
 	struct evdi_buffer frame_buffer;
 	struct evdi_frame_buffer_node *next;
