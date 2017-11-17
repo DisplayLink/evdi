@@ -133,7 +133,11 @@ static int is_evdi_compatible(int fd)
 		EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
 		EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
 
+#ifdef NDEBUG
 	return 0;
+#else
+	return 1;
+#endif
 }
 
 static int is_evdi(int fd)
