@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define LIBEVDI_VERSION_MAJOR 1
-#define LIBEVDI_VERSION_MINOR 5
+#define LIBEVDI_VERSION_MINOR 6
 #define LIBEVDI_VERSION_PATCHLEVEL 0
 
 struct evdi_lib_version {
@@ -81,6 +81,11 @@ struct evdi_event_context {
 	void *user_data;
 };
 
+struct evdi_logging {
+	void (*function)(void *user_data, const char *fmt, ...);
+	void *user_data;
+};
+
 #define EVDI_INVALID_HANDLE NULL
 
 enum evdi_device_status evdi_check_device(int device);
@@ -101,6 +106,7 @@ bool evdi_request_update(evdi_handle handle, int bufferId);
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx);
 evdi_selectable evdi_get_event_ready(evdi_handle handle);
 void evdi_get_lib_version(struct evdi_lib_version *version);
+void evdi_set_logging(struct evdi_logging evdi_logging);
 
 #ifdef __cplusplus
 }
