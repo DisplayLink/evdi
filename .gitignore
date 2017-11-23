@@ -11,6 +11,7 @@ module/.tmp_versions/
 module/evdi.mod.c
 
 tmp/
+site/
 
 checkpatch.pl
 const_structs.checkpatch
