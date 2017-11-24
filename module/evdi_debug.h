@@ -19,9 +19,9 @@
 
 extern unsigned int evdi_loglevel;
 
-#define EVDI_PRINTK(kLEVEL, lEVEL, FORMAT_STR, ...)	do { \
-	if (lEVEL <= evdi_loglevel) {\
-		printk(kLEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
+#define EVDI_PRINTK(KERN_LEVEL, LEVEL, FORMAT_STR, ...)	do { \
+	if (evdi_loglevel >= LEVEL) {\
+		printk(KERN_LEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
 	} \
 } while (0)
 
