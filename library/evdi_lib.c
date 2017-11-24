@@ -134,19 +134,26 @@ static int removeFrameBuffer(evdi_handle context, int const *id)
 
 static int is_evdi_compatible(int fd)
 {
-	struct drm_version ver = {
-		.version_major = 0,
-		.version_minor = 0,
-		.version_patchlevel = 0
-	};
-	if (do_ioctl(fd, DRM_IOCTL_VERSION, &ver, "version") == 0 &&
-		ver.version_major ==  EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR &&
-		ver.version_minor ==  EVDI_MODULE_COMPATIBILITY_VERSION_MINOR) {
+	struct drm_version ver = { 0 };
+
+	evdi_log("LibEvdi version (%d.%d.%d)",
+		 LIBEVDI_VERSION_MAJOR,
+		 LIBEVDI_VERSION_MINOR,
+		 LIBEVDI_VERSION_PATCHLEVEL);
+
+	if (do_ioctl(fd, DRM_IOCTL_VERSION, &ver, "version") != 0)
+		return 0;
+
+	evdi_log("Evdi version (%d.%d.%d)",
+		 ver.version_major,
+		 ver.version_minor,
+		 ver.version_patchlevel);
+
+	if (ver.version_major == EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR &&
+	    ver.version_minor == EVDI_MODULE_COMPATIBILITY_VERSION_MINOR)
 		return 1;
-	}
-	evdi_log("Evdi version (%d.%d.%d) ",
-		 ver.version_major, ver.version_minor, ver.version_patchlevel);
-	evdi_log("doesn't match LibEvdi compatibility one (%d.%d.%d)",
+
+	evdi_log("Doesn't match LibEvdi compatibility one (%d.%d.%d)",
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
 		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
