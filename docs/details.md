@@ -21,6 +21,7 @@ Version consists of 3 components formatted as MAJOR.MINOR.PATCH
 User can modify driver behaviour by its parameters that can be set at module load time or changed during runtime.
 
  * `enable_cursor_blending` Enables cursor compositing on user supplied framebuffer via `EVDI_GRABPIX` ioctl (default: true)
+ * `initial_device_count` Number of evdi devices added at module load time (default: 0)
 
 
 ### EVDI nodes
