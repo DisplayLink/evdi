@@ -20,6 +20,7 @@
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
+#include "evdi_params.h"
 
 struct evdi_flip_queue {
 	struct mutex lock;
