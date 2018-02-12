@@ -11,6 +11,7 @@
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
+#include "evdi_params.h"
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 

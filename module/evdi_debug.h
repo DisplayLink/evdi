@@ -9,6 +9,8 @@
 #ifndef EVDI_DEBUG_H
 #define EVDI_DEBUG_H
 
+#include "evdi_params.h"
+
 #define EVDI_LOGLEVEL_ALWAYS  0
 #define EVDI_LOGLEVEL_FATAL   1
 #define EVDI_LOGLEVEL_ERROR   2
@@ -16,8 +18,6 @@
 #define EVDI_LOGLEVEL_INFO    4
 #define EVDI_LOGLEVEL_DEBUG   5
 #define EVDI_LOGLEVEL_VERBOSE 6
-
-extern unsigned int evdi_loglevel;
 
 #define EVDI_PRINTK(KERN_LEVEL, LEVEL, FORMAT_STR, ...)	do { \
 	if (evdi_loglevel >= LEVEL) {\
