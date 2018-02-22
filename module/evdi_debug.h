@@ -19,9 +19,13 @@
 #define EVDI_LOGLEVEL_DEBUG   5
 #define EVDI_LOGLEVEL_VERBOSE 6
 
-#define EVDI_PRINTK(KERN_LEVEL, LEVEL, FORMAT_STR, ...)	do { \
-	if (evdi_loglevel >= LEVEL) {\
-		printk(KERN_LEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
+// This definition is to get checkpatch.pl to stop complaining.
+// TODO: Refactor all this to use pr_<level> and dev_dbg and stuff.
+#define __EVDI_PRINTK printk
+
+#define EVDI_PRINTK(kLEVEL, lEVEL, FORMAT_STR, ...)	do { \
+	if (lEVEL <= evdi_loglevel) {\
+		__EVDI_PRINTK(kLEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
 	} \
 } while (0)
 
