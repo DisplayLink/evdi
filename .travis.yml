@@ -25,6 +25,8 @@ env:
   - KVER=master
 
 matrix:
+  allow_failures:
+    - env: KVER=master
   include:
     - env: StyleCheck
       script: ./ci/run_style_check
