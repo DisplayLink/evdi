@@ -1,6 +1,5 @@
-/* SPDX-License-Identifier: LGPL-2.1-only
- * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
- */
+// SPDX-License-Identifier: LGPL-2.1-only
+// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
 #include <stddef.h>
 #include <stdint.h>
 #include <libdrm/drm.h>
