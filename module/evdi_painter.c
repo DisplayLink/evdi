@@ -1,4 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-only
+/*
  * Copyright (c) 2013 - 2017 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
