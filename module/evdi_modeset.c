@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: LGPL-2.1-only
-/*
+/* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
  * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
  *
