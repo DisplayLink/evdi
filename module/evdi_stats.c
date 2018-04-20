@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-2.1-only
 /*
  * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
  *
