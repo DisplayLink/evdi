@@ -580,7 +580,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 	return 0;
 }
 
-static void evdi_painter_disconnect(struct evdi_device *evdi,
+static int evdi_painter_disconnect(struct evdi_device *evdi,
 	struct drm_file *file)
 {
 	struct evdi_painter *painter = evdi->painter;
@@ -595,9 +595,8 @@ static void evdi_painter_disconnect(struct evdi_device *evdi,
 		     evdi->dev_index, file);
 		EVDI_WARN(" - ignoring\n");
 
-
 		painter_unlock(painter);
-		return;
+		return -EFAULT;
 	}
 
 	evdi_painter_set_new_scanout_buffer(evdi, NULL);
@@ -622,6 +621,7 @@ static void evdi_painter_disconnect(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
+	return 0;
 }
 
 void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file)
@@ -640,20 +640,21 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 	struct evdi_device *evdi = drm_dev->dev_private;
 	struct evdi_painter *painter = evdi->painter;
 	struct drm_evdi_connect *cmd = data;
+	int ret;
 
 	EVDI_CHECKPT();
 	if (painter) {
 		if (cmd->connected)
-			evdi_painter_connect(evdi,
+			ret = evdi_painter_connect(evdi,
 					     cmd->edid,
 					     cmd->edid_length,
 					     cmd->sku_area_limit,
 					     file,
 					     cmd->dev_index);
 		else
-			evdi_painter_disconnect(evdi, file);
+			ret = evdi_painter_disconnect(evdi, file);
 
-		return 0;
+		return ret;
 	}
 	EVDI_WARN("Painter does not exist!");
 	return -ENODEV;
