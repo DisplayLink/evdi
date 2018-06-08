@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
  * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
@@ -134,4 +135,3 @@ void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
 	if (evdi)
 		evdi_painter_close(evdi, file);
 }
-

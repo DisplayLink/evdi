@@ -1,4 +1,6 @@
-// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+/* SPDX-License-Identifier: LGPL-2.1-only
+ * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+ */
 
 #ifndef EVDI_LIB_H
 #define EVDI_LIB_H
@@ -113,4 +115,3 @@ void evdi_set_logging(struct evdi_logging evdi_logging);
 #endif
 
 #endif
-

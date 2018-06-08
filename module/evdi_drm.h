@@ -1,4 +1,4 @@
-/*
+/* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
@@ -101,4 +101,3 @@ struct drm_evdi_event_cursor_move {
 	DRM_EVDI_GRABPIX, struct drm_evdi_grabpix)
 
 #endif /* __EVDI_UAPI_DRM_H__ */
-
