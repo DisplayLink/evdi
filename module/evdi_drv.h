@@ -1,4 +1,4 @@
-/*
+/* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
  * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
  *
@@ -170,4 +170,3 @@ void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
 int evdi_fb_get_bpp(uint32_t format);
 #endif
-

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * evdi_cursor.c
  *
@@ -279,4 +280,3 @@ void evdi_cursor_stride(struct evdi_cursor *cursor, uint32_t *stride)
 {
 	*stride = cursor->stride;
 }
-

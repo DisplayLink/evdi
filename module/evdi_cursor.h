@@ -1,4 +1,5 @@
-/*
+/* SPDX-License-Identifier: GPL-2.0-only
+ *
  * evdi_cursor.h
  *
  * Copyright (c) 2016 The Chromium OS Authors
@@ -57,4 +58,3 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 				   char __user *buffer,
 				   int buf_byte_stride);
 #endif
-
