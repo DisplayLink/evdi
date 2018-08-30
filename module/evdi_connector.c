@@ -32,11 +32,20 @@ static int evdi_get_modes(struct drm_connector *connector)
 	edid = (struct edid *)evdi_painter_get_edid_copy(evdi);
 
 	if (!edid) {
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+		drm_connector_update_edid_property(connector, NULL);
+#else
 		drm_mode_connector_update_edid_property(connector, NULL);
+#endif
 		return 0;
 	}
 
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	ret = drm_connector_update_edid_property(connector, edid);
+#else
 	ret = drm_mode_connector_update_edid_property(connector, edid);
+#endif
+
 	if (!ret)
 		drm_add_edid_modes(connector, edid);
 	else
@@ -144,7 +153,12 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 #else
 	drm_sysfs_connector_add(connector);
 #endif
+
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	drm_connector_attach_encoder(connector, encoder);
+#else
 	drm_mode_connector_attach_encoder(connector, encoder);
+#endif
 
 #if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_object_attach_property(&connector->base,
