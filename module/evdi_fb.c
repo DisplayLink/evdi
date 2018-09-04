@@ -103,6 +103,9 @@ static int evdi_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long page, pos;
 
+	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+		return -EINVAL;
+
 	if (offset > info->fix.smem_len ||
 	    size > info->fix.smem_len - offset)
 		return -EINVAL;
