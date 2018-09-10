@@ -434,12 +434,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 		return -ENOMEM;
 
 	evdi->fbdev = ufbdev;
-#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 	drm_fb_helper_prepare(dev, &ufbdev->helper, &evdi_fb_helper_funcs);
-#else
-	ufbdev->helper.funcs = &evdi_fb_helper_funcs;
-	ufbdev->helper.dev = dev;
-#endif
 
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	ret = drm_fb_helper_init(dev, &ufbdev->helper, 1, 1);

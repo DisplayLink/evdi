@@ -307,13 +307,8 @@ static int __init evdi_init(void)
 	int i, ret;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
-
-#if KERNEL_VERSION(4, 0, 0) <= LINUX_VERSION_CODE
 	EVDI_INFO("Atomic driver:%s",
 		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
-#else
-	EVDI_INFO("Atomic driver: unsupported");
-#endif
 
 	evdi_context.root_dev = root_device_register("evdi");
 	if (!PTR_RET(evdi_context.root_dev))
