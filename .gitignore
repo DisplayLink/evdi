@@ -9,6 +9,7 @@ modules.order
 
 module/.tmp_versions/
 module/evdi.mod.c
+module/.cache.mk
 
 tmp/
 site/
