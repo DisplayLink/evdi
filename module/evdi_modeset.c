@@ -15,9 +15,7 @@
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_plane_helper.h>
-#endif
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
@@ -428,7 +426,7 @@ int evdi_modeset_init(struct drm_device *dev)
 
 #elif KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, dev_name(dev->dev));
-#elif KERNEL_VERSION(3, 16, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(4, 2, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
 #endif
 	evdi_crtc_init(dev);
