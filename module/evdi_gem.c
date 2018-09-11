@@ -50,6 +50,9 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		return NULL;
 	}
 
+	reservation_object_init(&obj->_resv);
+	obj->resv = &obj->_resv;
+
 	return obj;
 }
 
@@ -236,6 +239,9 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (gem_obj->dev->vma_offset_manager)
 		drm_gem_free_mmap_offset(gem_obj);
+
+	reservation_object_fini(&obj->_resv);
+	obj->resv = NULL;
 }
 
 /*
@@ -529,6 +535,7 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 		goto fail_unmap;
 
 	uobj->base.import_attach = attach;
+	uobj->resv = attach->dmabuf->resv;
 
 	return &uobj->base;
 
@@ -544,12 +551,13 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 				      struct drm_gem_object *obj, int flags)
 {
+	struct evdi_gem_object *evdi_obj = to_evdi_bo(obj);
 	struct dma_buf_export_info exp_info = {
 		.exp_name = "evdi",
 		.ops = &evdi_dmabuf_ops,
 		.size = obj->size,
 		.flags = flags,
-		.resv = NULL,
+		.resv = evdi_obj->resv,
 		.priv = obj
 	};
 

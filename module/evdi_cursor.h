@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0-only
- *
  * evdi_cursor.h
  *
  * Copyright (c) 2016 The Chromium OS Authors
@@ -36,14 +35,13 @@ void evdi_cursor_lock(struct evdi_cursor *cursor);
 void evdi_cursor_unlock(struct evdi_cursor *cursor);
 bool evdi_cursor_enabled(struct evdi_cursor *cursor);
 void evdi_cursor_enable(struct evdi_cursor *cursor, bool enabled);
-int evdi_cursor_set(struct evdi_cursor *cursor,
-		    struct evdi_gem_object *obj,
-		    uint32_t width, uint32_t height,
-		    int32_t hot_x, int32_t hot_y,
-		    uint32_t pixel_format, uint32_t stride);
+void evdi_cursor_set(struct evdi_cursor *cursor,
+		     struct evdi_gem_object *obj,
+		     uint32_t width, uint32_t height,
+		     int32_t hot_x, int32_t hot_y,
+		     uint32_t pixel_format, uint32_t stride);
 
 void evdi_cursor_move(struct evdi_cursor *cursor, int32_t x, int32_t y);
-
 void evdi_cursor_position(struct evdi_cursor *cursor, int32_t *x, int32_t *y);
 void evdi_cursor_hotpoint(struct evdi_cursor *cursor,
 			  int32_t *hot_x, int32_t *hot_y);
@@ -54,7 +52,7 @@ void evdi_cursor_stride(struct evdi_cursor *cursor, uint32_t *stride);
 struct evdi_gem_object *evdi_cursor_gem(struct evdi_cursor *cursor);
 
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
-				   struct evdi_framebuffer *ufb,
-				   char __user *buffer,
-				   int buf_byte_stride);
+				 struct evdi_framebuffer *ufb,
+				 char __user *buffer,
+				 int buf_byte_stride);
 #endif
