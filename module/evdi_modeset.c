@@ -13,99 +13,25 @@
 
 #include <linux/version.h>
 #include <drm/drmP.h>
+#include <drm/drm_atomic.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_plane_helper.h>
+#include <drm/drm_atomic_helper.h>
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 
-struct evdi_flip_queue {
-	struct mutex lock;
-	struct workqueue_struct *wq;
-	struct delayed_work work;
-	struct drm_crtc *crtc;
-	struct drm_pending_vblank_event *event;
-	u64 flip_time;  /* in jiffies */
-	u64 vblank_interval;  /* in jiffies */
-};
-
-static void evdi_crtc_dpms(struct drm_crtc *crtc, int mode)
+static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
+			   __always_unused int mode)
 {
-	struct evdi_device *evdi = crtc->dev->dev_private;
-
-	evdi_painter_dpms_notify(evdi, mode);
-}
-
-static bool evdi_crtc_mode_fixup(
-			__always_unused struct drm_crtc *crtc,
-			__always_unused const struct drm_display_mode *mode,
-			__always_unused struct drm_display_mode *adjusted_mode)
-{
-	return true;
-}
-
-
-static int evdi_crtc_mode_set(struct drm_crtc *crtc,
-			      struct drm_display_mode *mode,
-			      struct drm_display_mode *adjusted_mode,
-			     __always_unused int x,
-			     __always_unused int y,
-			     struct drm_framebuffer *old_fb)
-{
-	struct drm_device *dev = NULL;
-	struct evdi_device *evdi = NULL;
-	struct evdi_framebuffer *efb = NULL;
-	struct evdi_flip_queue *flip_queue = NULL;
-	struct drm_clip_rect rect;
-
-	if (crtc->primary == NULL) {
-		EVDI_DEBUG("%s primary plane is NULL", __func__);
-		return 0;
-	}
-
-	EVDI_ENTER();
-
-	efb = to_evdi_fb(crtc->primary->fb);
-	if (old_fb) {
-		struct evdi_framebuffer *eold_fb = to_evdi_fb(old_fb);
-
-		eold_fb->active = false;
-	}
-	efb->active = true;
-
-	dev = efb->base.dev;
-	evdi = dev->dev_private;
-	evdi_painter_mode_changed_notify(evdi, &efb->base, adjusted_mode);
-
-	/* update flip queue vblank interval */
-	flip_queue = evdi->flip_queue;
-	if (flip_queue) {
-		mutex_lock(&flip_queue->lock);
-		flip_queue->vblank_interval = HZ / drm_mode_vrefresh(mode);
-		mutex_unlock(&flip_queue->lock);
-	}
-
-	/* damage all of it */
-	evdi_painter_set_new_scanout_buffer(evdi, efb);
-	evdi_painter_commit_scanout_buffer(evdi);
-
-	rect.x1 = 0;
-	rect.y1 = 0;
-	rect.x2 = efb->base.width;
-	rect.y2 = efb->base.height;
-	evdi_painter_mark_dirty(evdi, &rect);
-	EVDI_EXIT();
-	return 0;
-}
-
-static void evdi_crtc_disable(struct drm_crtc *crtc)
-{
-	struct evdi_device *evdi = crtc->dev->dev_private;
-
 	EVDI_CHECKPT();
-	evdi_painter_crtc_state_notify(evdi, DRM_MODE_DPMS_OFF);
+}
+
+static void evdi_crtc_disable(__always_unused struct drm_crtc *crtc)
+{
+	EVDI_CHECKPT();
 }
 
 static void evdi_crtc_destroy(struct drm_crtc *crtc)
@@ -115,113 +41,56 @@ static void evdi_crtc_destroy(struct drm_crtc *crtc)
 	kfree(crtc);
 }
 
-static void evdi_sched_page_flip(struct work_struct *work)
+static void evdi_crtc_commit(__always_unused struct drm_crtc *crtc)
 {
-	struct evdi_flip_queue *flip_queue =
-		container_of(container_of(work, struct delayed_work, work),
-			struct evdi_flip_queue, work);
-	struct drm_crtc *crtc;
-	struct drm_device *dev;
-	struct drm_pending_vblank_event *event;
-	struct drm_framebuffer *fb;
-
-	mutex_lock(&flip_queue->lock);
-	crtc = flip_queue->crtc;
-	dev = crtc->dev;
-	event = flip_queue->event;
-	fb = crtc->primary->fb;
-	flip_queue->event = NULL;
-	mutex_unlock(&flip_queue->lock);
-
 	EVDI_CHECKPT();
-	if (fb) {
-		struct evdi_device *evdi = dev->dev_private;
-		const struct drm_clip_rect rect = {
-			0, 0, fb->width, fb->height };
-
-		evdi_painter_commit_scanout_buffer(evdi);
-		evdi_painter_mark_dirty(evdi, &rect);
-	}
-	if (event) {
-		unsigned long flags = 0;
-
-		spin_lock_irqsave(&dev->event_lock, flags);
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
-		drm_send_vblank_event(dev, 0, event);
-#else
-		drm_crtc_send_vblank_event(crtc, event);
-#endif
-		spin_unlock_irqrestore(&dev->event_lock, flags);
-	}
 }
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-static int evdi_crtc_page_flip(struct drm_crtc *crtc,
-			       struct drm_framebuffer *fb,
-			       struct drm_pending_vblank_event *event,
-			       __always_unused uint32_t page_flip_flags)
-#else
-static int evdi_crtc_page_flip(
-	struct drm_crtc *crtc,
-	struct drm_framebuffer *fb,
-	struct drm_pending_vblank_event *event,
-	__always_unused uint32_t page_flip_flags,
-	__always_unused struct drm_modeset_acquire_ctx *ctx)
-#endif
+static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 {
-	struct drm_device *dev = crtc->dev;
-	struct evdi_device *evdi = dev->dev_private;
-	struct evdi_flip_queue *flip_queue = evdi->flip_queue;
+}
 
-	if (!flip_queue || !flip_queue->wq) {
-		DRM_ERROR("Uninitialized page flip queue\n");
-		return -ENOMEM;
-	}
-
-	mutex_lock(&flip_queue->lock);
-
-	EVDI_CHECKPT();
-	atomic_inc(&evdi->frame_count);
-	flip_queue->crtc = crtc;
-	if (fb) {
-		struct evdi_framebuffer *efb = to_evdi_fb(fb);
-		struct drm_framebuffer *old_fb = crtc->primary->fb;
-
-		if (old_fb) {
-			struct evdi_framebuffer *eold_fb = to_evdi_fb(old_fb);
-
-			eold_fb->active = false;
-		}
-		efb->active = true;
-		crtc->primary->fb = fb;
-		evdi_painter_set_new_scanout_buffer(evdi, efb);
-	}
-	if (event) {
-		if (flip_queue->event) {
-			unsigned long flags = 0;
-
-			spin_lock_irqsave(&dev->event_lock, flags);
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
-			drm_send_vblank_event(dev, 0, flip_queue->event);
-#else
-			drm_crtc_send_vblank_event(crtc, flip_queue->event);
+static void evdi_crtc_atomic_flush(
+	struct drm_crtc *crtc
+#if KERNEL_VERSION(4, 3, 0) <= LINUX_VERSION_CODE
+	, __always_unused struct drm_crtc_state *old_state
 #endif
-			spin_unlock_irqrestore(&dev->event_lock, flags);
-		}
-		flip_queue->event = event;
-	}
-	if (!delayed_work_pending(&flip_queue->work)) {
-		u64 now = jiffies;
-		u64 next_flip =
-			flip_queue->flip_time + flip_queue->vblank_interval;
-		flip_queue->flip_time = (next_flip < now) ? now : next_flip;
-		queue_delayed_work(flip_queue->wq, &flip_queue->work,
-			flip_queue->flip_time - now);
-	}
+	)
+{
+	struct drm_crtc_state *state = crtc->state;
+	struct evdi_device *evdi = crtc->dev->dev_private;
+	unsigned long flags;
 
-	mutex_unlock(&flip_queue->lock);
+	if (state->event) {
+		spin_lock_irqsave(&crtc->dev->event_lock, flags);
+		drm_crtc_send_vblank_event(crtc, state->event);
+		state->event = NULL;
+		spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
+	}
+	if (state->mode_changed && state->active)
+		evdi_painter_mode_changed_notify(evdi, &state->adjusted_mode);
 
-	return 0;
+	if (state->active_changed)
+		evdi_painter_dpms_notify(evdi,
+			state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
+
+	evdi_painter_send_update_ready_if_needed(evdi);
+}
+
+static void evdi_crtc_mark_full_screen_dirty(struct evdi_device *evdi,
+					     struct drm_crtc *crtc)
+{
+	if (crtc && crtc->primary && crtc->primary->fb) {
+		struct drm_clip_rect rect = {
+			0,
+			0,
+			crtc->primary->fb->width,
+			crtc->primary->fb->height
+		};
+
+		evdi_painter_mark_dirty(evdi, &rect);
+		evdi_painter_send_update_ready_if_needed(evdi);
+	}
 }
 
 static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
@@ -236,7 +105,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	struct evdi_device *evdi = dev->dev_private;
 	struct drm_gem_object *obj = NULL;
 	struct evdi_gem_object *eobj = NULL;
-	int ret;
+
 	/*
 	 * evdi_crtc_cursor_set is callback function using
 	 * deprecated cursor entry point.
@@ -267,26 +136,19 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 		mutex_unlock(&dev->struct_mutex);
 	}
 
-	ret = evdi_cursor_set(evdi->cursor,
-			      eobj, width, height, hot_x, hot_y,
-			      format, stride);
+	evdi_cursor_set(evdi->cursor,
+			eobj, width, height, hot_x, hot_y,
+			format, stride);
 	drm_gem_object_unreference_unlocked(obj);
-	if (ret) {
-		EVDI_ERROR("Failed to set evdi cursor\n");
-		return ret;
-	}
 
 	/*
 	 * For now we don't care whether the application wanted the mouse set,
 	 * or not.
 	 */
 	if (evdi_enable_cursor_blending)
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-		return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
-#else
-		return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
-#endif
-	evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
+		evdi_crtc_mark_full_screen_dirty(evdi, crtc);
+	else
+		evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
 	return 0;
 }
 
@@ -298,48 +160,202 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	evdi_cursor_move(evdi->cursor, x, y);
 
 	if (evdi_enable_cursor_blending)
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-		return evdi_crtc_page_flip(crtc, NULL, NULL, 0);
-#else
-		return evdi_crtc_page_flip(crtc, NULL, NULL, 0, NULL);
-#endif
+		evdi_crtc_mark_full_screen_dirty(evdi, crtc);
+	else
+		evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
 
-	evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
 	return 0;
 }
 
-static void evdi_crtc_prepare(__always_unused struct drm_crtc *crtc)
-{
-}
-
-static void evdi_crtc_commit(struct drm_crtc *crtc)
-{
-	struct evdi_device *evdi = crtc->dev->dev_private;
-
-	EVDI_CHECKPT();
-	evdi_painter_crtc_state_notify(evdi, DRM_MODE_DPMS_ON);
-}
-
 static struct drm_crtc_helper_funcs evdi_helper_funcs = {
-	.dpms = evdi_crtc_dpms,
-	.mode_fixup = evdi_crtc_mode_fixup,
-	.mode_set = evdi_crtc_mode_set,
-	.prepare = evdi_crtc_prepare,
-	.commit = evdi_crtc_commit,
-	.disable = evdi_crtc_disable,
+	.mode_set_nofb  = evdi_crtc_set_nofb,
+	.atomic_flush   = evdi_crtc_atomic_flush,
+
+	.dpms           = evdi_crtc_dpms,
+	.commit         = evdi_crtc_commit,
+	.disable        = evdi_crtc_disable
 };
 
 static const struct drm_crtc_funcs evdi_crtc_funcs = {
-	.set_config = drm_crtc_helper_set_config,
-	.destroy = evdi_crtc_destroy,
-	.page_flip = evdi_crtc_page_flip,
-	.cursor_set2 = evdi_crtc_cursor_set,
-	.cursor_move = evdi_crtc_cursor_move,
+	.reset                  = drm_atomic_helper_crtc_reset,
+	.destroy                = evdi_crtc_destroy,
+	.set_config             = drm_atomic_helper_set_config,
+	.page_flip              = drm_atomic_helper_page_flip,
+#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
+	.set_property           = drm_atomic_helper_crtc_set_property,
+#endif
+	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
+	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
+
+	.cursor_set2            = evdi_crtc_cursor_set,
+	.cursor_move            = evdi_crtc_cursor_move
 };
+
+static void evdi_plane_atomic_update(struct drm_plane *plane,
+				     struct drm_plane_state *old_state)
+{
+	if (plane && plane->state && plane->state->fb &&
+	    plane->dev && plane->dev->dev_private) {
+		struct drm_plane_state *state = plane->state;
+		struct drm_framebuffer *fb = state->fb;
+		struct evdi_framebuffer *efb = to_evdi_fb(fb);
+		struct evdi_device *evdi = plane->dev->dev_private;
+
+		const struct drm_clip_rect rect = {
+			0, 0, fb->width, fb->height
+		};
+
+		evdi_painter_mark_dirty(evdi, &rect);
+
+		if (state->fb != old_state->fb ||
+		    evdi_painter_needs_full_modeset(evdi)) {
+			evdi_painter_set_new_scanout_buffer(evdi, efb);
+			evdi_painter_commit_scanout_buffer(evdi);
+		}
+	}
+}
+
+static void evdi_cursor_atomic_get_rect(struct drm_clip_rect *rect,
+					struct drm_plane_state *state)
+{
+	rect->x1 = (state->crtc_x < 0) ? 0 : state->crtc_x;
+	rect->y1 = (state->crtc_y < 0) ? 0 : state->crtc_y;
+	rect->x2 = state->crtc_x + state->crtc_w;
+	rect->y2 = state->crtc_y + state->crtc_h;
+}
+
+static void evdi_cursor_atomic_update(struct drm_plane *plane,
+				      struct drm_plane_state *old_state)
+{
+	if (plane && plane->state && plane->dev && plane->dev->dev_private) {
+		struct drm_plane_state *state = plane->state;
+		struct evdi_device *evdi = plane->dev->dev_private;
+		struct drm_framebuffer *fb = state->fb;
+		struct evdi_framebuffer *efb = to_evdi_fb(fb);
+
+		struct drm_clip_rect old_rect;
+		struct drm_clip_rect rect;
+		bool cursor_changed = false;
+		bool cursor_position_changed = false;
+		int32_t cursor_position_x = 0;
+		int32_t cursor_position_y = 0;
+
+		mutex_lock(&plane->dev->struct_mutex);
+
+		evdi_cursor_position(evdi->cursor, &cursor_position_x,
+		&cursor_position_y);
+		evdi_cursor_move(evdi->cursor, state->crtc_x, state->crtc_y);
+		cursor_position_changed = cursor_position_x != state->crtc_x ||
+					  cursor_position_y != state->crtc_y;
+
+		if (fb != old_state->fb) {
+			if (fb != NULL) {
+				uint32_t stride = 4 * fb->width;
+
+				evdi_cursor_set(evdi->cursor,
+						efb->obj,
+						fb->width,
+						fb->height,
+						0,
+						0,
+#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
+						fb->pixel_format,
+#else
+						fb->format->format,
+#endif
+						stride);
+			}
+
+			evdi_cursor_enable(evdi->cursor, fb != NULL);
+			cursor_changed = true;
+		}
+
+		mutex_unlock(&plane->dev->struct_mutex);
+		if (evdi_enable_cursor_blending) {
+			evdi_cursor_atomic_get_rect(&old_rect, old_state);
+			evdi_cursor_atomic_get_rect(&rect, state);
+
+			evdi_painter_mark_dirty(evdi, &old_rect);
+			evdi_painter_mark_dirty(evdi, &rect);
+			return;
+		}
+		if (cursor_changed)
+			evdi_painter_send_cursor_set(evdi->painter,
+						     evdi->cursor);
+		if (cursor_position_changed)
+			evdi_painter_send_cursor_move(evdi->painter,
+						      evdi->cursor);
+	}
+}
+
+static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
+	.atomic_update = evdi_plane_atomic_update
+};
+
+static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
+	.atomic_update = evdi_cursor_atomic_update
+};
+
+static const struct drm_plane_funcs evdi_plane_funcs = {
+	.update_plane = drm_atomic_helper_update_plane,
+	.disable_plane = drm_atomic_helper_disable_plane,
+	.destroy = drm_plane_cleanup,
+	.reset = drm_atomic_helper_plane_reset,
+	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
+	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
+};
+
+static const uint32_t formats[] = {
+	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_ARGB8888,
+};
+
+static struct drm_plane *evdi_create_plane(
+		struct drm_device *dev,
+		enum drm_plane_type type,
+		const struct drm_plane_helper_funcs *helper_funcs)
+{
+	struct drm_plane *plane;
+	int ret;
+
+	plane = kzalloc(sizeof(*plane), GFP_KERNEL);
+	if (plane == NULL) {
+		EVDI_ERROR("Failed to allocate primary plane\n");
+		return NULL;
+	}
+	plane->format_default = true;
+
+	ret = drm_universal_plane_init(dev,
+				       plane,
+				       0xFF,
+				       &evdi_plane_funcs,
+				       formats,
+				       ARRAY_SIZE(formats),
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+				       NULL,
+#endif
+				       type
+#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
+				     , NULL
+#endif
+				       );
+
+	if (ret) {
+		EVDI_ERROR("Failed to initialize primary plane\n");
+		kfree(plane);
+		return NULL;
+	}
+
+	drm_plane_helper_add(plane, helper_funcs);
+
+	return plane;
+}
 
 static int evdi_crtc_init(struct drm_device *dev)
 {
-	struct drm_crtc *crtc;
+	struct drm_crtc *crtc = NULL;
+	struct drm_plane *primary_plane = NULL;
+	struct drm_plane *cursor_plane = NULL;
 	int status = 0;
 
 	EVDI_CHECKPT();
@@ -347,68 +363,60 @@ static int evdi_crtc_init(struct drm_device *dev)
 	if (crtc == NULL)
 		return -ENOMEM;
 
-	status = drm_crtc_init(dev, crtc, &evdi_crtc_funcs);
-	EVDI_DEBUG("drm_crtc_init: %d\n", status);
+	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
+					  &evdi_plane_helper_funcs);
+	status = drm_crtc_init_with_planes(dev, crtc,
+					   primary_plane, cursor_plane,
+					   &evdi_crtc_funcs
+#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
+					 , NULL
+#endif
+					   );
+
+	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
 
 	return 0;
 }
 
-static int evdi_flip_workqueue_init(struct drm_device *dev)
+static int evdi_atomic_check(struct drm_device *dev,
+			     struct drm_atomic_state *state)
 {
+	struct drm_crtc *crtc;
+	struct drm_crtc_state *crtc_state;
+	int i;
 	struct evdi_device *evdi = dev->dev_private;
-	struct evdi_flip_queue *flip_queue =
-		kzalloc(sizeof(struct evdi_flip_queue), GFP_KERNEL);
 
-	EVDI_CHECKPT();
-	if (WARN_ON(!flip_queue))
-		return -ENOMEM;
-	mutex_init(&flip_queue->lock);
-	flip_queue->wq = create_singlethread_workqueue("flip");
-	if (WARN_ON(!flip_queue->wq)) {
-		mutex_destroy(&flip_queue->lock);
-		kfree(flip_queue);
-		return -ENOMEM;
+	if (evdi_painter_needs_full_modeset(evdi)) {
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+		for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
+#else
+		for_each_crtc_in_state(state, crtc, crtc_state, i) {
+#endif
+			crtc_state->active_changed = true;
+			crtc_state->mode_changed = true;
+		}
 	}
-	INIT_DELAYED_WORK(&flip_queue->work, evdi_sched_page_flip);
-	flip_queue->flip_time = jiffies;
-	flip_queue->vblank_interval = HZ / 60;
-	evdi->flip_queue = flip_queue;
 
-	return 0;
-}
-
-static void evdi_flip_workqueue_cleanup(struct drm_device *dev)
-{
-	struct evdi_device *evdi = dev->dev_private;
-	struct evdi_flip_queue *flip_queue = evdi->flip_queue;
-
-	if (!flip_queue)
-		return;
-
-	EVDI_CHECKPT();
-	if (flip_queue->wq) {
-		flush_workqueue(flip_queue->wq);
-		destroy_workqueue(flip_queue->wq);
-	}
-	mutex_destroy(&flip_queue->lock);
-	kfree(flip_queue);
+	return drm_atomic_helper_check(dev, state);
 }
 
 static const struct drm_mode_config_funcs evdi_mode_funcs = {
 	.fb_create = evdi_fb_user_fb_create,
 	.output_poll_changed = NULL,
+	.atomic_commit = drm_atomic_helper_commit,
+	.atomic_check = evdi_atomic_check
 };
 
-int evdi_modeset_init(struct drm_device *dev)
+void evdi_modeset_init(struct drm_device *dev)
 {
 	struct drm_encoder *encoder;
 
 	EVDI_CHECKPT();
 	drm_mode_config_init(dev);
 
-	dev->mode_config.min_width = 640;
-	dev->mode_config.min_height = 480;
+	dev->mode_config.min_width = 64;
+	dev->mode_config.min_height = 64;
 
 	dev->mode_config.max_width = 3840;
 	dev->mode_config.max_height = 2160;
@@ -426,7 +434,7 @@ int evdi_modeset_init(struct drm_device *dev)
 
 #elif KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	drm_dev_set_unique(dev, dev_name(dev->dev));
-#elif KERNEL_VERSION(4, 2, 0) <= LINUX_VERSION_CODE
+#else
 	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
 #endif
 	evdi_crtc_init(dev);
@@ -435,12 +443,11 @@ int evdi_modeset_init(struct drm_device *dev)
 
 	evdi_connector_init(dev, encoder);
 
-	return evdi_flip_workqueue_init(dev);
+	drm_mode_config_reset(dev);
 }
 
 void evdi_modeset_cleanup(struct drm_device *dev)
 {
 	EVDI_CHECKPT();
-	evdi_flip_workqueue_cleanup(dev);
 	drm_mode_config_cleanup(dev);
 }

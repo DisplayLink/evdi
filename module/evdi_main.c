@@ -35,10 +35,7 @@ int evdi_driver_setup_early(struct drm_device *dev)
 		goto err;
 
 	EVDI_CHECKPT();
-	ret = evdi_modeset_init(dev);
-
-	if (ret)
-		goto err;
+	evdi_modeset_init(dev);
 
 	ret = evdi_fbdev_init(dev);
 	if (ret)
@@ -135,3 +132,4 @@ void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
 	if (evdi)
 		evdi_painter_close(evdi, file);
 }
+

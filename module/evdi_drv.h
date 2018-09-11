@@ -20,6 +20,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
+#include <linux/reservation.h>
 #include "evdi_debug.h"
 
 #define DRIVER_NAME   "evdi"
@@ -32,7 +33,6 @@
 
 struct evdi_fbdev;
 struct evdi_painter;
-struct evdi_flip_queue;
 
 struct evdi_device {
 	struct device *dev;
@@ -46,8 +46,6 @@ struct evdi_device {
 	atomic_t frame_count;
 
 	int dev_index;
-
-	struct evdi_flip_queue *flip_queue;
 };
 
 struct evdi_gem_object {
@@ -55,6 +53,8 @@ struct evdi_gem_object {
 	struct page **pages;
 	void *vmapping;
 	struct sg_table *sg;
+	struct reservation_object *resv;
+	struct reservation_object _resv;
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
@@ -68,7 +68,7 @@ struct evdi_framebuffer {
 #define to_evdi_fb(x) container_of(x, struct evdi_framebuffer, base)
 
 /* modeset */
-int evdi_modeset_init(struct drm_device *dev);
+void evdi_modeset_init(struct drm_device *dev);
 void evdi_modeset_cleanup(struct drm_device *dev);
 int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 
@@ -132,9 +132,9 @@ void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file);
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *rect);
+void evdi_painter_send_update_ready_if_needed(struct evdi_device *evdi);
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
-				      struct drm_framebuffer *fb,
 				      struct drm_display_mode *mode);
 void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state);
 unsigned int evdi_painter_poll(struct file *filp,
@@ -166,5 +166,7 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 				  struct evdi_cursor *cursor);
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
+bool evdi_painter_needs_full_modeset(struct evdi_device *evdi);
+
 int evdi_fb_get_bpp(uint32_t format);
 #endif
