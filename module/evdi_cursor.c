@@ -176,12 +176,12 @@ static int evdi_cursor_compose_pixel(char __user *buffer,
 }
 
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
-				 struct evdi_framebuffer *ufb,
+				 struct evdi_framebuffer *efb,
 				 char __user *buffer,
 				 int buf_byte_stride)
 {
 	int x, y;
-	struct drm_framebuffer *fb = &ufb->base;
+	struct drm_framebuffer *fb = &efb->base;
 	const int h_cursor_w = cursor->width >> 1;
 	const int h_cursor_h = cursor->height >> 1;
 	uint32_t *cursor_buffer = NULL;
@@ -232,7 +232,7 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 			cursor_pix = h_cursor_w+x +
 				    (h_cursor_h+y)*cursor->width;
 			curs_val = le32_to_cpu(cursor_buffer[cursor_pix]);
-			fbsrc = (int *)ufb->obj->vmapping;
+			fbsrc = (int *)efb->obj->vmapping;
 			fb_value = *(fbsrc + ((fb->pitches[0]>>2) *
 						  mouse_pix_y + mouse_pix_x));
 			cmd_offset = (buf_byte_stride * mouse_pix_y) +
