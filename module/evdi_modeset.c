@@ -205,13 +205,13 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 			0, 0, fb->width, fb->height
 		};
 
-		evdi_painter_mark_dirty(evdi, &rect);
-
 		if (state->fb != old_state->fb ||
 		    evdi_painter_needs_full_modeset(evdi)) {
 			evdi_painter_set_new_scanout_buffer(evdi, efb);
 			evdi_painter_commit_scanout_buffer(evdi);
 		}
+
+		evdi_painter_mark_dirty(evdi, &rect);
 	}
 }
 

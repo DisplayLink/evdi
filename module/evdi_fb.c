@@ -222,44 +222,15 @@ static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
 	struct drm_device *dev = efb->base.dev;
 	struct evdi_device *evdi = dev->dev_private;
 	int i;
-	int ret = 0;
 
 	EVDI_CHECKPT();
-	drm_modeset_lock_all(fb->dev);
 
-	if (!efb->active)
-		goto unlock;
+	for (i = 0; i < num_clips; i++)
+		evdi_painter_mark_dirty(evdi, &clips[i]);
 
-	if (efb->obj->base.import_attach) {
-		ret =
-		    dma_buf_begin_cpu_access(
-			efb->obj->base.import_attach->dmabuf,
-#if KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE
-			0, efb->obj->base.size,
-#endif
-			DMA_FROM_DEVICE);
-		if (ret)
-			goto unlock;
-	}
+	evdi_painter_send_update_ready_if_needed(evdi);
 
-	for (i = 0; i < num_clips; i++) {
-		ret = evdi_handle_damage(efb, clips[i].x1, clips[i].y1,
-					 clips[i].x2 - clips[i].x1,
-					 clips[i].y2 - clips[i].y1);
-		if (ret)
-			goto unlock;
-	}
-
-	if (efb->obj->base.import_attach)
-		dma_buf_end_cpu_access(efb->obj->base.import_attach->dmabuf,
-#if KERNEL_VERSION(4, 6, 0) > LINUX_VERSION_CODE
-				       0, efb->obj->base.size,
-#endif
-				       DMA_FROM_DEVICE);
-	atomic_add(1, &evdi->frame_count);
- unlock:
-	drm_modeset_unlock_all(fb->dev);
-	return ret;
+	return 0;
 }
 
 static int evdi_user_framebuffer_create_handle(struct drm_framebuffer *fb,
