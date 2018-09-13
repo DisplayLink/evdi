@@ -120,14 +120,14 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 	*count = 1;
 }
 
-static int copy_primary_pixels(struct evdi_framebuffer *ufb,
+static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			       char __user *buffer,
 			       int buf_byte_stride,
 			       int num_rects, struct drm_clip_rect *rects,
 			       int const max_x,
 			       int const max_y)
 {
-	struct drm_framebuffer *fb = &ufb->base;
+	struct drm_framebuffer *fb = &efb->base;
 	struct drm_clip_rect *r;
 
 	EVDI_CHECKPT();
@@ -136,7 +136,7 @@ static int copy_primary_pixels(struct evdi_framebuffer *ufb,
 		const int byte_offset = r->x1 * 4;
 		const int byte_span = (r->x2 - r->x1) * 4;
 		const int src_offset = fb->pitches[0] * r->y1 + byte_offset;
-		const char *src = (char *)ufb->obj->vmapping + src_offset;
+		const char *src = (char *)efb->obj->vmapping + src_offset;
 		const int dst_offset = buf_byte_stride * r->y1 + byte_offset;
 		char __user *dst = buffer + dst_offset;
 		int y = r->y2 - r->y1;

@@ -52,7 +52,7 @@ void evdi_cursor_stride(struct evdi_cursor *cursor, uint32_t *stride);
 struct evdi_gem_object *evdi_cursor_gem(struct evdi_cursor *cursor);
 
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
-				 struct evdi_framebuffer *ufb,
+				 struct evdi_framebuffer *efb,
 				 char __user *buffer,
 				 int buf_byte_stride);
 #endif
