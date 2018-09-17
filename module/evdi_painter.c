@@ -428,7 +428,7 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	struct evdi_framebuffer *efb = NULL;
 	struct evdi_painter *painter = evdi->painter;
 
-	if (painter == NULL){
+	if (painter == NULL) {
 		EVDI_WARN("Painter is not connected!");
 		return;
 	}
