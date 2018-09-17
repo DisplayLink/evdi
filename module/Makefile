@@ -12,7 +12,7 @@ ifneq ($(DKMS_BUILD),)
 KERN_DIR := /lib/modules/$(KERNELRELEASE)/build
 
 ccflags-y := -Iinclude/drm
-evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_params.o evdi_cursor.o
+evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_painter.o evdi_params.o evdi_cursor.o
 evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-m := evdi.o
 
@@ -36,7 +36,7 @@ ifneq ($(KERNELRELEASE),)
 CONFIG_DRM_EVDI := m
 LINUXINCLUDE := $(subst -I,-isystem,$(LINUXINCLUDE))
 ccflags-y := -isystem include/drm $(CFLAGS)
-evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_stats.o evdi_painter.o evdi_params.o evdi_cursor.o
+evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_painter.o evdi_params.o evdi_cursor.o
 evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-$(CONFIG_DRM_EVDI) := evdi.o
 

@@ -43,8 +43,6 @@ struct evdi_device {
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
 
-	atomic_t frame_count;
-
 	int dev_index;
 };
 
@@ -124,9 +122,6 @@ int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 int evdi_gem_fault(struct vm_fault *vmf);
 #endif
 
-void evdi_stats_init(struct evdi_device *evdi);
-void evdi_stats_cleanup(struct evdi_device *evdi);
-
 bool evdi_painter_is_connected(struct evdi_device *evdi);
 void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file);
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
@@ -159,8 +154,7 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 			const struct evdi_framebuffer *fb,
 			const struct drm_clip_rect *rect);
 
-int evdi_driver_setup_early(struct drm_device *dev);
-void evdi_driver_setup_late(struct drm_device *dev);
+int evdi_driver_setup(struct drm_device *dev);
 
 void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 				  struct evdi_cursor *cursor);

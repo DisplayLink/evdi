@@ -83,7 +83,6 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 static struct drm_driver driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
-	/* In 4.12+, loading moves from .load() to open-coding */
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	.load = evdi_driver_load,
 #endif
@@ -167,13 +166,6 @@ static int evdi_add_devices(unsigned int val)
 	return 0;
 }
 
-/*
- * In 4.12+, the DRM core moves from the load() callback to requiring drivers
- * to open-code their registration in their probe callback.
- *
- * Most of our setup happens before registration but the stats require
- * registration first.
- */
 #if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 static int evdi_platform_probe(struct platform_device *pdev)
 {
@@ -186,15 +178,13 @@ static int evdi_platform_probe(struct platform_device *pdev)
 	if (IS_ERR(dev))
 		return PTR_ERR(dev);
 
-	ret = evdi_driver_setup_early(dev);
+	ret = evdi_driver_setup(dev);
 	if (ret)
 		goto err_free;
 
 	ret = drm_dev_register(dev, 0);
 	if (ret)
 		goto err_free;
-
-	evdi_driver_setup_late(dev);
 
 	return 0;
 
