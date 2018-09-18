@@ -146,9 +146,8 @@ int evdi_painter_request_update_ioctl(struct drm_device *drm_dev, void *data,
 
 int evdi_painter_init(struct evdi_device *evdi);
 void evdi_painter_cleanup(struct evdi_device *evdi);
-void evdi_painter_set_new_scanout_buffer(struct evdi_device *evdi,
-					 struct evdi_framebuffer *buffer);
-void evdi_painter_commit_scanout_buffer(struct evdi_device *evdi);
+void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
+				     struct evdi_framebuffer *buffer);
 
 struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 			const struct evdi_framebuffer *fb,

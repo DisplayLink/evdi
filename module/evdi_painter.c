@@ -56,10 +56,8 @@ struct evdi_painter {
 	unsigned int edid_length;
 
 	struct mutex lock;
-	struct mutex new_scanout_fb_lock;
 	struct drm_clip_rect dirty_rects[MAX_DIRTS];
 	int num_dirts;
-	struct evdi_framebuffer *new_scanout_fb;
 	struct evdi_framebuffer *scanout_fb;
 
 	struct drm_file *drm_filp;
@@ -622,8 +620,6 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 		return -EFAULT;
 	}
 
-	evdi_painter_set_new_scanout_buffer(evdi, NULL);
-
 	if (painter->scanout_fb) {
 		drm_framebuffer_unreference(&painter->scanout_fb->base);
 		painter->scanout_fb = NULL;
@@ -815,7 +811,6 @@ int evdi_painter_init(struct evdi_device *dev)
 	dev->painter = kzalloc(sizeof(*dev->painter), GFP_KERNEL);
 	if (dev->painter) {
 		mutex_init(&dev->painter->lock);
-		mutex_init(&dev->painter->new_scanout_fb_lock);
 		dev->painter->edid = NULL;
 		dev->painter->edid_length = 0;
 		dev->painter->needs_full_modeset = true;
@@ -840,50 +835,20 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	}
 }
 
-/*
- * This can be called from multiple threads so we need to lock during
- * *new_scanout_fb* assignment.
- * It is called from *evdi_crtc_page_flip* which must return immediately.
- * If we lock here whole painter object it will interfere with grab_pics
- * ioctl (which can take some time).
- * Because of that we lock only on the *new_scanout_fb*.
- */
-void evdi_painter_set_new_scanout_buffer(struct evdi_device *evdi,
-					 struct evdi_framebuffer *newfb)
+void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
+				     struct evdi_framebuffer *newfb)
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct evdi_framebuffer *oldfb = NULL;
 
 	if (newfb)
 		drm_framebuffer_reference(&newfb->base);
-
-	mutex_lock(&painter->new_scanout_fb_lock);
-	oldfb = painter->new_scanout_fb;
-	painter->new_scanout_fb = newfb;
-	mutex_unlock(&painter->new_scanout_fb_lock);
-
-	if (oldfb)
-		drm_framebuffer_unreference(&oldfb->base);
-}
-
-void evdi_painter_commit_scanout_buffer(struct evdi_device *evdi)
-{
-	struct evdi_painter *painter = evdi->painter;
-	struct evdi_framebuffer *newfb = NULL;
-	struct evdi_framebuffer *oldfb = NULL;
 
 	painter_lock(painter);
-	mutex_lock(&painter->new_scanout_fb_lock);
-
-	newfb = painter->new_scanout_fb;
-
-	if (newfb)
-		drm_framebuffer_reference(&newfb->base);
 
 	oldfb = painter->scanout_fb;
 	painter->scanout_fb = newfb;
 
-	mutex_unlock(&painter->new_scanout_fb_lock);
 	painter_unlock(painter);
 
 	if (oldfb)
