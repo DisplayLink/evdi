@@ -125,6 +125,7 @@ int evdi_gem_fault(struct vm_fault *vmf);
 bool evdi_painter_is_connected(struct evdi_device *evdi);
 void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file);
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
+int evdi_painter_get_num_dirts(struct evdi_device *evdi);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *rect);
 void evdi_painter_send_update_ready_if_needed(struct evdi_device *evdi);

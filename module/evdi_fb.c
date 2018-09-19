@@ -19,6 +19,7 @@
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
+#include <drm/drm_atomic.h>
 #include "evdi_drv.h"
 
 
@@ -210,26 +211,100 @@ static struct fb_ops evdifb_ops = {
 	.fb_release = evdi_fb_release,
 };
 
-static int evdi_user_framebuffer_dirty(struct drm_framebuffer *fb,
-				       __always_unused struct drm_file *file,
-				       __always_unused unsigned int flags,
-				       __always_unused unsigned int color,
-				       struct drm_clip_rect *clips,
-				       unsigned int num_clips)
+/*
+ * Function taken from
+ * https://lists.freedesktop.org/archives/dri-devel/2018-September/188716.html
+ */
+static int evdi_user_framebuffer_dirty(
+		struct drm_framebuffer *fb,
+		__maybe_unused struct drm_file *file_priv,
+		__always_unused unsigned int flags,
+		__always_unused unsigned int color,
+		__always_unused struct drm_clip_rect *clips,
+		__always_unused unsigned int num_clips)
 {
 	struct evdi_framebuffer *efb = to_evdi_fb(fb);
 	struct drm_device *dev = efb->base.dev;
 	struct evdi_device *evdi = dev->dev_private;
+
+	struct drm_modeset_acquire_ctx ctx;
+	struct drm_atomic_state *state;
+	struct drm_plane *plane;
+	int ret = 0;
 	int i;
 
 	EVDI_CHECKPT();
 
-	for (i = 0; i < num_clips; i++)
+	drm_modeset_acquire_init(&ctx,
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+		/*
+		 * When called from ioctl, we are interruptable,
+		 * but not when called internally (ie. defio worker)
+		 */
+		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :
+#endif
+		0);
+
+	state = drm_atomic_state_alloc(fb->dev);
+	if (!state) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	state->acquire_ctx = &ctx;
+
+	for (i = 0; i < num_clips; ++i)
 		evdi_painter_mark_dirty(evdi, &clips[i]);
 
-	evdi_painter_send_update_ready_if_needed(evdi);
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+retry:
+#endif
 
-	return 0;
+#if KERNEL_VERSION(4, 3, 0) <= LINUX_VERSION_CODE
+	drm_for_each_plane(plane, fb->dev) {
+#else
+	list_for_each_entry(plane, &fb->dev->mode_config.plane_list, head) {
+#endif
+		struct drm_plane_state *plane_state;
+
+		if (plane->state->fb != fb)
+			continue;
+
+		/*
+		 * Even if it says 'get state' this function will create and
+		 * initialize state if it does not exists. We use this property
+		 * to force create state.
+		 */
+		plane_state = drm_atomic_get_plane_state(state, plane);
+		if (IS_ERR(plane_state)) {
+			ret = PTR_ERR(plane_state);
+			goto out;
+		}
+	}
+
+	ret = drm_atomic_commit(state);
+
+out:
+	if (ret == -EDEADLK) {
+		drm_atomic_state_clear(state);
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+		ret = drm_modeset_backoff(&ctx);
+		if (!ret)
+			goto retry;
+#else
+		drm_modeset_backoff(&ctx);
+#endif
+	}
+
+#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
+	drm_atomic_state_put(state);
+#else
+	drm_atomic_state_free(state);
+#endif
+
+	drm_modeset_drop_locks(&ctx);
+	drm_modeset_acquire_fini(&ctx);
+
+	return ret;
 }
 
 static int evdi_user_framebuffer_create_handle(struct drm_framebuffer *fb,
