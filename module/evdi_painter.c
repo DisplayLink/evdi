@@ -596,8 +596,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	drm_helper_hpd_irq_event(evdi->ddev);
 
-	drm_helper_resume_force_mode(evdi->ddev);
-
 	return 0;
 }
 
