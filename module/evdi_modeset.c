@@ -201,16 +201,17 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 		struct evdi_framebuffer *efb = to_evdi_fb(fb);
 		struct evdi_device *evdi = plane->dev->dev_private;
 
-		const struct drm_clip_rect rect = {
+		const struct drm_clip_rect fullscreen_rect = {
 			0, 0, fb->width, fb->height
 		};
 
 		if (state->fb != old_state->fb ||
 		    evdi_painter_needs_full_modeset(evdi)) {
 			evdi_painter_set_scanout_buffer(evdi, efb);
+			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
+		} else if (evdi_painter_get_num_dirts(evdi) == 0) {
+			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
 		}
-
-		evdi_painter_mark_dirty(evdi, &rect);
 	}
 }
 

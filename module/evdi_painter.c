@@ -419,6 +419,25 @@ static void evdi_painter_send_mode_changed(
 	}
 }
 
+int evdi_painter_get_num_dirts(struct evdi_device *evdi)
+{
+	struct evdi_painter *painter = evdi->painter;
+	int num_dirts;
+
+	if (painter == NULL) {
+		EVDI_WARN("Painter is not connected!");
+		return 0;
+	}
+
+	painter_lock(painter);
+
+	num_dirts = painter->num_dirts;
+
+	painter_unlock(painter);
+
+	return num_dirts;
+}
+
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *dirty_rect)
 {
@@ -693,6 +712,25 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		return -ENODEV;
 
 	painter_lock(painter);
+
+	if (painter->was_update_requested) {
+		EVDI_WARN("(dev=%d) Update ready not sent,",
+			  evdi->dev_index);
+		EVDI_WARN(" but pixels are grabbed.\n");
+	}
+
+	if (painter->num_dirts < 0) {
+		err = -EAGAIN;
+		goto err_painter;
+	}
+
+	if (painter->num_dirts > cmd->num_rects)
+		collapse_dirty_rects(&painter->dirty_rects[0],
+				     &painter->num_dirts);
+
+	cmd->num_rects = painter->num_dirts;
+	memcpy(dirty_rects, painter->dirty_rects,
+	       painter->num_dirts * sizeof(painter->dirty_rects[0]));
 
 	efb = painter->scanout_fb;
 
