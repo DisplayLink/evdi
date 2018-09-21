@@ -702,11 +702,21 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	struct evdi_device *evdi = drm_dev->dev_private;
 	struct evdi_painter *painter = evdi->painter;
 	struct drm_evdi_grabpix *cmd = data;
-	struct drm_framebuffer *fb = NULL;
 	struct evdi_framebuffer *efb = NULL;
-	int err = 0;
+	struct drm_clip_rect dirty_rects[MAX_DIRTS];
+	int err;
 
 	EVDI_CHECKPT();
+
+	if (cmd->mode != EVDI_GRABPIX_MODE_DIRTY) {
+		EVDI_ERROR("Unknown command mode\n");
+		return -EINVAL;
+	}
+
+	if (cmd->num_rects < 1) {
+		EVDI_ERROR("No space for clip rects\n");
+		return -EINVAL;
+	}
 
 	if (!painter)
 		return -ENODEV;
@@ -737,77 +747,61 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	if (!efb) {
 		EVDI_ERROR("Scanout buffer not set\n");
 		err = -EAGAIN;
-		goto unlock;
+		goto err_painter;
 	}
 
-	if (painter->was_update_requested) {
-		EVDI_WARN("(dev=%d) Update ready not sent,",
-			  evdi->dev_index);
-		EVDI_WARN(" but pixels are grabbed.\n");
-	}
+	painter->num_dirts = 0;
 
-	fb = &efb->base;
+	drm_framebuffer_reference(&efb->base);
+
+	painter_unlock(painter);
+
 	if (!efb->obj->vmapping) {
 		if (evdi_gem_vmap(efb->obj) == -ENOMEM) {
 			EVDI_ERROR("Failed to map scanout buffer\n");
 			err = -EFAULT;
-			goto unlock;
+			goto err_fb;
 		}
 		if (!efb->obj->vmapping) {
 			EVDI_ERROR("Inexistent vmapping\n");
 			err = -EFAULT;
-			goto unlock;
+			goto err_fb;
 		}
 	}
 
-	if (cmd->buf_width != fb->width ||
-		cmd->buf_height != fb->height) {
+	if (cmd->buf_width != efb->base.width ||
+		cmd->buf_height != efb->base.height) {
 		EVDI_ERROR("Invalid buffer dimension\n");
 		err = -EINVAL;
-		goto unlock;
+		goto err_fb;
 	}
 
-	if (cmd->num_rects < 1) {
-		EVDI_ERROR("No space for clip rects\n");
-		err = -EINVAL;
-		goto unlock;
+	if (copy_to_user(cmd->rects, dirty_rects,
+		cmd->num_rects * sizeof(cmd->rects[0]))) {
+		err = -EFAULT;
+		goto err_fb;
 	}
 
-	if (cmd->mode == EVDI_GRABPIX_MODE_DIRTY) {
-		if (painter->num_dirts < 0) {
-			err = -EAGAIN;
-			goto unlock;
-		}
-		merge_dirty_rects(&painter->dirty_rects[0],
-				  &painter->num_dirts);
-		if (painter->num_dirts > cmd->num_rects)
-			collapse_dirty_rects(&painter->dirty_rects[0],
-						 &painter->num_dirts);
+	err = copy_primary_pixels(efb,
+				  cmd->buffer,
+				  cmd->buf_byte_stride,
+				  cmd->num_rects,
+				  dirty_rects,
+				  cmd->buf_width,
+				  cmd->buf_height);
+	if (err == 0)
+		copy_cursor_pixels(efb,
+				   cmd->buffer,
+				   cmd->buf_byte_stride,
+				   evdi->cursor);
 
-		cmd->num_rects = painter->num_dirts;
+err_fb:
+	drm_framebuffer_unreference(&efb->base);
 
-		if (copy_to_user(cmd->rects, painter->dirty_rects,
-			cmd->num_rects * sizeof(cmd->rects[0])))
-			err = -EFAULT;
-		if (err == 0)
-			err = copy_primary_pixels(efb,
-						  cmd->buffer,
-						  cmd->buf_byte_stride,
-						  painter->num_dirts,
-						  painter->dirty_rects,
-						  cmd->buf_width,
-						  cmd->buf_height);
-		if (err == 0)
-			copy_cursor_pixels(efb,
-					   cmd->buffer,
-					   cmd->buf_byte_stride,
-					   evdi->cursor);
+	return err;
 
-		painter->num_dirts = 0;
-	}
-unlock:
+err_painter:
 	painter_unlock(painter);
-
 	return err;
 }
 
