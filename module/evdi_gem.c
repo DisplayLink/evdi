@@ -321,7 +321,9 @@ struct evdi_drm_dmabuf_attachment {
 };
 
 static int evdi_attach_dma_buf(__always_unused struct dma_buf *dmabuf,
+#if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
 			       __always_unused struct device *dev,
+#endif
 			       struct dma_buf_attachment *attach)
 {
 	struct evdi_drm_dmabuf_attachment *evdi_attach;
@@ -434,6 +436,7 @@ static void evdi_unmap_dma_buf(
 {
 }
 
+#if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
 static void *evdi_dmabuf_kmap(__always_unused struct dma_buf *dma_buf,
 			__always_unused unsigned long page_num)
 {
@@ -459,6 +462,7 @@ static void evdi_dmabuf_kunmap_atomic(
 			__always_unused void *addr)
 {
 }
+#endif
 
 static int evdi_dmabuf_mmap(__always_unused struct dma_buf *dma_buf,
 			__always_unused struct vm_area_struct *vma)
@@ -477,7 +481,11 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.kmap_atomic = evdi_dmabuf_kmap_atomic,
 	.kunmap = evdi_dmabuf_kunmap,
 	.kunmap_atomic = evdi_dmabuf_kunmap_atomic,
-#else
+#elif KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
+	/*
+	 * map became optional and {map,unmap}_atomic were removed, so
+	 * skip all those ops under 4.19+
+	 */
 	.map = evdi_dmabuf_kmap,
 	.map_atomic = evdi_dmabuf_kmap_atomic,
 	.unmap = evdi_dmabuf_kunmap,

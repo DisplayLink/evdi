@@ -23,6 +23,13 @@
  * all EVDI appear to have a DVI-D
  */
 
+#if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
+#define drm_connector_update_edid_property \
+			drm_mode_connector_update_edid_property
+#define drm_connector_attach_encoder \
+			drm_mode_connector_attach_encoder
+#endif
+
 static int evdi_get_modes(struct drm_connector *connector)
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
@@ -32,11 +39,11 @@ static int evdi_get_modes(struct drm_connector *connector)
 	edid = (struct edid *)evdi_painter_get_edid_copy(evdi);
 
 	if (!edid) {
-		drm_mode_connector_update_edid_property(connector, NULL);
+		drm_connector_update_edid_property(connector, NULL);
 		return 0;
 	}
 
-	ret = drm_mode_connector_update_edid_property(connector, edid);
+	ret = drm_connector_update_edid_property(connector, edid);
 	if (!ret)
 		drm_add_edid_modes(connector, edid);
 	else
@@ -144,7 +151,7 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 #else
 	drm_sysfs_connector_add(connector);
 #endif
-	drm_mode_connector_attach_encoder(connector, encoder);
+	drm_connector_attach_encoder(connector, encoder);
 
 #if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_object_attach_property(&connector->base,
