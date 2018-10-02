@@ -453,8 +453,8 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	painter_lock(evdi->painter);
 	efb = evdi->painter->scanout_fb;
 	if (!efb) {
-		EVDI_WARN("(dev=%d) Skip clip rect. Scanout buffer not set.\n",
-			  evdi->dev_index);
+		EVDI_DEBUG("(dev=%d) Skip clip rect. Scanout buffer not set.\n",
+			   evdi->dev_index);
 		goto unlock;
 	}
 
