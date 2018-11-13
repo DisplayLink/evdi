@@ -346,8 +346,11 @@ static int open_device(int device)
 
 	fd = wait_for_device(dev);
 
-	if (fd >= 0)
-		do_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL, "drop_master");
+	if (fd >= 0) {
+		const int err = ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
+		if (err == 0)
+			evdi_log("Dropped master on %s", dev);
+	}
 
 	return fd;
 }
