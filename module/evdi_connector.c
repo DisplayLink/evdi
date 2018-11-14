@@ -84,10 +84,12 @@ evdi_detect(struct drm_connector *connector, __always_unused bool force)
 
 	EVDI_CHECKPT();
 	if (evdi_painter_is_connected(evdi)) {
-		EVDI_DEBUG("(dev=%d) Painter is connected\n", evdi->dev_index);
+		EVDI_DEBUG("(dev=%d) poll connector state: connected\n",
+			   evdi->dev_index);
 		return connector_status_connected;
 	}
-	EVDI_DEBUG("(dev=%d) Painter is disconnected\n", evdi->dev_index);
+	EVDI_DEBUG("(dev=%d) poll connector state: disconnected\n",
+		   evdi->dev_index);
 	return connector_status_disconnected;
 }
 
