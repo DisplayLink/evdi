@@ -110,12 +110,26 @@ void evdi_driver_unload(struct drm_device *dev)
 #endif
 }
 
-void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
+static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
 
 	EVDI_CHECKPT();
 	if (evdi)
 		evdi_painter_close(evdi, file);
+}
+
+void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
+{
+	evdi_driver_close(drm_dev, file);
+}
+
+void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
+{
+	struct evdi_device *evdi = drm_dev->dev_private;
+
+	EVDI_DEBUG("(dev=%d) process %d tries to close us, postclose\n",
+		   evdi ? evdi->dev_index : -1, (int)task_pid_nr(current));
+	evdi_driver_close(drm_dev, file);
 }
 

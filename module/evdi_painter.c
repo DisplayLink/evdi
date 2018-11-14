@@ -632,11 +632,6 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	painter_lock(painter);
 
 	if (file != painter->drm_filp) {
-		EVDI_VERBOSE
-		    ("(dev=%d) An unknown connection to %p tries to close us",
-		     evdi->dev_index, file);
-		EVDI_VERBOSE(" - ignoring\n");
-
 		painter_unlock(painter);
 		return -EFAULT;
 	}
@@ -694,6 +689,11 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 		else
 			ret = evdi_painter_disconnect(evdi, file);
 
+		if (ret) {
+			EVDI_WARN("(dev=%d) evdi_painter_disconnect failed,"
+				  "ioctl called by: %d\n",
+				  evdi->dev_index, (int)task_pid_nr(current));
+		}
 		return ret;
 	}
 	EVDI_WARN("Painter does not exist!");

@@ -78,7 +78,8 @@ int evdi_driver_unload(struct drm_device *dev);
 #else
 void evdi_driver_unload(struct drm_device *dev);
 #endif
-void evdi_driver_close(struct drm_device *dev, struct drm_file *file_priv);
+void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
+void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 
 #ifdef CONFIG_COMPAT
 long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
