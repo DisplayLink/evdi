@@ -348,6 +348,7 @@ static int open_device(int device)
 
 	if (fd >= 0) {
 		const int err = ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
+
 		if (err == 0)
 			evdi_log("Dropped master on %s", dev);
 	}
