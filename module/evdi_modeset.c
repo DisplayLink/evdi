@@ -308,6 +308,8 @@ static const struct drm_plane_funcs evdi_plane_funcs = {
 static const uint32_t formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_XBGR8888,
+	DRM_FORMAT_ABGR8888,
 };
 
 static struct drm_plane *evdi_create_plane(
