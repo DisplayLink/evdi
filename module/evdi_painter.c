@@ -755,6 +755,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		goto err_painter;
 	}
 
+	merge_dirty_rects(&painter->dirty_rects[0],
+			  &painter->num_dirts);
 	if (painter->num_dirts > cmd->num_rects)
 		collapse_dirty_rects(&painter->dirty_rects[0],
 				     &painter->num_dirts);
