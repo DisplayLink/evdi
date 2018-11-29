@@ -85,9 +85,11 @@ void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 #endif
 
+#ifdef CONFIG_FB
 int evdi_fbdev_init(struct drm_device *dev);
 void evdi_fbdev_cleanup(struct drm_device *dev);
 void evdi_fbdev_unplug(struct drm_device *dev);
+#endif /* CONFIG_FB */
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
 				struct drm_file *file,
