@@ -191,6 +191,16 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.cursor_move            = evdi_crtc_cursor_move
 };
 
+static void evdi_plane_atomic_disable(
+		struct drm_plane *plane,
+		__always_unused struct drm_plane_state *old_state)
+{
+	struct evdi_device *evdi = plane->dev->dev_private;
+
+	EVDI_CHECKPT();
+	evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_OFF);
+}
+
 static void evdi_plane_atomic_update(struct drm_plane *plane,
 				     struct drm_plane_state *old_state)
 {
@@ -289,6 +299,7 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 }
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
+	.atomic_disable = evdi_plane_atomic_disable,
 	.atomic_update = evdi_plane_atomic_update
 };
 
