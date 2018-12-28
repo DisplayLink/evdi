@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -164,6 +164,8 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
 bool evdi_painter_needs_full_modeset(struct evdi_device *evdi);
+struct drm_clip_rect evdi_painter_framebuffer_size(
+			struct evdi_painter *painter);
 
 int evdi_fb_get_bpp(uint32_t format);
 #endif
