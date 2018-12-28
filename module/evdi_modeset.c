@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -77,20 +77,13 @@ static void evdi_crtc_atomic_flush(
 	evdi_painter_send_update_ready_if_needed(evdi);
 }
 
-static void evdi_crtc_mark_full_screen_dirty(struct evdi_device *evdi,
-					     struct drm_crtc *crtc)
+static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
 {
-	if (crtc && crtc->primary && crtc->primary->fb) {
-		struct drm_clip_rect rect = {
-			0,
-			0,
-			crtc->primary->fb->width,
-			crtc->primary->fb->height
-		};
+	const struct drm_clip_rect rect =
+		evdi_painter_framebuffer_size(evdi->painter);
 
-		evdi_painter_mark_dirty(evdi, &rect);
-		evdi_painter_send_update_ready_if_needed(evdi);
-	}
+	evdi_painter_mark_dirty(evdi, &rect);
+	evdi_painter_send_update_ready_if_needed(evdi);
 }
 
 static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
@@ -146,7 +139,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * or not.
 	 */
 	if (evdi_enable_cursor_blending)
-		evdi_crtc_mark_full_screen_dirty(evdi, crtc);
+		evdi_mark_full_screen_dirty(evdi);
 	else
 		evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
 	return 0;
@@ -157,10 +150,11 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	struct drm_device *dev = crtc->dev;
 	struct evdi_device *evdi = dev->dev_private;
 
+	EVDI_CHECKPT();
 	evdi_cursor_move(evdi->cursor, x, y);
 
 	if (evdi_enable_cursor_blending)
-		evdi_crtc_mark_full_screen_dirty(evdi, crtc);
+		evdi_mark_full_screen_dirty(evdi);
 	else
 		evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
 
