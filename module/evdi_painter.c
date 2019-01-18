@@ -18,6 +18,17 @@
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+static inline void drm_framebuffer_put(struct drm_framebuffer *fb)
+{
+	drm_framebuffer_unreference(fb);
+}
+static inline void drm_framebuffer_get(struct drm_framebuffer *fb)
+{
+	drm_framebuffer_reference(fb);
+}
+#endif
+
 struct evdi_event_cursor_set_pending {
 	struct drm_pending_event base;
 	struct drm_evdi_event_cursor_set cursor_set;
@@ -681,7 +692,7 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	}
 
 	if (painter->scanout_fb) {
-		drm_framebuffer_unreference(&painter->scanout_fb->base);
+		drm_framebuffer_put(&painter->scanout_fb->base);
 		painter->scanout_fb = NULL;
 	}
 
@@ -801,7 +812,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 
 	painter->num_dirts = 0;
 
-	drm_framebuffer_reference(&efb->base);
+	drm_framebuffer_get(&efb->base);
 
 	painter_unlock(painter);
 
@@ -845,7 +856,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				   evdi->cursor);
 
 err_fb:
-	drm_framebuffer_unreference(&efb->base);
+	drm_framebuffer_put(&efb->base);
 
 	return err;
 
@@ -921,7 +932,7 @@ void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
 	struct evdi_framebuffer *oldfb = NULL;
 
 	if (newfb)
-		drm_framebuffer_reference(&newfb->base);
+		drm_framebuffer_get(&newfb->base);
 
 	painter_lock(painter);
 
@@ -931,7 +942,7 @@ void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	if (oldfb)
-		drm_framebuffer_unreference(&oldfb->base);
+		drm_framebuffer_put(&oldfb->base);
 }
 
 bool evdi_painter_needs_full_modeset(struct evdi_device *evdi)

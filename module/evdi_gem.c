@@ -17,6 +17,17 @@
 #include <drm/drm_cache.h>
 #endif
 
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+static inline void drm_gem_object_put(struct drm_gem_object *obj)
+{
+	drm_gem_object_unreference(obj);
+}
+static inline void drm_gem_object_put_unlocked(struct drm_gem_object *obj)
+{
+	drm_gem_object_unreference_unlocked(obj);
+}
+#endif
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -77,7 +88,7 @@ evdi_gem_create(struct drm_file *file,
 		return ret;
 	}
 
-	drm_gem_object_unreference_unlocked(&obj->base);
+	drm_gem_object_put_unlocked(&obj->base);
 	*handle_p = handle;
 	return 0;
 }
@@ -278,7 +289,7 @@ int evdi_gem_mmap(struct drm_file *file,
 	*offset = drm_vma_node_offset_addr(&gobj->base.vma_node);
 
  out:
-	drm_gem_object_unreference(&gobj->base);
+	drm_gem_object_put(&gobj->base);
  unlock:
 	mutex_unlock(&dev->struct_mutex);
 	return ret;
@@ -509,7 +520,13 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 	if (dma_buf->ops == &evdi_dmabuf_ops) {
 		uobj = to_evdi_bo(dma_buf->priv);
 		if (uobj->base.dev == dev) {
+
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+			drm_gem_object_get(&uobj->base);
+#else
 			drm_gem_object_reference(&uobj->base);
+#endif
+
 			return &uobj->base;
 		}
 	}
