@@ -24,6 +24,17 @@
 #include <drm/drm_atomic.h>
 #include "evdi_drv.h"
 
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+static inline void drm_gem_object_put(struct drm_gem_object *obj)
+{
+	drm_gem_object_unreference(obj);
+}
+static inline void drm_gem_object_put_unlocked(struct drm_gem_object *obj)
+{
+	drm_gem_object_unreference_unlocked(obj);
+}
+#endif
+
 struct evdi_fbdev {
 	struct drm_fb_helper helper;
 	struct evdi_framebuffer efb;
@@ -325,7 +336,7 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 
 	EVDI_CHECKPT();
 	if (efb->obj)
-		drm_gem_object_unreference_unlocked(&efb->obj->base);
+		drm_gem_object_put_unlocked(&efb->obj->base);
 
 	drm_framebuffer_cleanup(fb);
 	kfree(efb);
@@ -447,7 +458,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 	return ret;
  out_gfree:
-	drm_gem_object_unreference_unlocked(&efbdev->efb.obj->base);
+	drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
  out:
 	return ret;
 }
@@ -472,7 +483,7 @@ static void evdi_fbdev_destroy(__always_unused struct drm_device *dev,
 	drm_fb_helper_fini(&efbdev->helper);
 	drm_framebuffer_unregister_private(&efbdev->efb.base);
 	drm_framebuffer_cleanup(&efbdev->efb.base);
-	drm_gem_object_unreference_unlocked(&efbdev->efb.obj->base);
+	drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
 }
 
 int evdi_fbdev_init(struct drm_device *dev)
@@ -604,10 +615,10 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 	return &efb->base;
 
  err_no_mem:
-	drm_gem_object_unreference(obj);
+	drm_gem_object_put(obj);
 	return ERR_PTR(-ENOMEM);
  err_inval:
 	kfree(efb);
-	drm_gem_object_unreference(obj);
+	drm_gem_object_put(obj);
 	return ERR_PTR(-EINVAL);
 }

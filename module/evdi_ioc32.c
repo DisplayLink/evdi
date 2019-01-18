@@ -56,13 +56,17 @@ static int compat_evdi_connect(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-	    || __put_user(req32.connected, &request->connected)
-	    || __put_user(req32.dev_index, &request->dev_index)
-	    || __put_user((void __user *)(unsigned long)req32.edid_ptr32,
+#else
+	if (!access_ok(request, sizeof(*request))
+#endif
+		|| __put_user(req32.connected, &request->connected)
+		|| __put_user(req32.dev_index, &request->dev_index)
+		|| __put_user((void __user *)(unsigned long)req32.edid_ptr32,
 			  &request->edid)
-	    || __put_user(req32.edid_length, &request->edid_length)
-	    || __put_user(req32.sku_area_limit, &request->sku_area_limit))
+		|| __put_user(req32.edid_length, &request->edid_length)
+		|| __put_user(req32.sku_area_limit, &request->sku_area_limit))
 		return -EFAULT;
 
 	return drm_ioctl(file, DRM_IOCTL_EVDI_CONNECT,
@@ -80,15 +84,19 @@ static int compat_evdi_grabpix(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-	    || __put_user(req32.mode, &request->mode)
-	    || __put_user(req32.buf_width, &request->buf_width)
-	    || __put_user(req32.buf_height, &request->buf_height)
-	    || __put_user(req32.buf_byte_stride, &request->buf_byte_stride)
-	    || __put_user((void __user *)(unsigned long)req32.buffer_ptr32,
+#else
+	if (!access_ok(request, sizeof(*request))
+#endif
+		|| __put_user(req32.mode, &request->mode)
+		|| __put_user(req32.buf_width, &request->buf_width)
+		|| __put_user(req32.buf_height, &request->buf_height)
+		|| __put_user(req32.buf_byte_stride, &request->buf_byte_stride)
+		|| __put_user((void __user *)(unsigned long)req32.buffer_ptr32,
 			  &request->buffer)
-	    || __put_user(req32.num_rects, &request->num_rects)
-	    || __put_user((void __user *)(unsigned long)req32.rects_ptr32,
+		|| __put_user(req32.num_rects, &request->num_rects)
+		|| __put_user((void __user *)(unsigned long)req32.rects_ptr32,
 			  &request->rects))
 		return -EFAULT;
 

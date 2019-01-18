@@ -189,7 +189,11 @@ static int evdi_platform_probe(struct platform_device *pdev)
 	return 0;
 
 err_free:
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+	drm_dev_put(dev);
+#else
 	drm_dev_unref(dev);
+#endif
 	return ret;
 }
 #else
