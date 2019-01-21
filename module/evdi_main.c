@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -136,8 +136,10 @@ void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
 
-	EVDI_DEBUG("(dev=%d) process %d tries to close us, postclose\n",
-		   evdi ? evdi->dev_index : -1, (int)task_pid_nr(current));
+	EVDI_DEBUG("(dev=%d) Process tries to close us, postclose\n",
+		   evdi ? evdi->dev_index : -1);
+	evdi_log_process();
+
 	evdi_driver_close(drm_dev, file);
 }
 
