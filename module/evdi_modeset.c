@@ -190,25 +190,33 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.cursor_move            = evdi_crtc_cursor_move
 };
 
-static void evdi_plane_atomic_disable(
-		struct drm_plane *plane,
-		__always_unused struct drm_plane_state *old_state)
-{
-	struct evdi_device *evdi = plane->dev->dev_private;
-
-	EVDI_CHECKPT();
-	evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_OFF);
-}
-
 static void evdi_plane_atomic_update(struct drm_plane *plane,
 				     struct drm_plane_state *old_state)
 {
-	if (plane && plane->state && plane->state->fb &&
-	    plane->dev && plane->dev->dev_private) {
-		struct drm_plane_state *state = plane->state;
+	struct drm_plane_state *state;
+	struct evdi_device *evdi;
+
+	if (!plane || !plane->state) {
+		EVDI_WARN("Plane state is null\n");
+		return;
+	}
+
+	if (!plane->dev || !plane->dev->dev_private) {
+		EVDI_WARN("Plane device is null\n");
+		return;
+	}
+
+	state = plane->state;
+	evdi = plane->dev->dev_private;
+
+	if (!old_state->crtc && state->crtc)
+		evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_ON);
+	else if (old_state->crtc && !state->crtc)
+		evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_OFF);
+
+	if (state->fb) {
 		struct drm_framebuffer *fb = state->fb;
 		struct evdi_framebuffer *efb = to_evdi_fb(fb);
-		struct evdi_device *evdi = plane->dev->dev_private;
 
 		const struct drm_clip_rect fullscreen_rect = {
 			0, 0, fb->width, fb->height
@@ -298,7 +306,6 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 }
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
-	.atomic_disable = evdi_plane_atomic_disable,
 	.atomic_update = evdi_plane_atomic_update
 };
 
