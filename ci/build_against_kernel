@@ -3,144 +3,64 @@
 set -e
 set -u
 
-usage() {
+if [ "${#}" = "0" ]; then
   cat << EOF
+Usage: ${0} [all|KVER ...]
 
-SYNOPSIS
-    ${0} [--help] [--clean|--cached|--ci] [--tmp=<DIR>] [all|KVER ...]
-
-OPTIONS
-    --clean       Default; Get clean version of tar.gz.
-    --cached      Use previously downloaded sources.
-    --ci          Use previously extracted sources.
-
-    --tmp=<DIR>   Subdirectory to store kernel sources.
-                  Default is 'tmp'.
-
-    --help        Show this message.
-
-PARAMETERS
-    all           Build against all KVER specified in '.travis.yml' file.
-    KVER ...      List of kernel versions to build against (e.g. '3.19 4.10').
-
-EXAMPLES
-    ${0} 4.12
-                  Build against newly downloaded sources of 4.12
-
-    ${0} --ci master
-                  Build against already extracted sources of master
-
-    ${0} --ci master --cached 4.11
-                  Build against already extracted sources of master and
-                  clean sources of previously cached tar.gz of 4.11
+where:
+  all       build against all KVER specified in '.travis.yml' file
+  KVER ...  list of kernel versions to build against (e.g. 3.19)
 EOF
-}
+  exit 123
+fi
 
 get_versions_from_file() { # file
   local PREFIX="^  \- KVER="
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
-get_sources() { ( # PACKAGE SOURCES
-  local PACKAGE="${1}.tar.gz"
-  local SOURCES="${2}"
+get_master_sources() {
+  wget -O master.tar.gz https://github.com/torvalds/linux/tarball/master
+  tar -xzf master.tar.gz
+  rm master.tar.gz
 
-  if [ ! -d "${TMP}" ]; then
-    mkdir "${TMP}"
-  fi
-
-  cd "${TMP}"
-
-  if [ "${MODE}" = "CLEAN" ]; then
-    rm -f "${PACKAGE}"
-  fi
-
-  if [ ! -e "${PACKAGE}" ]; then
-    wget -O "${PACKAGE}" "https://github.com/torvalds/linux/archive/${PACKAGE}"
-  fi
-
-  if [ "${MODE}" = "CLEAN" ] || [ "${MODE}" = "CACHED" ]; then
-    rm -rf "${SOURCES}"
-  fi
-
-  if [ ! -e "${SOURCES}" ]; then
-    tar -xzf "${PACKAGE}"
-  fi
-
-  echo "$(pwd)/${SOURCES}"
-) }
-
-prepare_kernel() { ( # SRC_DIR
-    cd "${1}"
-    make olddefconfig
-    make prepare
-    make scripts
-) }
-
-build_one() { # KVER
-  local KVER=${1}
-
-  echo "Running ${MODE} build for ${KVER} in ${TMP}"
-
-  local src_dir
-  if [ "${KVER}" = "master" ]; then
-    src_dir=$(get_sources "master" "linux-master")
-  else
-    src_dir=$(get_sources "v${KVER}" "linux-${KVER}")
-  fi
-
-  prepare_kernel "${src_dir}"
-  make KDIR="${src_dir}" CC="${CC:-gcc}"
+  echo $(pwd)/torvalds-linux-*
 }
 
-MODE="CLEAN"
-TMP="tmp"
-while [[ $# -gt 0 ]]
-do
-  case ${1} in
-    --clean)
-      MODE="CLEAN"
-      ;;
+get_tagged_sources() { # version
+  wget -N "https://github.com/torvalds/linux/archive/v${1}.tar.gz"
+  tar -xzf "v${1}.tar.gz"
+  rm "v${1}.tar.gz"
 
-    --cached)
-      MODE="CACHED"
-      ;;
+  echo "$(pwd)/linux-${1}"
+}
 
-    --ci)
-      MODE="CI"
-      ;;
+prepare_kernel() { # srcDir
+  oldDir=$(pwd)
 
-    --tmp)
-      shift
-      TMP="${1}"
-      ;;
+  cd "${1}"
+  make olddefconfig
+  make prepare
+  make scripts
 
-    --tmp=*)
-      TMP="${1#*=}"
-      ;;
+  cd "${oldDir}"
+}
 
-    -h|--help)
-      usage
-      exit 0
-      ;;
+if [ "${1}" = "all" ]; then
+  KVERS="$(get_versions_from_file '.travis.yml')"
+else
+  KVERS="${@}"
+fi
 
-    -*)
-      echo "Unkown option '${1}'" >&2
-      usage >&2
-      exit 1
-      ;;
+for KVER in ${KVERS}; do
+  if [ "${KVER}" = "master" ]; then
+    srcDir=$(get_master_sources)
+  else
+    srcDir=$(get_tagged_sources "${KVER}")
+  fi
 
-    all)
-      for KVER in $(get_versions_from_file '.travis.yml'); do
-        build_one "${KVER}"
-      done
-      ;;
+  prepare_kernel "${srcDir}"
+  make KDIR="${srcDir}" CC="${CC:-gcc}"
 
-    *)
-      build_one "${1}"
-      ;;
-  esac
-
-  shift
+  rm -r "${srcDir}"
 done
-
