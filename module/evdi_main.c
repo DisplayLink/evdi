@@ -71,11 +71,7 @@ err:
 	return ret;
 }
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 int evdi_driver_unload(struct drm_device *dev)
-#else
-void evdi_driver_unload(struct drm_device *dev)
-#endif
 {
 	struct evdi_device *evdi = dev->dev_private;
 
@@ -100,10 +96,7 @@ void evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
-
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	return 0;
-#endif
 }
 
 void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
