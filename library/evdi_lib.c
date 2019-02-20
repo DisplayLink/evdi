@@ -8,25 +8,24 @@
 #include "evdi_drm.h"
 #include "evdi_lib.h"
 #include <assert.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <poll.h>
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 // ********************* Private part **************************
 
 #define SLEEP_INTERVAL_US   100000L
 #define OPEN_TOTAL_WAIT_US  5000000L
 #define MAX_FILEPATH        256
-#define MAX_DIRTS           16
+#define MAX_DIRTS       16
 
 struct evdi_frame_buffer_node {
 	struct evdi_buffer frame_buffer;
@@ -423,135 +422,14 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
 
 static struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
 {
-	struct evdi_mode mode;
+	struct evdi_mode e;
 
-	mode.width = event->hdisplay;
-	mode.height = event->vdisplay;
-	mode.refresh_rate = event->vrefresh;
-	mode.bits_per_pixel = event->bits_per_pixel;
-	mode.pixel_format = event->pixel_format;
-
-	return mode;
-}
-
-uint64_t evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle)
-{
-	struct drm_mode_map_dumb map_dumb = { 0 };
-
-	map_dumb.handle = handle;
-	do_ioctl(ehandle->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb,
-		 "DRM_MODE_MAP_DUMB");
-
-	return map_dumb.offset;
-}
-
-struct evdi_cursor_set to_evdi_cursor_set(
-		evdi_handle handle, struct drm_evdi_event_cursor_set *event)
-{
-	struct evdi_cursor_set cursor_set;
-
-	cursor_set.hot_x = event->hot_x;
-	cursor_set.hot_y = event->hot_y;
-	cursor_set.width =  event->width;
-	cursor_set.height = event->height;
-	cursor_set.enabled = event->enabled;
-	cursor_set.buffer_length = event->buffer_length;
-	cursor_set.buffer = NULL;
-	cursor_set.buffer_format = event->buffer_format;
-
-	if (event->enabled) {
-		size_t size = event->buffer_length;
-		uint64_t offset =
-			evdi_get_dumb_offset(handle, event->buffer_handle);
-		void *ptr = mmap(0, size, PROT_READ,
-				 MAP_SHARED, handle->fd, offset);
-
-		if (ptr != MAP_FAILED) {
-			cursor_set.buffer = malloc(size);
-			memcpy(cursor_set.buffer, ptr, size);
-			munmap(ptr, size);
-		}
-	}
-
-	return cursor_set;
-}
-
-struct evdi_cursor_move to_evdi_cursor_move(
-		struct drm_evdi_event_cursor_move *event)
-{
-	struct evdi_cursor_move cursor_move;
-
-	cursor_move.x = event->x;
-	cursor_move.y = event->y;
-
-	return cursor_move;
-}
-
-static void evdi_handle_event(evdi_handle handle,
-			      struct evdi_event_context *evtctx,
-			      struct drm_event *e)
-{
-	switch (e->type) {
-	case DRM_EVDI_EVENT_UPDATE_READY:
-		if (evtctx->update_ready_handler)
-			evtctx->update_ready_handler(handle->bufferToUpdate,
-						     evtctx->user_data);
-		break;
-
-	case DRM_EVDI_EVENT_DPMS:
-		if (evtctx->dpms_handler) {
-			struct drm_evdi_event_dpms *event =
-				(struct drm_evdi_event_dpms *) e;
-
-			evtctx->dpms_handler(event->mode,
-					     evtctx->user_data);
-		}
-		break;
-
-	case DRM_EVDI_EVENT_MODE_CHANGED:
-		if (evtctx->mode_changed_handler) {
-			struct drm_evdi_event_mode_changed *event =
-				(struct drm_evdi_event_mode_changed *) e;
-
-			evtctx->mode_changed_handler(to_evdi_mode(event),
-						     evtctx->user_data);
-		}
-		break;
-
-	case DRM_EVDI_EVENT_CRTC_STATE:
-		if (evtctx->crtc_state_handler) {
-			struct drm_evdi_event_crtc_state *event =
-				(struct drm_evdi_event_crtc_state *) e;
-
-			evtctx->crtc_state_handler(event->state,
-						   evtctx->user_data);
-		}
-		break;
-
-	case DRM_EVDI_EVENT_CURSOR_SET:
-		if (evtctx->cursor_set_handler) {
-			struct drm_evdi_event_cursor_set *event =
-				(struct drm_evdi_event_cursor_set *) e;
-
-			evtctx->cursor_set_handler(to_evdi_cursor_set(handle,
-								      event),
-						   evtctx->user_data);
-		}
-		break;
-
-	case DRM_EVDI_EVENT_CURSOR_MOVE:
-		if (evtctx->cursor_move_handler) {
-			struct drm_evdi_event_cursor_move *event =
-				(struct drm_evdi_event_cursor_move *) e;
-
-			evtctx->cursor_move_handler(to_evdi_cursor_move(event),
-						    evtctx->user_data);
-		}
-		break;
-
-	default:
-		printf("Warning: Unhandled event\n");
-	}
+	e.width = event->hdisplay;
+	e.height = event->vdisplay;
+	e.refresh_rate = event->vrefresh;
+	e.bits_per_pixel =	event->bits_per_pixel;
+	e.pixel_format = event->pixel_format;
+	return e;
 }
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx)
@@ -561,15 +439,49 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx)
 
 	int bytesRead = read(handle->fd, buffer, sizeof(buffer));
 
-	if (!evtctx) {
-		printf("Error: Event context is null!\n");
-		return;
-	}
-
 	while (i < bytesRead) {
 		struct drm_event *e = (struct drm_event *) &buffer[i];
 
-		evdi_handle_event(handle, evtctx, e);
+		switch (e->type) {
+		case DRM_EVDI_EVENT_UPDATE_READY:
+			if (evtctx && evtctx->update_ready_handler)
+				evtctx->update_ready_handler(
+					handle->bufferToUpdate,
+					evtctx->user_data);
+			break;
+		case DRM_EVDI_EVENT_DPMS:
+			if (evtctx && evtctx->dpms_handler) {
+				struct drm_evdi_event_dpms *dpms =
+					(struct drm_evdi_event_dpms *) e;
+
+				evtctx->dpms_handler(dpms->mode,
+						     evtctx->user_data);
+			}
+			break;
+		case DRM_EVDI_EVENT_MODE_CHANGED:
+			{
+			struct drm_evdi_event_mode_changed *event =
+				(struct drm_evdi_event_mode_changed *) e;
+
+			if (evtctx && evtctx->mode_changed_handler)
+				evtctx->mode_changed_handler(
+					to_evdi_mode(event),
+					evtctx->user_data);
+
+			break;
+			}
+		case DRM_EVDI_EVENT_CRTC_STATE:
+			{
+			if (evtctx && evtctx->crtc_state_handler) {
+				struct drm_evdi_event_crtc_state *event =
+					(struct drm_evdi_event_crtc_state *)e;
+
+				evtctx->crtc_state_handler(event->state,
+							   evtctx->user_data);
+			}
+			break;
+			}
+		} // switch
 
 		i += e->length;
 	}
