@@ -89,6 +89,7 @@ int evdi_gem_fault(struct vm_fault *vmf)
 int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 #endif
+
 	struct evdi_gem_object *obj = to_evdi_bo(vma->vm_private_data);
 	struct page *page;
 	unsigned int page_offset;
@@ -105,11 +106,13 @@ int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		return VM_FAULT_SIGBUS;
 
 	page = obj->pages[page_offset];
+
 #if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	ret = vm_insert_page(vma, vmf->address, page);
 #else
 	ret = vm_insert_page(vma, (unsigned long)vmf->virtual_address, page);
 #endif
+
 	switch (ret) {
 	case -EAGAIN:
 	case 0:
@@ -229,11 +232,13 @@ int evdi_gem_mmap(struct drm_file *file,
 	int ret = 0;
 
 	mutex_lock(&dev->struct_mutex);
+
 #if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 	obj = drm_gem_object_lookup(dev, file, handle);
 #else
 	obj = drm_gem_object_lookup(file, handle);
 #endif
+
 	if (obj == NULL) {
 		ret = -ENOENT;
 		goto unlock;
@@ -406,7 +411,7 @@ static void evdi_unmap_dma_buf(
 }
 
 static void *evdi_dmabuf_kmap(__always_unused struct dma_buf *dma_buf,
-			__always_unused unsigned long page_num)
+			      __always_unused unsigned long page_num)
 {
 	return NULL;
 }
@@ -432,7 +437,7 @@ static void evdi_dmabuf_kunmap_atomic(
 }
 
 static int evdi_dmabuf_mmap(__always_unused struct dma_buf *dma_buf,
-			__always_unused struct vm_area_struct *vma)
+			    __always_unused struct vm_area_struct *vma)
 {
 	return -EINVAL;
 }

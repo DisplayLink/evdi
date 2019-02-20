@@ -2,7 +2,7 @@
 # Copyright (c) 2015 DisplayLink (UK) Ltd.
 #
 
-FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes
+FLAGS=-Werror -Wextra -Wall
 
 all:
 	CFLAGS="$(FLAGS)" $(MAKE) -C module $(MFLAGS)

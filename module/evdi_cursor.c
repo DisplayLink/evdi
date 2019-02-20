@@ -2,20 +2,14 @@
  * evdi_cursor.c
  *
  * Copyright (c) 2016 The Chromium OS Authors
- * Copyright (c) 2016 - 2017 DisplayLink (UK) Ltd.
+ * Copyright (c) 2016 DisplayLink (UK) Ltd.
  *
- * This program is free software; you can redistribute  it and/or modify it
- * under  the terms of  the GNU General  Public License as published by the
- * Free Software Foundation;  either version 2 of the  License, or (at your
- * option) any later version.
+ * Based on parts on udlfb.c:
+ * Copyright (C) 2009 its respective authors
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * This file is subject to the terms and conditions of the GNU General Public
+ * License v2. See the file COPYING in the main directory of this archive for
+ * more details.
  */
 
 #include <drm/drmP.h>
@@ -51,8 +45,7 @@ int evdi_cursor_alloc(struct evdi_cursor **cursor)
 
 void evdi_cursor_free(struct evdi_cursor *cursor)
 {
-	if (WARN_ON(!cursor))
-		return;
+	BUG_ON(!cursor);
 	kfree(cursor);
 }
 
@@ -99,11 +92,13 @@ int evdi_cursor_set(__maybe_unused struct drm_crtc *crtc, struct drm_file *file,
 					EVDI_CURSOR_W, EVDI_CURSOR_H);
 			return -EINVAL;
 		}
+
 #if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 		obj = drm_gem_object_lookup(crtc->dev, file, handle);
 #else
 		obj = drm_gem_object_lookup(file, handle);
 #endif
+
 		if (!obj) {
 			DRM_ERROR("failed to lookup gem object.\n");
 			return -EINVAL;
