@@ -42,6 +42,7 @@ prepare_kernel() { # srcDir
   make olddefconfig
   make prepare
   make scripts
+  make kernel
 
   cd "${oldDir}"
 }
