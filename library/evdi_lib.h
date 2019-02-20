@@ -80,7 +80,7 @@ struct evdi_event_context {
 	void (*crtc_state_handler)(int state, void *user_data);
 	void (*cursor_set_handler)(struct evdi_cursor_set cursor_set,
 				   void *user_data);
-	void (*cursor_move_handler)(struct evdi_cursor_move cursor_move,
+	void (*cursor_move_handler)(struct evdi_cursor_move cursor_set,
 				    void *user_data);
 	void *user_data;
 };
