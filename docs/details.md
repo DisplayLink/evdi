@@ -4,24 +4,18 @@
 
 ## Functions by group
 
-#### Versioning
-    #!c
-    evdi_get_lib_version(struct evdi_lib_version device);
-
-Function returns library version. 
-It uses semantic versioning to mark compatibility changes.
+### Versioning
+Library uses semantic versioning to mark compatibility changes.
 Version consists of 3 components formatted as MAJOR.MINOR.PATCH
 
  * `MAJOR` number is changed for incompatibile API changes
  * `MINOR` number is changed for backwards-compatible changes
  * `PATCH` number is changed for backwards-compatibile bug fixes
+#
+    #!c
+    evdi_get_lib_version(struct evdi_lib_version device);
 
-#### Module parameters
-
-User can modify driver behaviour by its parameters that can be set at module load time or changed during runtime.
-
- * `enable_cursor_blending` Enables cursor compositing on user supplied framebuffer via `EVDI_GRABPIX` ioctl (default: true)
-
+Function returns library version.
 
 ### EVDI nodes
 
@@ -200,21 +194,6 @@ See [evdi_mode](details.md#evdi_mode) for description of the structure.
 This notification is sent when an update for a buffer, that had been earlier requested is ready to be consumed.
 The buffer number to be updated is `buffer_to_be_updated`.
 
-#### Cursor change notification
-
-	#!c
-	void (*cursor_set_handler)(struct evdi_cursor_set cursor_set, void* user_data);
-
-This notification is sent for an update of cursor buffer or shape. It is also raised when cursor is enabled or disabled.
-Such situation happens when cursor is moved on and off the screen respectively.
-
-#### Cursor move notification
-
-	#!c
-	void (*cursor_move_handler)(struct evdi_cursor_move cursor_move, void* user_data);
-
-This notification is sent for a cursor position change. It is raised only when cursor is positioned on virtual screen.
-
 #### CRTC state change
 
 	#!c
@@ -303,42 +282,3 @@ See [Events and handlers](details.md#events-and-handlers) for more information.
 
 The `evdi_lib_version` structure contains libevdi version.
 Version can be used to check compatibility between library and a client application.
-
-### evdi_cursor_set
-
-    #!c
-	struct evdi_cursor_set {
-		int32_t hot_x;
-		int32_t hot_y;
-		uint32_t width;
-		uint32_t height;
-		uint8_t enabled;
-		uint32_t buffer_length;
-		uint32_t *buffer;
-		uint32_t pixel_format;
-		uint32_t stride;
-	};
-
-The `evdi_cursor_set` structure contains cursor state information. `hot_x` and `hot_y` define hotspot information.
-`enabled` parameter is true when cursor bitmap is available and cursor is visible on virtual display.
-Parameters `width` and `height` define size of the cursor bitmap stored in a `buffer` memory area of size `buffer_length`.
-
-!!! warning
-	Event handler or library user has to free buffer memory when it is not using it.
-
-Remaining `stride` and `pixel_format` describe data organization in the buffer. `stride` is a size of a single line in a buffer.
-Usually it is width of the cursor multiplied by bytes per pixel value plus additional extra padding. It ensures proper alignment of subsequent pixel rows.
-Pixel encoding is described by FourCC code in `pixel_format` field. Usually it is `ARGB_8888` however the value is system dependent and might change in the future.
-
-### evdi_cursor_move
-
-    #!c
-	struct evdi_cursor_move {
-		int32_t x;
-		int32_t y;
-	};
-
-The `evdi_cursor_move` structure contains current cursor position.
-It is defined as top left corner of the cursor bitmap.
-
-
