@@ -1,6 +1,6 @@
 sudo: false
 
-language: c
+language: cpp
 
 env:
   - KVER=3.16
@@ -18,7 +18,6 @@ env:
   - KVER=4.8
   - KVER=4.9
   - KVER=4.10
-  - KVER=4.11
   - KVER=master
 
 matrix:
