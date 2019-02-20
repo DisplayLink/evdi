@@ -78,7 +78,6 @@ struct drm_evdi_event_cursor_set {
 	uint32_t buffer_handle;
 	uint32_t buffer_length;
 	uint32_t pixel_format;
-	uint32_t stride;
 };
 
 struct drm_evdi_event_cursor_move {
