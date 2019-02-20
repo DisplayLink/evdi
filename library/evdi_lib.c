@@ -42,8 +42,7 @@ static int do_ioctl(int fd, unsigned int request, void *data, const char *msg)
 	const int err = ioctl(fd, request, data);
 
 	if (err < 0)
-		printf("[libevdi] ioctl: %s error: %s\n", msg,
-		       strerror(errno));
+		printf("[libevdi] ioctl: %s error=%d\n", msg, err);
 	return err;
 }
 
@@ -235,12 +234,12 @@ static int process_opened_files(const char *pid, const char *device_file_path)
 	return result;
 }
 
-static int device_has_master(const char *device_file_path, int flags)
+static int device_has_master(const char *device_file_path)
 {
 	pid_t myself = getpid();
 	DIR *proc_dir;
 	struct dirent *proc_entry;
-	int result = -1;
+	int result = 0;
 
 	proc_dir = opendir("/proc");
 	if (proc_dir == NULL)
@@ -270,43 +269,21 @@ static int device_has_master(const char *device_file_path, int flags)
 	return result;
 }
 
-static int wait_for(int (*predicate)(const char*, int),
-		    const char *device_path,
-		    int flags)
-{
-	const unsigned int TOTAL_WAIT_US = 5000000L;
-	const unsigned int SLEEP_INTERVAL_US = 100000L;
-
-	unsigned int cnt = TOTAL_WAIT_US / SLEEP_INTERVAL_US;
-
-	int result = 0;
-
-	while ((result = predicate(device_path, flags)) < 0 && cnt--)
-		usleep(SLEEP_INTERVAL_US);
-
-	return result;
-}
-
 static void wait_for_master(const char *device_path)
 {
-	if (wait_for(device_has_master, device_path, 0) < 0)
-		printf("[libevdi] Wait for master timed out\n");
-}
+	const unsigned int SLEEP_INTERVAL_US = 100000L;
+	const unsigned int OPEN_TOTAL_WAIT_US = 5000000L;
 
-static int wait_for_device(const char *device_path)
-{
-	int fd = wait_for(open, device_path, O_RDWR);
+	unsigned int cnt = OPEN_TOTAL_WAIT_US / SLEEP_INTERVAL_US;
 
-	if (fd < 0)
-		printf("[libevdi] Failed to open a device: %s\n",
-		       strerror(errno));
-	return fd;
+	while (!device_has_master(device_path) && cnt--)
+		usleep(SLEEP_INTERVAL_US);
 }
 
 static int open_device(int device)
 {
 	char dev[PATH_MAX] = "";
-	int fd = 0;
+	int dev_fd = 0;
 
 	snprintf(dev, PATH_MAX, "/dev/dri/card%d", device);
 
@@ -314,12 +291,11 @@ static int open_device(int device)
 	wait_for_master(dev);
 #endif
 
-	fd = wait_for_device(dev);
+	dev_fd = open(dev, O_RDWR);
+	if (dev_fd >= 0)
+		do_ioctl(dev_fd, DRM_IOCTL_DROP_MASTER, NULL, "drop_master");
 
-	if (fd >= 0)
-		do_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL, "drop_master");
-
-	return fd;
+	return dev_fd;
 }
 
 // ********************* Public part **************************
