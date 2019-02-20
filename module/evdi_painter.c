@@ -7,8 +7,6 @@
  * more details.
  */
 
-#include "linux/thread_info.h"
-#include "linux/mm.h"
 #include <drm/drmP.h>
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
@@ -566,8 +564,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	EVDI_CHECKPT();
 
-	EVDI_DEBUG("(dev=%d) process %d trying to connect\n", evdi->dev_index,
-		   (int)task_pid_nr(current));
 	if (edid_length < sizeof(struct edid)) {
 		EVDI_ERROR("Edid length too small\n");
 		return -EINVAL;
