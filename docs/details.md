@@ -134,7 +134,7 @@ Requests an update for a buffer with a given `bufferId`. The buffer must be alre
 **Arguments**:
 
 * `handle` to an opened device.
-* `bufferId` is an identifier for a buffer that should be updated.
+* `bufferId` is an indentifier for a buffer that should be updated.
 
 **Return value:**
 

@@ -2,7 +2,7 @@
 
 # Quick Start
 
-This section explains how to write a basic client for EVDI. Details of API calls are omitted here for brevity.
+This section explains how to write a basic client for EVDI. Details of API calls are ommitted here for brevity.
 
 # Typical application
 
@@ -56,7 +56,7 @@ The library itself does _not_ allocate any memory for buffers - this is to allow
 Therefore, before you request screen updates for the screens you're managing, an appropriate amount of memory must be allocated to hold screen data within your application.
 The application can register as many buffers as you like, and subsequent update requests can refer to any buffer that was previously registered.
 
-Allocated memory is made available for EVDI library to use by calling `evdi_register_buffer`. Symmetrically, `evdi_unregister_buffer` is used to tell the library not to use the buffer anymore.
+Allocated memory is made available for EVDI library to use by calling `evdi_register_buffer`. Symetrically, `evdi_unregister_buffer` is used to tell the library not to use the buffer anymore.
 
 ## Cursor
 

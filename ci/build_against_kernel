@@ -126,7 +126,7 @@ do
       ;;
 
     -*)
-      echo "Unknown option '${1}'" >&2
+      echo "Unkown option '${1}'" >&2
       usage >&2
       exit 1
       ;;
