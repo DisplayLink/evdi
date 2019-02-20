@@ -8,7 +8,7 @@
     #!c
     evdi_get_lib_version(struct evdi_lib_version device);
 
-Function returns library version.
+Function returns library version. 
 It uses semantic versioning to mark compatibility changes.
 Version consists of 3 components formatted as MAJOR.MINOR.PATCH
 
@@ -222,15 +222,6 @@ This notification is sent for a cursor position change. It is raised only when c
 
 Sent when DRM's CRTC changes state. The `state` is a value that's forwarded from the kernel.
 
-### Logging
-
-Client can register their own callback to be used for logging instead of default `printf`.
-
-	#!c
-	void evdi_set_logging(struct evdi_logging evdi_logging);
-
-For more on argument see [struct evdi_logging](details.md#Types).
-
 ## Types
 
 ### evdi_handle
@@ -349,20 +340,5 @@ Pixel encoding is described by FourCC code in `pixel_format` field. Usually it i
 
 The `evdi_cursor_move` structure contains current cursor position.
 It is defined as top left corner of the cursor bitmap.
-
-###  evdi_logging
-
-	#!c
-	struct evdi_logging {
-		void (*function)(void *user_data, const char *fmt, ...);
-		void *user_data;
-	};
-
-Structure contains two fields:
-* `function` which is a pointer to the actuall callback. The `fmt` and `...` are the same as in case of `printf`.
-* `user_data` a pointer provided by the client when registering callback
-
-!!! note
-    By setting `function` to NULL libevdi will switch to default behaviour of using `printf`.
 
 

@@ -58,7 +58,7 @@ The application can register as many buffers as you like, and subsequent update 
 
 Allocated memory is made available for EVDI library to use by calling `evdi_register_buffer`. Symetrically, `evdi_unregister_buffer` is used to tell the library not to use the buffer anymore.
 
-## Cursor
+## Cursor 
 
 Mouse cursor is an important part of the desktop. Because of this, evdi provides special control over it.
 
@@ -98,7 +98,3 @@ The notifications your application can (and should) be handling, are:
 You will start receiving first notifications from the kernel module right after connecting to EVDI.
 Your application should use this information before you ask for screen updates to make sure the buffers are the right size.
 
-## Logging
-
-By default libevdi uses `printf` to print messages to stdout. Client application can provide its own callback which will be used instead by calling `evdi_set_logging`.
-The same function can be used to switch back to default behaviour (by setting callback to `NULL`);
