@@ -689,7 +689,8 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 			ret = evdi_painter_disconnect(evdi, file);
 
 		if (ret) {
-			EVDI_WARN("(dev=%d)(pid=%d) disconnect failed\n",
+			EVDI_WARN("(dev=%d) evdi_painter_disconnect failed,"
+				  "ioctl called by: %d\n",
 				  evdi->dev_index, (int)task_pid_nr(current));
 		}
 		return ret;
