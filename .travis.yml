@@ -1,7 +1,6 @@
 sudo: false
 
 language: c
-cache: ccache
 
 env:
   - KVER=3.16
