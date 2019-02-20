@@ -83,12 +83,17 @@ static struct drm_encoder *evdi_best_single_encoder(struct drm_connector
 						    *connector)
 {
 	int enc_id = connector->encoder_ids[0];
+	struct drm_mode_object *obj;
+	struct drm_encoder *encoder;
 
-	return drm_encoder_find(connector->dev,
-#if KERNEL_VERSION(4, 16, 0) <= LINUX_VERSION_CODE
-				 NULL,
-#endif
-				 enc_id);
+	obj =
+	    drm_mode_object_find(connector->dev, enc_id,
+				 DRM_MODE_OBJECT_ENCODER);
+	if (!obj)
+		return NULL;
+
+	encoder = obj_to_encoder(obj);
+	return encoder;
 }
 
 static int evdi_connector_set_property(
