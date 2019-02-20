@@ -309,7 +309,7 @@ static void wait_for_master(const char *device_path)
 
 	int has_master = 0;
 
-	while ((has_master = device_has_master(device_path)) == 0 && cnt--)
+	while ((has_master = device_has_master(device_path)) != 0 && cnt--)
 		usleep(SLEEP_INTERVAL_US);
 
 	if (!has_master)
