@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -14,6 +15,7 @@
 
 #include "evdi_drv.h"
 #include "evdi_drm.h"
+#include "evdi_params.h"
 #include "evdi_debug.h"
 
 MODULE_AUTHOR("DisplayLink (UK) Ltd.");
@@ -59,11 +61,35 @@ static const struct file_operations evdi_driver_fops = {
 	.llseek = noop_llseek,
 };
 
+static int evdi_enable_vblank(__always_unused struct drm_device *dev,
+#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
+			      __always_unused int pipe)
+#else
+			      __always_unused unsigned int pipe)
+#endif
+{
+	return 1;
+}
+
+static void evdi_disable_vblank(__always_unused struct drm_device *dev,
+#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
+				__always_unused int pipe)
+#else
+				__always_unused unsigned int pipe)
+#endif
+{
+}
+
 static struct drm_driver driver = {
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME,
+	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
+			 | DRIVER_ATOMIC,
+#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	.load = evdi_driver_load,
+#endif
 	.unload = evdi_driver_unload,
 	.preclose = evdi_driver_preclose,
+
+	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
 	.gem_free_object = evdi_gem_free_object,
@@ -82,6 +108,14 @@ static struct drm_driver driver = {
 	.gem_prime_import = evdi_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.gem_prime_export = evdi_gem_prime_export,
+
+#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
+	.get_vblank_counter = drm_vblank_count,
+#elif KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+	.get_vblank_counter = drm_vblank_no_hw_counter,
+#endif
+	.enable_vblank = evdi_enable_vblank,
+	.disable_vblank = evdi_disable_vblank,
 
 	.name = DRIVER_NAME,
 	.desc = DRIVER_DESC,
@@ -114,11 +148,61 @@ static void evdi_add_device(void)
 	evdi_context.dev_count++;
 }
 
+static int evdi_add_devices(unsigned int val)
+{
+	if (val == 0) {
+		EVDI_WARN("Adding 0 devices has no effect\n");
+		return 0;
+	}
+	if (val > EVDI_DEVICE_COUNT_MAX - evdi_context.dev_count) {
+		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
+		return -EINVAL;
+	}
+
+	EVDI_DEBUG("Increasing device count to %u\n",
+		   evdi_context.dev_count + val);
+	while (val--)
+		evdi_add_device();
+	return 0;
+}
+
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+static int evdi_platform_probe(struct platform_device *pdev)
+{
+	struct drm_device *dev;
+	int ret;
+
+	EVDI_CHECKPT();
+
+	dev = drm_dev_alloc(&driver, &pdev->dev);
+	if (IS_ERR(dev))
+		return PTR_ERR(dev);
+
+	ret = evdi_driver_setup(dev);
+	if (ret)
+		goto err_free;
+
+	ret = drm_dev_register(dev, 0);
+	if (ret)
+		goto err_free;
+
+	return 0;
+
+err_free:
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+	drm_dev_put(dev);
+#else
+	drm_dev_unref(dev);
+#endif
+	return ret;
+}
+#else
 static int evdi_platform_probe(struct platform_device *pdev)
 {
 	EVDI_CHECKPT();
 	return drm_platform_init(&driver, pdev);
 }
+#endif
 
 static int evdi_platform_remove(struct platform_device *pdev)
 {
@@ -126,7 +210,11 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
+#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
 	drm_unplug_dev(drm_dev);
+#else
+	drm_dev_unplug(drm_dev);
+#endif
 
 	return 0;
 }
@@ -177,24 +265,16 @@ static ssize_t add_store(__always_unused struct device *dev,
 			 const char *buf, size_t count)
 {
 	unsigned int val;
+	int ret;
 
 	if (kstrtouint(buf, 10, &val)) {
 		EVDI_ERROR("Invalid device count \"%s\"\n", buf);
 		return -EINVAL;
 	}
-	if (val == 0) {
-		EVDI_WARN("Adding 0 devices has no effect\n");
-		return count;
-	}
-	if (evdi_context.dev_count + val >= EVDI_DEVICE_COUNT_MAX) {
-		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
-		return -EINVAL;
-	}
 
-	EVDI_DEBUG("Increasing device count to %u\n",
-		   evdi_context.dev_count + val);
-	while (val--)
-		evdi_add_device();
+	ret = evdi_add_devices(val);
+	if (ret)
+		return ret;
 
 	return count;
 }
@@ -246,9 +326,12 @@ static struct device_attribute evdi_device_attributes[] = {
 
 static int __init evdi_init(void)
 {
-	int i;
+	int i, ret;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
+	EVDI_INFO("Atomic driver:%s",
+		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
+
 	evdi_context.root_dev = root_device_register("evdi");
 	if (!PTR_RET(evdi_context.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
@@ -256,7 +339,14 @@ static int __init evdi_init(void)
 					   &evdi_device_attributes[i]);
 		}
 
-	return platform_driver_register(&evdi_platform_driver);
+	ret = platform_driver_register(&evdi_platform_driver);
+	if (ret)
+		return ret;
+
+	if (evdi_initial_device_count)
+		return evdi_add_devices(evdi_initial_device_count);
+
+	return 0;
 }
 
 static void __exit evdi_exit(void)

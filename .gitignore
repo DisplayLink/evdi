@@ -9,9 +9,10 @@ modules.order
 
 module/.tmp_versions/
 module/evdi.mod.c
+module/.cache.mk
 
-linux-*
-v*.tar.gz
+tmp/
+site/
 
 checkpatch.pl
 const_structs.checkpatch

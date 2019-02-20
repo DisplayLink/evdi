@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
  * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
@@ -14,6 +15,7 @@
 #include <drm/drm_crtc.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
+#include <drm/drm_atomic_helper.h>
 #include <linux/version.h>
 #include "evdi_drv.h"
 
@@ -31,11 +33,20 @@ static int evdi_get_modes(struct drm_connector *connector)
 	edid = (struct edid *)evdi_painter_get_edid_copy(evdi);
 
 	if (!edid) {
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+		drm_connector_update_edid_property(connector, NULL);
+#else
 		drm_mode_connector_update_edid_property(connector, NULL);
+#endif
 		return 0;
 	}
 
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	ret = drm_connector_update_edid_property(connector, edid);
+#else
 	ret = drm_mode_connector_update_edid_property(connector, edid);
+#endif
+
 	if (!ret)
 		drm_add_edid_modes(connector, edid);
 	else
@@ -45,8 +56,8 @@ static int evdi_get_modes(struct drm_connector *connector)
 	return ret;
 }
 
-static int evdi_mode_valid(struct drm_connector *connector,
-			   struct drm_display_mode *mode)
+static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
+					    struct drm_display_mode *mode)
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
 	uint32_t mode_area = mode->hdisplay * mode->vdisplay;
@@ -55,7 +66,8 @@ static int evdi_mode_valid(struct drm_connector *connector,
 		return MODE_OK;
 
 	if (mode_area > evdi->sku_area_limit) {
-		EVDI_WARN("Mode %dx%d@%d rejected\n",
+		EVDI_WARN("(dev=%d) Mode %dx%d@%d rejected\n",
+			evdi->dev_index,
 			mode->hdisplay,
 			mode->vdisplay,
 			drm_mode_vrefresh(mode));
@@ -72,61 +84,51 @@ evdi_detect(struct drm_connector *connector, __always_unused bool force)
 
 	EVDI_CHECKPT();
 	if (evdi_painter_is_connected(evdi)) {
-		EVDI_DEBUG("(dev=%d) Painter is connected\n", evdi->dev_index);
+		EVDI_DEBUG("(dev=%d) poll connector state: connected\n",
+			   evdi->dev_index);
 		return connector_status_connected;
 	}
-	EVDI_DEBUG("Painter is disconnected\n");
+	EVDI_DEBUG("(dev=%d) poll connector state: disconnected\n",
+		   evdi->dev_index);
 	return connector_status_disconnected;
-}
-
-static struct drm_encoder *evdi_best_single_encoder(struct drm_connector
-						    *connector)
-{
-	int enc_id = connector->encoder_ids[0];
-	struct drm_mode_object *obj;
-	struct drm_encoder *encoder;
-
-	obj =
-	    drm_mode_object_find(connector->dev, enc_id,
-				 DRM_MODE_OBJECT_ENCODER);
-	if (!obj)
-		return NULL;
-
-	encoder = obj_to_encoder(obj);
-	return encoder;
-}
-
-static int evdi_connector_set_property(
-				__always_unused struct drm_connector *connector,
-			       __always_unused struct drm_property *property,
-			       __always_unused uint64_t val)
-{
-	return 0;
 }
 
 static void evdi_connector_destroy(struct drm_connector *connector)
 {
-#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 	drm_connector_unregister(connector);
-#else
-	drm_sysfs_connector_remove(connector);
-#endif
 	drm_connector_cleanup(connector);
 	kfree(connector);
+}
+
+static struct drm_encoder *evdi_best_encoder(struct drm_connector *connector)
+{
+
+	return drm_encoder_find(connector->dev,
+#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
+				NULL,
+#endif
+				connector->encoder_ids[0]);
 }
 
 static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
 	.get_modes = evdi_get_modes,
 	.mode_valid = evdi_mode_valid,
-	.best_encoder = evdi_best_single_encoder,
+	.best_encoder = evdi_best_encoder,
 };
 
 static const struct drm_connector_funcs evdi_connector_funcs = {
-	.dpms = drm_helper_connector_dpms,
+#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
+	.dpms = drm_atomic_helper_connector_dpms,
+#endif
 	.detect = evdi_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.destroy = evdi_connector_destroy,
-	.set_property = evdi_connector_set_property,
+#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
+	.set_property = drm_atomic_helper_connector_set_property,
+#endif
+	.reset = drm_atomic_helper_connector_reset,
+	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
+	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state
 };
 
 int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
@@ -143,12 +145,13 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 	drm_connector_helper_add(connector, &evdi_connector_helper_funcs);
 	connector->polled = DRM_CONNECTOR_POLL_HPD;
 
-#if KERNEL_VERSION(3, 17, 0) <= LINUX_VERSION_CODE
 	drm_connector_register(connector);
+
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	drm_connector_attach_encoder(connector, encoder);
 #else
-	drm_sysfs_connector_add(connector);
-#endif
 	drm_mode_connector_attach_encoder(connector, encoder);
+#endif
 
 #if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
 	drm_object_attach_property(&connector->base,

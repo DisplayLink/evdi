@@ -2,7 +2,7 @@
 
 # Quick Start
 
-This section explains how to write a basic client for EVDI. Details of API calls are ommitted here for brevity.
+This section explains how to write a basic client for EVDI. Details of API calls are omitted here for brevity.
 
 # Typical application
 
@@ -56,7 +56,18 @@ The library itself does _not_ allocate any memory for buffers - this is to allow
 Therefore, before you request screen updates for the screens you're managing, an appropriate amount of memory must be allocated to hold screen data within your application.
 The application can register as many buffers as you like, and subsequent update requests can refer to any buffer that was previously registered.
 
-Allocated memory is made available for EVDI library to use by calling `evdi_register_buffer`. Symetrically, `evdi_unregister_buffer` is used to tell the library not to use the buffer anymore.
+Allocated memory is made available for EVDI library to use by calling `evdi_register_buffer`. Symmetrically, `evdi_unregister_buffer` is used to tell the library not to use the buffer anymore.
+
+## Cursor
+
+Mouse cursor is an important part of the desktop. Because of this, evdi provides special control over it.
+
+There are two ways to handle cursor:
+
+ * Automatic cursor compositing on framebuffer(default). Every cursor change causes `update_ready` event to be raised. In the following grab pixels operation evdi will compose cursor
+on the user supplied framebuffer. This option is enabled by `enable_cursor_blending` module parameter.
+ * Cursor change notifications. Enabled when `enable_cursor_blending` is set to N(no).
+In that mode the responsibility for cursor blending is passed to the library client. Instead of `update_ready` event the `cursor_set` and `cursor_move` notifications are sent.
 
 ## Running loop
 
@@ -82,6 +93,12 @@ The notifications your application can (and should) be handling, are:
 * Mode changed notification (sent from DRM after screen mode is changed)
 * DPMS notifications (telling the new power state of a connector)
 * CRTC state change event (exposing DRM CRTC state)
+* Cursor events (send when cursor position or state changes)
 
 You will start receiving first notifications from the kernel module right after connecting to EVDI.
 Your application should use this information before you ask for screen updates to make sure the buffers are the right size.
+
+## Logging
+
+By default libevdi uses `printf` to print messages to stdout. Client application can provide its own callback which will be used instead by calling `evdi_set_logging`.
+The same function can be used to switch back to default behaviour (by setting callback to `NULL`);

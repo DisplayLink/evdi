@@ -1,0 +1,175 @@
+#! /usr/bin/env bash
+
+set -e
+set -u
+
+if [ "${#}" = "0" ]; then
+  cat << EOF
+Usage: ${0} KVER [MODULE]
+
+where:
+  KVER      kernel version used, e.g. '4', '4.11', '4.11.5'
+  MODULE    path to the 'module' directory, by default '${PWD}/module'
+EOF
+  exit 123
+fi
+
+KVER=${1}
+IFS='.' read -a VERS <<< "${KVER}"
+MAJ=${VERS[0]}
+MIN=${VERS[1]:-0}
+PATCH=${VERS[2]:-0}
+
+MODULE="${2:-${PWD}/module}"
+
+VER_SUFFIX="${MAJ}_${MIN}_${PATCH}"
+
+KERNEL_VERSION() { # MAJ MIN PATCH
+  echo $(( ${1} * 65536 + ${2} * 256 + ${3} ))
+}
+
+LINUX_VERSION_CODE=$(KERNEL_VERSION "${MAJ}" "${MIN}" "${PATCH}")
+
+progress() { # current max
+  local current=${1}
+  local max=${2}
+
+  printf "|"
+  for ((done=0; done<current; done=done+1)); do
+    printf "▇"
+  done
+  for ((remain=current; remain<max; remain=remain+1)); do
+    printf " "
+  done
+  printf "| %s%%" $(( 100*(current*100)/(max*100) ))
+
+  if [[ ${current} != ${max} ]]; then
+    printf "\r"
+  else
+    printf "\n"
+  fi
+}
+
+count_files() { # module
+  find "${1}" | wc -l
+}
+
+copy_module() { # module suffix
+  rm -rf "${1}_${2}"
+  cp -r "${1}" "${1}_${2}"
+}
+
+get_condition() { # line
+  sed \
+    -e 's/#if//' \
+    -e 's/#elif//' \
+    -e 's/[(,]/ /g' \
+    -e 's/KERNEL/$(KERNEL/' \
+    -e 's/LINUX/$LINUX/' \
+    <<< "${1}"
+}
+
+eval_condition() { # condition
+  local condition="\$((${1} ))"
+  eval "echo ${condition}"
+}
+
+eval_line() { # line
+  eval_condition "$(get_condition "${1}")"
+}
+
+#
+#          |
+#          V
+#      OUT_OF_IF <----+
+#       ^|    |^      |
+#       |V    V|      |
+# IN_FALSE -> IN_TRUE |
+#               |     |
+#               V     |
+#            WAS_IN_TRUE
+#
+export_file() { # file
+  local file="${1}"
+
+  local state=OUT_OF_IF
+  while IFS='' read -r line || [ -n "${line}" ]; do
+    case $state in
+      OUT_OF_IF)
+        if [[ "${line}" != "#include <linux/version.h>" ]]; then
+          if [[ "${line}" =~ "#if KERNEL_VERSION" ]]; then
+            if [ $(eval_line "${line}") == 1 ]; then
+              state="IN_TRUE"
+            else
+              state="IN_FALSE"
+            fi
+          else
+            echo "${line}"
+          fi
+        fi
+        ;;
+
+      IN_TRUE)
+        if [[ "${line}" =~ "#elif KERNEL_VERSION" ]] || \
+           [[ "${line}" == "#else" ]]; then
+          state="WAS_IN_TRUE"
+        elif [[ "${line}" == "#endif" ]]; then
+          state="OUT_OF_IF"
+        else
+          echo "${line}"
+        fi
+        ;;
+
+      WAS_IN_TRUE)
+        if [[ "${line}" == "#endif" ]]; then
+          state="OUT_OF_IF"
+        fi
+        ;;
+
+      IN_FALSE)
+        if [[ "${line}" =~ "#elif KERNEL_VERSION" ]]; then
+          if [ $(eval_line "${line}") == 1 ]; then
+            state="IN_TRUE"
+          fi
+        elif [[ "${line}" == "#else" ]]; then
+          state="IN_TRUE"
+        elif [[ "${line}" == "#endif" ]]; then
+          state="OUT_OF_IF"
+        fi
+        ;;
+    esac
+  done < "${file}"
+}
+
+modify_file() { # file
+  local file="${1}"
+  local tmp="${file}.tmp"
+  rm -f "${tmp}"
+
+  export_file "${file}" > "${tmp}"
+
+  mv "${tmp}" "${file}"
+}
+
+modify_files() { # module
+  max_count=$(count_files "${MODULE}")
+  count=0
+
+  for file in ${1}/*; do
+    progress ${count} "${max_count}"
+
+    case "${file}" in
+      *.[ch])
+        modify_file "${file}"
+        ;;
+    esac
+
+    count=$((count+1))
+  done
+
+  progress "${max_count}" "${max_count}"
+}
+
+copy_module "${MODULE}" "${VER_SUFFIX}"
+modify_files "${MODULE}_${VER_SUFFIX}"
+

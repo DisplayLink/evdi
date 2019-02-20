@@ -2,7 +2,7 @@
 # Copyright (c) 2015 DisplayLink (UK) Ltd.
 #
 
-FLAGS=-Werror -Wextra -Wall
+FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-error=missing-field-initializers
 
 all:
 	CFLAGS="$(FLAGS)" $(MAKE) -C module $(MFLAGS)

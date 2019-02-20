@@ -4,6 +4,26 @@
 
 ## Functions by group
 
+#### Versioning
+    #!c
+    evdi_get_lib_version(struct evdi_lib_version device);
+
+Function returns library version.
+It uses semantic versioning to mark compatibility changes.
+Version consists of 3 components formatted as MAJOR.MINOR.PATCH
+
+ * `MAJOR` number is changed for incompatibile API changes
+ * `MINOR` number is changed for backwards-compatible changes
+ * `PATCH` number is changed for backwards-compatibile bug fixes
+
+#### Module parameters
+
+User can modify driver behaviour by its parameters that can be set at module load time or changed during runtime.
+
+ * `enable_cursor_blending` Enables cursor compositing on user supplied framebuffer via `EVDI_GRABPIX` ioctl (default: true)
+ * `initial_device_count` Number of evdi devices added at module load time (default: 0)
+
+
 ### EVDI nodes
 
 #### Finding an available EVDI node to use
@@ -34,6 +54,8 @@ Use this to tell the kernel module to create a new `cardX` node for your applica
 	evdi_handle evdi_open(int device);
 
 This function attempts to open a DRM device node with given number as EVDI.
+Function performs compatibility check with underlying drm device. If version of the
+library and module does not match then the device will not be opened.
 
 **Arguments**: `device` is a number of card to open, e.g. `1` means `/dev/dri/card1`.
 
@@ -64,7 +86,7 @@ Creates a connection between the EVDI and Linux DRM subsystem, resulting in kern
 * `handle` to an opened device
 * `edid` should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel
 * `edid_length` is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)
-* `sku_area_limit` is maximum supported pixel count for connected device
+* `sku_area_limit` is maximum pixel area (width x height) connected device can display
 
 #### Disconnecting
 
@@ -112,7 +134,7 @@ Requests an update for a buffer with a given `bufferId`. The buffer must be alre
 **Arguments**:
 
 * `handle` to an opened device.
-* `bufferId` is an indentifier for a buffer that should be updated.
+* `bufferId` is an identifier for a buffer that should be updated.
 
 **Return value:**
 
@@ -179,12 +201,36 @@ See [evdi_mode](details.md#evdi_mode) for description of the structure.
 This notification is sent when an update for a buffer, that had been earlier requested is ready to be consumed.
 The buffer number to be updated is `buffer_to_be_updated`.
 
+#### Cursor change notification
+
+	#!c
+	void (*cursor_set_handler)(struct evdi_cursor_set cursor_set, void* user_data);
+
+This notification is sent for an update of cursor buffer or shape. It is also raised when cursor is enabled or disabled.
+Such situation happens when cursor is moved on and off the screen respectively.
+
+#### Cursor move notification
+
+	#!c
+	void (*cursor_move_handler)(struct evdi_cursor_move cursor_move, void* user_data);
+
+This notification is sent for a cursor position change. It is raised only when cursor is positioned on virtual screen.
+
 #### CRTC state change
 
 	#!c
 	void (*crtc_state_handler)(int state, void* user_data);
 
 Sent when DRM's CRTC changes state. The `state` is a value that's forwarded from the kernel.
+
+### Logging
+
+Client can register their own callback to be used for logging instead of default `printf`.
+
+	#!c
+	void evdi_set_logging(struct evdi_logging evdi_logging);
+
+For more on argument see [struct evdi_logging](details.md#Types).
 
 ## Types
 
@@ -255,3 +301,69 @@ Last two structure members, `rects` and `rect_counts` are updated during grabbin
 The `evdi_device_context` structure is used for holding pointers to handlers for all notifications that the application may receive from
 the kernel module. The `user_data` member is a value that the library will use while dispatching the call back.
 See [Events and handlers](details.md#events-and-handlers) for more information.
+
+### evdi_lib_version
+
+    #!c
+	struct evdi_lib_version {
+		int version_major;
+		int version_minor;
+		int version_patchlevel;
+	};
+
+The `evdi_lib_version` structure contains libevdi version.
+Version can be used to check compatibility between library and a client application.
+
+### evdi_cursor_set
+
+    #!c
+	struct evdi_cursor_set {
+		int32_t hot_x;
+		int32_t hot_y;
+		uint32_t width;
+		uint32_t height;
+		uint8_t enabled;
+		uint32_t buffer_length;
+		uint32_t *buffer;
+		uint32_t pixel_format;
+		uint32_t stride;
+	};
+
+The `evdi_cursor_set` structure contains cursor state information. `hot_x` and `hot_y` define hotspot information.
+`enabled` parameter is true when cursor bitmap is available and cursor is visible on virtual display.
+Parameters `width` and `height` define size of the cursor bitmap stored in a `buffer` memory area of size `buffer_length`.
+
+!!! warning
+	Event handler or library user has to free buffer memory when it is not using it.
+
+Remaining `stride` and `pixel_format` describe data organization in the buffer. `stride` is a size of a single line in a buffer.
+Usually it is width of the cursor multiplied by bytes per pixel value plus additional extra padding. It ensures proper alignment of subsequent pixel rows.
+Pixel encoding is described by FourCC code in `pixel_format` field. Usually it is `ARGB_8888` however the value is system dependent and might change in the future.
+
+### evdi_cursor_move
+
+    #!c
+	struct evdi_cursor_move {
+		int32_t x;
+		int32_t y;
+	};
+
+The `evdi_cursor_move` structure contains current cursor position.
+It is defined as top left corner of the cursor bitmap.
+
+###  evdi_logging
+
+	#!c
+	struct evdi_logging {
+		void (*function)(void *user_data, const char *fmt, ...);
+		void *user_data;
+	};
+
+Structure contains two fields:
+* `function` which is a pointer to the actuall callback. The `fmt` and `...` are the same as in case of `printf`.
+* `user_data` a pointer provided by the client when registering callback
+
+!!! note
+    By setting `function` to NULL libevdi will switch to default behaviour of using `printf`.
+
+

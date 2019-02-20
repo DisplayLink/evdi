@@ -3,53 +3,186 @@
 set -e
 set -u
 
-if [ "${1}" = "" ]; then
+usage() {
+  local bold=$(tput bold)
+  local underline=$(tput smul)
+  local normal=$(tput sgr0)
+
   cat << EOF
-Usage: ${0} KVER
 
-where:
-  KVER      kernel version to build against (e.g. 3.19)
+${bold}SYNOPSIS${normal}
+      ${bold}${0}${normal} [OPTION]... [PARAMETER]...
+
+${bold}DESCRIPTION${normal}
+      Script automates ${underline}module${normal} build against specific ${underline}kernel${normal} version.
+      It can download fresh copy of sources from ${underline}github${normal}, untar it,
+      prepare and build evdi in this 'sandboxed' environment.
+
+${bold}OPTIONS${normal}
+      ${bold}--clean${normal}
+            Get clean version of ${bold}tar.gz${normal}.
+            This is the ${underline}default${normal} behaviour.
+      ${bold}--cached${normal}
+            Use previously downloaded sources.
+      ${bold}--ci${normal}
+            Use previously extracted sources.
+
+      ${bold}-j${normal} ${underline}jobs${normal}, ${bold}--jobs=${normal}${underline}jobs${normal}, ${bold}--jobs${normal} ${underline}jobs${normal}
+            Specifies the number of commands to run simultaneously.
+            Similar as in ${bold}make${normal}.
+            Default is ${underline}1${normal}.
+
+      ${bold}-t${normal} ${underline}dir${normal}, ${bold}--tmp=${normal}${underline}dir${normal}, ${bold}--tmp${normal} ${underline}dir${normal}
+            Subdirectory to store kernel sources.
+            Default is ${underline}tmp${normal}.
+
+      ${bold}--help${normal}
+            Show this message.
+
+${bold}PARAMETERS${normal}
+      ${bold}all${normal}
+            Build against all ${underline}KVER${normal} specified in ${bold}.travis.yml${normal} file.
+      ${underline}KVERS${normal}
+            List of kernel versions to build against (e.g. ${underline}3.19 4.10${normal}).
+
+${bold}EXAMPLES${normal}
+      ${bold}${0} 4.12${normal}
+            Build against newly downloaded sources of ${underline}4.12${normal}.
+
+      ${bold}${0} --ci master${normal}
+            Build against already ${underline}extracted${normal} sources of ${underline}master${normal}.
+
+      ${bold}${0} --ci master --cached 4.11${normal}
+            Build against already ${underline}extracted${normal} sources of ${underline}master${normal} and
+            clean sources of previously ${underline}cached${normal} ${bold}tar.gz${normal} of ${underline}4.11${normal}.
+
+      ${bold}${0} -j 4 all${normal}
+            Build against ${underline}all${normal} kernels listed in ${bold}.travis.yml${normal}
+            file, passing ${underline}--jobs=4${normal} to ${bold}make${normal}.
 EOF
-  exit 123
-fi
-
-KVER=${1}
-
-get_master_sources() {
-  wget -O master.tar.gz https://github.com/torvalds/linux/tarball/master
-  tar -xzf master.tar.gz
-  rm master.tar.gz
-
-  echo $(pwd)/torvalds-linux-*
 }
 
-get_tagged_sources() { # version
-  wget -N "https://github.com/torvalds/linux/archive/v${1}.tar.gz"
-  tar -xzf "v${1}.tar.gz"
-  rm "v${1}.tar.gz"
-
-  echo "$(pwd)/linux-${1}"
+get_versions_from_file() { # file
+  local PREFIX="^  \- KVER="
+  grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
-prepare_kernel() { # srcDir
-  oldDir=$(pwd)
+get_sources() { ( # PACKAGE SOURCES
+  local PACKAGE="${1}.tar.gz"
+  local SOURCES="${2}"
 
-  cd "${1}"
-  make olddefconfig
-  make prepare
-  make scripts
-  make kernel
+  if [ ! -d "${TMP}" ]; then
+    mkdir "${TMP}"
+  fi
 
-  cd "${oldDir}"
+  cd "${TMP}"
+
+  if [ "${MODE}" = "CLEAN" ]; then
+    rm -f "${PACKAGE}"
+  fi
+
+  if [ ! -e "${PACKAGE}" ]; then
+    wget -O "${PACKAGE}" "https://github.com/torvalds/linux/archive/${PACKAGE}"
+  fi
+
+  if [ "${MODE}" = "CLEAN" ] || [ "${MODE}" = "CACHED" ]; then
+    rm -rf "${SOURCES}"
+  fi
+
+  if [ ! -e "${SOURCES}" ]; then
+    tar -xzf "${PACKAGE}"
+  fi
+
+  echo "$(pwd)/${SOURCES}"
+) }
+
+prepare_kernel() { ( # SRC_DIR CC
+    cd "${1}"
+    make olddefconfig CC="${2}" --jobs=${JOBS}
+    make prepare CC="${2}" --jobs=${JOBS}
+    make scripts CC="${2}" --jobs=${JOBS}
+) }
+
+build_one() { # KVER
+  local KVER=${1}
+  local CC="${CC:-gcc}"
+
+  local HEADER="$(echo "# Running ${MODE} --jobs=${JOBS} build for ${KVER} in ${TMP}")"
+
+  echo ""
+  echo "${HEADER//?/#}"
+  echo "${HEADER}"
+  echo ""
+
+  local src_dir
+  if [ "${KVER}" = "master" ]; then
+    src_dir=$(get_sources "master" "linux-master")
+  else
+    src_dir=$(get_sources "v${KVER}" "linux-${KVER}")
+  fi
+
+  prepare_kernel "${src_dir}" "${CC}"
+  make KDIR="${src_dir}" CC="${CC}" --jobs=${JOBS}
 }
 
-if [ "${KVER}" = "master" ]; then
-  srcDir=$(get_master_sources)
-else
-  srcDir=$(get_tagged_sources "${KVER}")
-fi
+MODE="CLEAN"
+JOBS="1"
+TMP="tmp"
+while [[ $# -gt 0 ]]
+do
+  case ${1} in
+    --clean)
+      MODE="CLEAN"
+      ;;
 
-prepare_kernel "${srcDir}"
-make KDIR="${srcDir}" CC=${CC:-gcc}
+    --cached)
+      MODE="CACHED"
+      ;;
 
-rm -r "${srcDir}"
+    --ci)
+      MODE="CI"
+      ;;
+
+    -j|--jobs)
+      shift
+      JOBS="${1}"
+      ;;
+
+    --jobs=*)
+      JOBS="${1#*=}"
+      ;;
+
+    -t|--tmp)
+      shift
+      TMP="${1}"
+      ;;
+
+    --tmp=*)
+      TMP="${1#*=}"
+      ;;
+
+    -h|--help)
+      usage
+      exit 0
+      ;;
+
+    -*)
+      echo "Unknown option '${1}'" >&2
+      usage >&2
+      exit 1
+      ;;
+
+    all)
+      for KVER in $(get_versions_from_file '.travis.yml'); do
+        build_one "${KVER}"
+      done
+      ;;
+
+    *)
+      build_one "${1}"
+      ;;
+  esac
+
+  shift
+done
+
