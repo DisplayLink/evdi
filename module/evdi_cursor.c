@@ -69,9 +69,8 @@ int evdi_cursor_init(struct evdi_cursor **cursor)
 	if (*cursor) {
 		mutex_init(&(*cursor)->lock);
 		return 0;
-	} else {
+	} else
 		return -ENOMEM;
-	}
 }
 
 void evdi_cursor_lock(struct evdi_cursor *cursor)
@@ -99,18 +98,18 @@ bool evdi_cursor_enabled(struct evdi_cursor *cursor)
 
 void evdi_cursor_enable(struct evdi_cursor *cursor, bool enable)
 {
-	evdi_cursor_lock(cursor);
+	mutex_lock(&cursor->lock);
 	cursor->enabled = enable;
 	if (!enable)
 		evdi_cursor_set_gem(cursor, NULL);
-	evdi_cursor_unlock(cursor);
+	mutex_unlock(&cursor->lock);
 }
 
-void evdi_cursor_set(struct evdi_cursor *cursor,
-		     struct evdi_gem_object *obj,
-		     uint32_t width, uint32_t height,
-		     int32_t hot_x, int32_t hot_y,
-		     uint32_t pixel_format, uint32_t stride)
+int evdi_cursor_set(struct evdi_cursor *cursor,
+		    struct evdi_gem_object *obj,
+		    uint32_t width, uint32_t height,
+		    int32_t hot_x, int32_t hot_y,
+		    uint32_t pixel_format, uint32_t stride)
 {
 	int err = 0;
 
@@ -131,8 +130,9 @@ void evdi_cursor_set(struct evdi_cursor *cursor,
 	cursor->pixel_format = pixel_format;
 	cursor->stride = stride;
 	evdi_cursor_set_gem(cursor, obj);
-
 	evdi_cursor_unlock(cursor);
+
+	return err;
 }
 
 void evdi_cursor_move(struct evdi_cursor *cursor, int32_t x, int32_t y)
@@ -166,9 +166,9 @@ static inline uint32_t blend_alpha(const uint32_t pixel_val32,
 }
 
 static int evdi_cursor_compose_pixel(char __user *buffer,
-				     int const cursor_value,
-				     int const fb_value,
-				     int cmd_offset)
+				int const cursor_value,
+				int const fb_value,
+				int cmd_offset)
 {
 	int const composed_value = blend_alpha(fb_value, cursor_value);
 
@@ -176,9 +176,9 @@ static int evdi_cursor_compose_pixel(char __user *buffer,
 }
 
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
-				 struct evdi_framebuffer *ufb,
-				 char __user *buffer,
-				 int buf_byte_stride)
+				   struct evdi_framebuffer *ufb,
+				   char __user *buffer,
+				   int buf_byte_stride)
 {
 	int x, y;
 	struct drm_framebuffer *fb = &ufb->base;
@@ -231,6 +231,7 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 
 			cursor_pix = h_cursor_w+x +
 				    (h_cursor_h+y)*cursor->width;
+
 			curs_val = le32_to_cpu(cursor_buffer[cursor_pix]);
 			fbsrc = (int *)ufb->obj->vmapping;
 			fb_value = *(fbsrc + ((fb->pitches[0]>>2) *
@@ -238,9 +239,9 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 			cmd_offset = (buf_byte_stride * mouse_pix_y) +
 						       (mouse_pix_x * bytespp);
 			if (evdi_cursor_compose_pixel(buffer,
-						      curs_val,
-						      fb_value,
-						      cmd_offset)) {
+						    curs_val,
+						    fb_value,
+						    cmd_offset)) {
 				EVDI_ERROR("Failed to compose cursor pixel\n");
 				return -EFAULT;
 			}
@@ -279,4 +280,3 @@ void evdi_cursor_stride(struct evdi_cursor *cursor, uint32_t *stride)
 {
 	*stride = cursor->stride;
 }
-
