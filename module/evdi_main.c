@@ -37,11 +37,9 @@ int evdi_driver_setup(struct drm_device *dev)
 	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
 
-#ifdef CONFIG_FB
 	ret = evdi_fbdev_init(dev);
 	if (ret)
 		goto err;
-#endif /* CONFIG_FB */
 
 	ret = drm_vblank_init(dev, 1);
 	if (ret)
@@ -59,9 +57,7 @@ int evdi_driver_setup(struct drm_device *dev)
 	return 0;
 
 err_fb:
-#ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
-#endif /* CONFIG_FB */
 err:
 	kfree(evdi);
 	EVDI_ERROR("%d\n", ret);
@@ -101,15 +97,11 @@ void evdi_driver_unload(struct drm_device *dev)
 #else
 	drm_connector_unplug_all(dev);
 #endif
-#ifdef CONFIG_FB
 	evdi_fbdev_unplug(dev);
-#endif /* CONFIG_FB */
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
 	evdi_painter_cleanup(evdi);
-#ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
-#endif /* CONFIG_FB */
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
