@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
  *
@@ -28,3 +27,4 @@ MODULE_PARM_DESC(initial_device_count, "Initial DRM device count (default: 0)");
 module_param_named(enable_cursor_blending,
 		   evdi_enable_cursor_blending, bool, 0644);
 MODULE_PARM_DESC(enable_cursor_blending, "Enables cursor compositing on user supplied framebuffer via EVDI_GRABPIX ioctl (default: true)");
+

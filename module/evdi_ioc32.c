@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/*
+/**
  * evdi_ioc32.c
  *
  * Copyright (c) 2016 The Chromium OS Authors
