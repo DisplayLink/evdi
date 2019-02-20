@@ -4,61 +4,35 @@ set -e
 set -u
 
 usage() {
-  local bold=$(tput bold)
-  local underline=$(tput smul)
-  local normal=$(tput sgr0)
-
   cat << EOF
 
-${bold}SYNOPSIS${normal}
-      ${bold}${0}${normal} [OPTION]... [PARAMETER]...
+SYNOPSIS
+    ${0} [--help] [--clean|--cached|--ci] [--tmp=<DIR>] [all|KVER ...]
 
-${bold}DESCRIPTION${normal}
-      Script automates ${underline}module${normal} build against specific ${underline}kernel${normal} version.
-      It can download fresh copy of sources from ${underline}github${normal}, untar it,
-      prepare and build evdi in this 'sandboxed' environment.
+OPTIONS
+    --clean       Default; Get clean version of tar.gz.
+    --cached      Use previously downloaded sources.
+    --ci          Use previously extracted sources.
 
-${bold}OPTIONS${normal}
-      ${bold}--clean${normal}
-            Get clean version of ${bold}tar.gz${normal}.
-            This is the ${underline}default${normal} behaviour.
-      ${bold}--cached${normal}
-            Use previously downloaded sources.
-      ${bold}--ci${normal}
-            Use previously extracted sources.
+    --tmp=<DIR>   Subdirectory to store kernel sources.
+                  Default is 'tmp'.
 
-      ${bold}-j${normal} ${underline}jobs${normal}, ${bold}--jobs=${normal}${underline}jobs${normal}, ${bold}--jobs${normal} ${underline}jobs${normal}
-            Specifies the number of commands to run simultaneously.
-            Similar as in ${bold}make${normal}.
-            Default is ${underline}1${normal}.
+    --help        Show this message.
 
-      ${bold}-t${normal} ${underline}dir${normal}, ${bold}--tmp=${normal}${underline}dir${normal}, ${bold}--tmp${normal} ${underline}dir${normal}
-            Subdirectory to store kernel sources.
-            Default is ${underline}tmp${normal}.
+PARAMETERS
+    all           Build against all KVER specified in '.travis.yml' file.
+    KVER ...      List of kernel versions to build against (e.g. '3.19 4.10').
 
-      ${bold}--help${normal}
-            Show this message.
+EXAMPLES
+    ${0} 4.12
+                  Build against newly downloaded sources of 4.12
 
-${bold}PARAMETERS${normal}
-      ${bold}all${normal}
-            Build against all ${underline}KVER${normal} specified in ${bold}.travis.yml${normal} file.
-      ${underline}KVERS${normal}
-            List of kernel versions to build against (e.g. ${underline}3.19 4.10${normal}).
+    ${0} --ci master
+                  Build against already extracted sources of master
 
-${bold}EXAMPLES${normal}
-      ${bold}${0} 4.12${normal}
-            Build against newly downloaded sources of ${underline}4.12${normal}.
-
-      ${bold}${0} --ci master${normal}
-            Build against already ${underline}extracted${normal} sources of ${underline}master${normal}.
-
-      ${bold}${0} --ci master --cached 4.11${normal}
-            Build against already ${underline}extracted${normal} sources of ${underline}master${normal} and
-            clean sources of previously ${underline}cached${normal} ${bold}tar.gz${normal} of ${underline}4.11${normal}.
-
-      ${bold}${0} -j 4 all${normal}
-            Build against ${underline}all${normal} kernels listed in ${bold}.travis.yml${normal}
-            file, passing ${underline}--jobs=4${normal} to ${bold}make${normal}.
+    ${0} --ci master --cached 4.11
+                  Build against already extracted sources of master and
+                  clean sources of previously cached tar.gz of 4.11
 EOF
 }
 
@@ -98,16 +72,16 @@ get_sources() { ( # PACKAGE SOURCES
 
 prepare_kernel() { ( # SRC_DIR CC
     cd "${1}"
-    make olddefconfig CC="${2}" --jobs=${JOBS}
-    make prepare CC="${2}" --jobs=${JOBS}
-    make scripts CC="${2}" --jobs=${JOBS}
+    make olddefconfig CC="${2}"
+    make prepare CC="${2}"
+    make scripts CC="${2}"
 ) }
 
 build_one() { # KVER
   local KVER=${1}
   local CC="${CC:-gcc}"
 
-  local HEADER="$(echo "# Running ${MODE} --jobs=${JOBS} build for ${KVER} in ${TMP}")"
+  local HEADER="$(echo "# Running ${MODE} build for ${KVER} in ${TMP}")"
 
   echo ""
   echo "${HEADER//?/#}"
@@ -122,11 +96,10 @@ build_one() { # KVER
   fi
 
   prepare_kernel "${src_dir}" "${CC}"
-  make KDIR="${src_dir}" CC="${CC}" --jobs=${JOBS}
+  make KDIR="${src_dir}" CC="${CC}"
 }
 
 MODE="CLEAN"
-JOBS="1"
 TMP="tmp"
 while [[ $# -gt 0 ]]
 do
@@ -143,16 +116,7 @@ do
       MODE="CI"
       ;;
 
-    -j|--jobs)
-      shift
-      JOBS="${1}"
-      ;;
-
-    --jobs=*)
-      JOBS="${1#*=}"
-      ;;
-
-    -t|--tmp)
+    --tmp)
       shift
       TMP="${1}"
       ;;
