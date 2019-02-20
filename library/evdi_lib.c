@@ -23,6 +23,8 @@
 
 // ********************* Private part **************************
 
+#define SLEEP_INTERVAL_US   100000L
+#define OPEN_TOTAL_WAIT_US  5000000L
 #define MAX_FILEPATH        256
 #define MAX_DIRTS           16
 
@@ -154,19 +156,13 @@ static int is_evdi(int fd)
 	return 0;
 }
 
-static int path_exists(const char *path)
-{
-	struct stat buf;
-
-	return stat(path, &buf) == 0;
-}
-
 static int device_exists(int device)
 {
 	char dev[MAX_FILEPATH] = "";
+	struct stat buf;
 
 	snprintf(dev, MAX_FILEPATH, "/dev/dri/card%d", device);
-	return path_exists(dev);
+	return stat(dev, &buf) == 0 ? 1 : 0;
 }
 
 static int does_path_links_to(const char *link, const char *substr)
@@ -270,15 +266,17 @@ static int device_has_master(const char *device_file_path)
 	return result;
 }
 
-static void wait_for_master(const char *device_path)
+static int wait_for_master(const char *device_path)
 {
-	const unsigned int SLEEP_INTERVAL_US = 100000L;
-	const unsigned int OPEN_TOTAL_WAIT_US = 5000000L;
+	int cnt = OPEN_TOTAL_WAIT_US / SLEEP_INTERVAL_US;
+	int has_master = device_has_master(device_path);
 
-	unsigned int cnt = OPEN_TOTAL_WAIT_US / SLEEP_INTERVAL_US;
-
-	while (!device_has_master(device_path) && cnt--)
+	while (!has_master && cnt--) {
 		usleep(SLEEP_INTERVAL_US);
+		has_master = device_has_master(device_path);
+	}
+
+	return has_master;
 }
 
 static int open_device(int device)
@@ -289,7 +287,8 @@ static int open_device(int device)
 	snprintf(dev, MAX_FILEPATH, "/dev/dri/card%d", device);
 
 #ifndef CHROMEOS
-	wait_for_master(dev);
+	if (!wait_for_master(dev))
+		return -EAGAIN;
 #endif
 
 	dev_fd = open(dev, O_RDWR);
@@ -323,35 +322,14 @@ evdi_handle evdi_open(int device)
 
 enum evdi_device_status evdi_check_device(int device)
 {
-	struct dirent *fd_entry;
-	DIR *fd_dir;
-	enum evdi_device_status status = UNRECOGNIZED;
-	char path[MAX_FILEPATH];
+	enum evdi_device_status status = NOT_PRESENT;
+	int fd = device_exists(device) ? open_device(device) : -1;
 
-	if (!device_exists(device))
-		return NOT_PRESENT;
-
-	fd_dir = opendir("/sys/devices/platform");
-	if (fd_dir == NULL) {
-		printf("[libevdi] Failed to list platform devices\n");
-		return NOT_PRESENT;
+	if (fd > 0) {
+		status = is_evdi(fd) ? AVAILABLE : UNRECOGNIZED;
+		close(fd);
 	}
 
-	while ((fd_entry = readdir(fd_dir)) != NULL) {
-		if (strncmp(fd_entry->d_name, "evdi", 4) != 0)
-			continue;
-
-		snprintf(path, MAX_FILEPATH,
-			"/sys/devices/platform/%s/drm/card%d",
-			fd_entry->d_name,
-			device);
-		if (path_exists(path)) {
-			status = AVAILABLE;
-			break;
-		}
-	}
-
-	closedir(fd_dir);
 	return status;
 }
 
