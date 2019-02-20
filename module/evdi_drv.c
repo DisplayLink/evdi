@@ -68,9 +68,7 @@ static struct drm_driver driver = {
 	.load = evdi_driver_load,
 #endif
 	.unload = evdi_driver_unload,
-	.preclose = evdi_driver_close,
-
-	.postclose = evdi_driver_close,
+	.preclose = evdi_driver_preclose,
 
 	/* gem hooks */
 	.gem_free_object = evdi_gem_free_object,

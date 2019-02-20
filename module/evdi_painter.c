@@ -590,10 +590,10 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	painter_lock(painter);
 
 	if (file != painter->drm_filp) {
-		EVDI_VERBOSE
+		EVDI_WARN
 		    ("(dev=%d) An unknown connection to %p tries to close us",
 		     evdi->dev_index, file);
-		EVDI_VERBOSE(" - ignoring\n");
+		EVDI_WARN(" - ignoring\n");
 
 		painter_unlock(painter);
 		return -EFAULT;
