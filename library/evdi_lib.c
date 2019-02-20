@@ -458,7 +458,6 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 	cursor_set.buffer_length = event->buffer_length;
 	cursor_set.buffer = NULL;
 	cursor_set.pixel_format = event->pixel_format;
-	cursor_set.stride = event->stride;
 
 	if (event->enabled) {
 		size_t size = event->buffer_length;
