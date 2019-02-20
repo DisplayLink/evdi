@@ -118,24 +118,6 @@ static void evdi_add_device(void)
 	evdi_context.dev_count++;
 }
 
-static int evdi_add_devices(unsigned int val)
-{
-	if (val == 0) {
-		EVDI_WARN("Adding 0 devices has no effect\n");
-		return 0;
-	}
-	if (val > EVDI_DEVICE_COUNT_MAX - evdi_context.dev_count) {
-		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
-		return -EINVAL;
-	}
-
-	EVDI_DEBUG("Increasing device count to %u\n",
-		   evdi_context.dev_count + val);
-	while (val--)
-		evdi_add_device();
-	return 0;
-}
-
 /*
  * In 4.12+, the DRM core moves from the load() callback to requiring drivers
  * to open-code their registration in their probe callback.
@@ -240,16 +222,24 @@ static ssize_t add_store(__always_unused struct device *dev,
 			 const char *buf, size_t count)
 {
 	unsigned int val;
-	int ret;
 
 	if (kstrtouint(buf, 10, &val)) {
 		EVDI_ERROR("Invalid device count \"%s\"\n", buf);
 		return -EINVAL;
 	}
+	if (val == 0) {
+		EVDI_WARN("Adding 0 devices has no effect\n");
+		return count;
+	}
+	if (val > EVDI_DEVICE_COUNT_MAX - evdi_context.dev_count) {
+		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
+		return -EINVAL;
+	}
 
-	ret = evdi_add_devices(val);
-	if (ret)
-		return ret;
+	EVDI_DEBUG("Increasing device count to %u\n",
+		   evdi_context.dev_count + val);
+	while (val--)
+		evdi_add_device();
 
 	return count;
 }
@@ -301,7 +291,7 @@ static struct device_attribute evdi_device_attributes[] = {
 
 static int __init evdi_init(void)
 {
-	int i, ret;
+	int i;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
 
@@ -319,14 +309,7 @@ static int __init evdi_init(void)
 					   &evdi_device_attributes[i]);
 		}
 
-	ret = platform_driver_register(&evdi_platform_driver);
-	if (ret)
-		return ret;
-
-	if (evdi_initial_device_count)
-		return evdi_add_devices(evdi_initial_device_count);
-
-	return 0;
+	return platform_driver_register(&evdi_platform_driver);
 }
 
 static void __exit evdi_exit(void)
