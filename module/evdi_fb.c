@@ -26,7 +26,6 @@ struct evdi_fbdev {
 	struct drm_fb_helper helper;
 	struct evdi_framebuffer ufb;
 	struct list_head fbdev_list;
-	struct fb_ops fb_ops;
 	int fb_count;
 };
 
@@ -369,8 +368,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	info->fix.smem_start = (unsigned long)ufbdev->ufb.obj->vmapping;
 
 	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
-	ufbdev->fb_ops = evdifb_ops;
-	info->fbops = &ufbdev->fb_ops;
+	info->fbops = &evdifb_ops;
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
 #else
