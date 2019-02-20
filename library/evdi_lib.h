@@ -9,20 +9,6 @@
 extern "C" {
 #endif
 
-#define LIBEVDI_VERSION_MAJOR 1
-#define LIBEVDI_VERSION_MINOR 4
-#define LIBEVDI_VERSION_PATCHLEVEL 0
-
-#define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
-#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 4
-#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
-
-struct evdi_lib_version {
-	int version_major;
-	int version_minor;
-	int version_patchlevel;
-};
-
 struct evdi_device_context;
 typedef struct evdi_device_context *evdi_handle;
 typedef int evdi_selectable;
@@ -83,7 +69,6 @@ bool evdi_request_update(evdi_handle handle, int bufferId);
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx);
 evdi_selectable evdi_get_event_ready(evdi_handle handle);
-void evdi_get_lib_version(struct evdi_lib_version *version);
 
 #ifdef __cplusplus
 }
