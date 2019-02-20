@@ -15,7 +15,6 @@ done
 
 chmod +x checkpatch.pl
 
-./checkpatch.pl --terse --no-tree --ignore NEW_TYPEDEFS -f ./library/*
 ./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE -f ./module/*
 
 rm ${files[@]}
