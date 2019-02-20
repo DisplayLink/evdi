@@ -61,7 +61,7 @@ static int evdi_crtc_mode_set(struct drm_crtc *crtc,
 	struct drm_clip_rect rect;
 
 	if (crtc->primary == NULL) {
-		EVDI_DEBUG("%s primary plane is NULL", __func__);
+		EVDI_DEBUG("evdi_crtc_mode_set primary plane is NULL");
 		return 0;
 	}
 
