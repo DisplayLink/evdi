@@ -29,21 +29,6 @@
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
 #define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
 
-#define evdi_log(...) do {						\
-	if (g_evdi_logging.function) {					\
-		g_evdi_logging.function(g_evdi_logging.user_data,	\
-					__VA_ARGS__);			\
-	} else {							\
-		printf("[libevdi] " __VA_ARGS__);			\
-		printf("\n");						\
-	}								\
-} while (0)
-
-struct evdi_logging g_evdi_logging = {
-	.function = NULL,
-	.user_data = NULL
-};
-
 struct evdi_frame_buffer_node {
 	struct evdi_buffer frame_buffer;
 	struct evdi_frame_buffer_node *next;
@@ -61,7 +46,8 @@ static int do_ioctl(int fd, unsigned int request, void *data, const char *msg)
 	const int err = ioctl(fd, request, data);
 
 	if (err < 0)
-		evdi_log("Ioctl %s error: %s", msg, strerror(errno));
+		printf("[libevdi] ioctl: %s error: %s\n", msg,
+		       strerror(errno));
 	return err;
 }
 
@@ -144,12 +130,12 @@ static int is_evdi_compatible(int fd)
 		ver.version_minor ==  EVDI_MODULE_COMPATIBILITY_VERSION_MINOR) {
 		return 1;
 	}
-	evdi_log("Evdi version (%d.%d.%d) ",
-		 ver.version_major, ver.version_minor, ver.version_patchlevel);
-	evdi_log("doesn't match LibEvdi compatibility one (%d.%d.%d)",
-		 EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
-		 EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
-		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
+	printf("[libevdi] evdi version:%d.%d.%d",
+		ver.version_major, ver.version_minor, ver.version_patchlevel);
+	printf("[libevdi] doesn't match libevdi compatibility one %d.%d.%d\n",
+		EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
+		EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
+		EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
 
 #ifdef NDEBUG
 	return 0;
@@ -305,7 +291,7 @@ static void wait_for_master(const char *device_path)
 		usleep(SLEEP_INTERVAL_US);
 
 	if (!has_master)
-		evdi_log("Wait for master timed out");
+		printf("[libevdi] Wait for master timed out\n");
 }
 
 static int wait_for_device(const char *device_path)
@@ -321,7 +307,8 @@ static int wait_for_device(const char *device_path)
 		usleep(SLEEP_INTERVAL_US);
 
 	if (fd < 0)
-		evdi_log("Failed to open a device: %s", strerror(errno));
+		printf("[libevdi] Failed to open a device: %s\n",
+		       strerror(errno));
 	return fd;
 }
 
@@ -378,7 +365,7 @@ enum evdi_device_status evdi_check_device(int device)
 
 	fd_dir = opendir("/sys/devices/platform");
 	if (fd_dir == NULL) {
-		evdi_log("Failed to list platform devices");
+		printf("[libevdi] Failed to list platform devices\n");
 		return NOT_PRESENT;
 	}
 
@@ -461,8 +448,8 @@ void evdi_grab_pixels(evdi_handle handle,
 	destinationNode = findBuffer(handle, handle->bufferToUpdate);
 
 	if (!destinationNode) {
-		evdi_log("Buffer %d not found. Not grabbing.",
-			 handle->bufferToUpdate);
+		printf("[libevdi] Buffer %d not found. Not grabbing.\n",
+			handle->bufferToUpdate);
 		*num_rects = 0;
 		return;
 	}
@@ -498,8 +485,8 @@ void evdi_grab_pixels(evdi_handle handle,
 	} else {
 		int id = destinationBuffer->id;
 
-		evdi_log("Grabbing pixels for buffer %d failed.", id);
-		evdi_log("Ignore if caused by change of mode.");
+		printf("[libevdi] Grabbing pixels for buffer %d failed.\n", id);
+		printf("[libevdi] Ignore if caused by change of mode.\n");
 		*num_rects = 0;
 	}
 }
@@ -671,7 +658,7 @@ static void evdi_handle_event(evdi_handle handle,
 		break;
 
 	default:
-		evdi_log("Warning: Unhandled event");
+		printf("Warning: Unhandled event\n");
 	}
 }
 
@@ -683,7 +670,7 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx)
 	int bytesRead = read(handle->fd, buffer, sizeof(buffer));
 
 	if (!evtctx) {
-		evdi_log("Error: Event context is null!");
+		printf("Error: Event context is null!\n");
 		return;
 	}
 
@@ -710,7 +697,3 @@ void evdi_get_lib_version(struct evdi_lib_version *version)
 	}
 }
 
-void evdi_set_logging(struct evdi_logging evdi_logging)
-{
-	g_evdi_logging = evdi_logging;
-}
