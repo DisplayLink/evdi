@@ -434,7 +434,7 @@ static struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
 	return mode;
 }
 
-static uint64_t evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle)
+uint64_t evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle)
 {
 	struct drm_mode_map_dumb map_dumb = { 0 };
 
@@ -445,7 +445,7 @@ static uint64_t evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle)
 	return map_dumb.offset;
 }
 
-static struct evdi_cursor_set to_evdi_cursor_set(
+struct evdi_cursor_set to_evdi_cursor_set(
 		evdi_handle handle, struct drm_evdi_event_cursor_set *event)
 {
 	struct evdi_cursor_set cursor_set;
@@ -476,7 +476,7 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 	return cursor_set;
 }
 
-static struct evdi_cursor_move to_evdi_cursor_move(
+struct evdi_cursor_move to_evdi_cursor_move(
 		struct drm_evdi_event_cursor_move *event)
 {
 	struct evdi_cursor_move cursor_move;
