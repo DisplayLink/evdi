@@ -151,7 +151,7 @@ static int is_evdi_compatible(int fd)
 		 ver.version_patchlevel);
 
 	if (ver.version_major == EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR &&
-	    ver.version_minor == EVDI_MODULE_COMPATIBILITY_VERSION_MINOR)
+	    ver.version_minor >= EVDI_MODULE_COMPATIBILITY_VERSION_MINOR)
 		return 1;
 
 	evdi_log("Doesn't match LibEvdi compatibility one (%d.%d.%d)",
