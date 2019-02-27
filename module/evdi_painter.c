@@ -122,8 +122,7 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 {
 	int i;
 
-	EVDI_CHECKPT();
-	EVDI_WARN("Not enough space for clip rects! Rects will be collapsed");
+	EVDI_VERBOSE("Not enough space for rects. They will be collapsed");
 
 	for (i = 1; i < *count; ++i)
 		expand_rect(&rects[0], &rects[i]);
