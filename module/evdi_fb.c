@@ -22,6 +22,9 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_atomic.h>
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_damage_helper.h>
+#endif
 #include "evdi_drv.h"
 
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
@@ -225,6 +228,7 @@ static struct fb_ops evdifb_ops = {
 };
 #endif /* CONFIG_FB */
 
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 /*
  * Function taken from
  * https://lists.freedesktop.org/archives/dri-devel/2018-September/188716.html
@@ -320,6 +324,7 @@ out:
 
 	return ret;
 }
+#endif
 
 static int evdi_user_framebuffer_create_handle(struct drm_framebuffer *fb,
 					       struct drm_file *file_priv,
@@ -345,7 +350,11 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 static const struct drm_framebuffer_funcs evdifb_funcs = {
 	.create_handle = evdi_user_framebuffer_create_handle,
 	.destroy = evdi_user_framebuffer_destroy,
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 	.dirty = evdi_user_framebuffer_dirty,
+#else
+	.dirty = drm_atomic_helper_dirtyfb,
+#endif
 };
 
 static int
