@@ -19,6 +19,10 @@
 #include <linux/version.h>
 #include "evdi_drv.h"
 
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
+
 /*
  * dummy connector to just get EDID,
  * all EVDI appear to have a DVI-D

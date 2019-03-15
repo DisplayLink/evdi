@@ -18,6 +18,10 @@
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
+
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 static inline void drm_framebuffer_put(struct drm_framebuffer *fb)
 {

@@ -16,6 +16,10 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
+
 int evdi_driver_setup(struct drm_device *dev)
 {
 	struct platform_device *platdev = NULL;

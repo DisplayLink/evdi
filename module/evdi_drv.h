@@ -119,10 +119,12 @@ int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);
 int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
-#else
+#if KERNEL_VERSION(4, 17, 0) <= LINUX_VERSION_CODE
+vm_fault_t evdi_gem_fault(struct vm_fault *vmf);
+#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 int evdi_gem_fault(struct vm_fault *vmf);
+#else
+int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 #endif
 
 bool evdi_painter_is_connected(struct evdi_device *evdi);
