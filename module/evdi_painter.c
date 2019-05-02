@@ -609,6 +609,10 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 		painter->needs_full_modeset = false;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+bool drm_helper_hpd_irq_event(struct drm_device *dev);
+#endif
+
 static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
