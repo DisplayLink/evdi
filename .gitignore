@@ -17,3 +17,5 @@ site/
 checkpatch.pl
 const_structs.checkpatch
 spelling.txt
+
+.idea
