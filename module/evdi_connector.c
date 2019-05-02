@@ -116,6 +116,12 @@ static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
 	.best_encoder = evdi_best_encoder,
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+int drm_helper_probe_single_connector_modes(struct drm_connector
+*connector, uint32_t maxX,
+uint32_t maxY);
+#endif
+
 static const struct drm_connector_funcs evdi_connector_funcs = {
 #if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
 	.dpms = drm_atomic_helper_connector_dpms,
