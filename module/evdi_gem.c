@@ -115,30 +115,15 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	return ret;
 }
 
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
-    #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-    int evdi_gem_fault(struct vm_fault *vmf){
-        struct vm_area_struct *vma = vmf->vma;
-    #else
-    int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-    {
-    #endif
-#else
+#if KERNEL_VERSION(5, 1, 0) >= LINUX_VERSION_CODE
 vm_fault_t evdi_gem_fault(struct vm_fault *vmf) {
     struct vm_area_struct *vma = vmf->vma;
+#elif KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE && KERNEL_VERSION(5, 1, 0) < LINUX_VERSION_CODE
+int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf) {
+#else
+int evdi_gem_fault(struct vm_fault *vmf) {
+        struct vm_area_struct *vma = vmf->vma;
 #endif
-
-//#if KERNEL_VERSION(5, 1, 0) >= LINUX_VERSION_CODE
-//unsigned int evdi_gem_fault(struct vm_fault *vmf) {
-//#else if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
-//int evdi_gem_fault(struct vm_fault *vmf)
-//{
-//	struct vm_area_struct *vma = vmf->vma;
-//#else
-//int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-//{
-//#endif
 	struct evdi_gem_object *obj = to_evdi_bo(vma->vm_private_data);
 	struct page *page;
 	unsigned int page_offset;
