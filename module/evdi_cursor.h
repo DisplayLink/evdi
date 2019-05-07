@@ -2,7 +2,7 @@
  * evdi_cursor.h
  *
  * Copyright (c) 2016 The Chromium OS Authors
- * Copyright (c) 2016 - 2017 DisplayLink (UK) Ltd.
+ * Copyright (c) 2016 - 2019 DisplayLink (UK) Ltd.
  *
  * This program is free software; you can redistribute  it and/or modify it
  * under  the terms of  the GNU General  Public License as published by the

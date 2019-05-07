@@ -1,4 +1,5 @@
 #! /usr/bin/env bash
+# Copyright (c) 2017 - 2019 DisplayLink (UK) Ltd.
 
 set -e
 set -u

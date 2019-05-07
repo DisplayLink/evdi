@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
 #
 
 DEPS = evdi_ioctl.h
