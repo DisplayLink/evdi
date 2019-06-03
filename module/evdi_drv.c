@@ -174,6 +174,12 @@ static int evdi_platform_probe(struct platform_device *pdev)
 
 	EVDI_CHECKPT();
 
+	/* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
+#if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
+#define INTEL_IOMMU_DUMMY_DOMAIN                ((void *)-1)
+	pdev->dev.archdata.iommu = INTEL_IOMMU_DUMMY_DOMAIN;
+#endif
+
 	dev = drm_dev_alloc(&driver, &pdev->dev);
 	if (IS_ERR(dev))
 		return PTR_ERR(dev);
