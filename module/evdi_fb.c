@@ -448,13 +448,18 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 	efbdev->fb_ops = evdifb_ops;
 	info->fbops = &efbdev->fb_ops;
+
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
-#else
-	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
-#endif
 	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
 			       sizes->fb_height);
+#elif KERNEL_VERSION(5, 2, 0) > LINUX_VERSION_CODE
+	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
+	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
+			       sizes->fb_height);
+#else
+	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);
+#endif
 
 	ret = fb_alloc_cmap(&info->cmap, 256, 0);
 	if (ret) {
