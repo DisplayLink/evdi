@@ -584,10 +584,14 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_display_mode *new_mode)
 {
 	struct evdi_painter *painter = evdi->painter;
-	struct drm_framebuffer *fb = &painter->scanout_fb->base;
+	struct drm_framebuffer *fb;
 	int bits_per_pixel;
 	uint32_t pixel_format;
 
+	if (painter == NULL)
+		return;
+
+	fb = &painter->scanout_fb->base;
 	if (fb == NULL)
 		return;
 
@@ -608,8 +612,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				       new_mode,
 				       bits_per_pixel,
 				       pixel_format);
-	if (painter)
-		painter->needs_full_modeset = false;
+	painter->needs_full_modeset = false;
 }
 
 static int
