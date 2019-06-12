@@ -67,10 +67,10 @@ err_fb:
 	evdi_fbdev_cleanup(dev);
 #endif /* CONFIG_FB */
 err:
-	kfree(evdi);
 	EVDI_ERROR("%d\n", ret);
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
+	kfree(evdi);
 	return ret;
 }
 
