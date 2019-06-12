@@ -313,11 +313,13 @@ out:
 #endif
 	}
 
+	if (state) {
 #if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
-	drm_atomic_state_put(state);
+		drm_atomic_state_put(state);
 #else
-	drm_atomic_state_free(state);
+		drm_atomic_state_free(state);
 #endif
+	}
 
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
