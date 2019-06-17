@@ -195,6 +195,7 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 {
 	struct drm_plane_state *state;
 	struct evdi_device *evdi;
+	struct drm_crtc *crtc;
 
 	if (!plane || !plane->state) {
 		EVDI_WARN("Plane state is null\n");
@@ -208,6 +209,7 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 
 	state = plane->state;
 	evdi = plane->dev->dev_private;
+	crtc = state->crtc;
 
 	if (!old_state->crtc && state->crtc)
 		evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_ON);
@@ -222,8 +224,14 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 			0, 0, fb->width, fb->height
 		};
 
+		if (!old_state->fb && crtc) {
+			evdi_painter_mode_changed_notify(evdi, &crtc->mode);
+			evdi_painter_force_full_modeset(evdi);
+		}
+
 		if (state->fb != old_state->fb ||
 		    evdi_painter_needs_full_modeset(evdi)) {
+
 			evdi_painter_set_scanout_buffer(evdi, efb);
 			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
 		} else if (evdi_painter_get_num_dirts(evdi) == 0) {

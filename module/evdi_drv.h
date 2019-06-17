@@ -166,6 +166,7 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
 bool evdi_painter_needs_full_modeset(struct evdi_device *evdi);
+void evdi_painter_force_full_modeset(struct evdi_device *evdi);
 struct drm_clip_rect evdi_painter_framebuffer_size(
 			struct evdi_painter *painter);
 

@@ -959,3 +959,12 @@ bool evdi_painter_needs_full_modeset(struct evdi_device *evdi)
 		return painter->needs_full_modeset;
 	return false;
 }
+
+
+void evdi_painter_force_full_modeset(struct evdi_device *evdi)
+{
+	struct evdi_painter *painter = evdi->painter;
+
+	if (painter)
+		painter->needs_full_modeset = true;
+}
