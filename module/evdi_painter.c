@@ -149,7 +149,8 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 	for (r = rects; r != rects + num_rects; ++r) {
 		const int byte_offset = r->x1 * 4;
 		const int byte_span = (r->x2 - r->x1) * 4;
-		const int src_offset = fb->pitches[0] * r->y1 + byte_offset;
+		const int src_offset = fb->offsets[0] +
+				       fb->pitches[0] * r->y1 + byte_offset;
 		const char *src = (char *)efb->obj->vmapping + src_offset;
 		const int dst_offset = buf_byte_stride * r->y1 + byte_offset;
 		char __user *dst = buffer + dst_offset;
