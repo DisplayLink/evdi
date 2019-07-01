@@ -628,7 +628,9 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 	efb = kzalloc(sizeof(*efb), GFP_KERNEL);
 	if (efb == NULL)
 		goto err_no_mem;
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 	efb->base.obj[0] = obj;
+#endif
 
 	ret = evdi_framebuffer_init(dev, efb, mode_cmd, to_evdi_bo(obj));
 	if (ret)
