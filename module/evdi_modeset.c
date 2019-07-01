@@ -20,6 +20,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_gem_framebuffer_helper.h>
 #include "evdi_drm.h"
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
@@ -316,11 +317,13 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 }
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
-	.atomic_update = evdi_plane_atomic_update
+	.atomic_update = evdi_plane_atomic_update,
+	.prepare_fb = drm_gem_fb_prepare_fb
 };
 
 static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
-	.atomic_update = evdi_cursor_atomic_update
+	.atomic_update = evdi_cursor_atomic_update,
+	.prepare_fb = drm_gem_fb_prepare_fb
 };
 
 static const struct drm_plane_funcs evdi_plane_funcs = {
