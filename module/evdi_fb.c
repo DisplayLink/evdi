@@ -611,13 +611,13 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 	if (obj == NULL)
 		return ERR_PTR(-ENOENT);
 
-	size = mode_cmd->pitches[0] * mode_cmd->height;
+	size = mode_cmd->offsets[0] + mode_cmd->pitches[0] * mode_cmd->height;
 	size = ALIGN(size, PAGE_SIZE);
 
 	if (size > obj->size) {
-		DRM_ERROR("object size not sufficient for fb %d %zu %d %d\n",
-			  size, obj->size, mode_cmd->pitches[0],
-			  mode_cmd->height);
+		DRM_ERROR("object size not sufficient for fb %d %zu %u %d %d\n",
+			  size, obj->size, mode_cmd->offsets[0],
+			  mode_cmd->pitches[0], mode_cmd->height);
 		goto err_no_mem;
 	}
 
