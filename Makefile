@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
 #
 
 FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-error=missing-field-initializers

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -173,6 +173,12 @@ static int evdi_platform_probe(struct platform_device *pdev)
 	int ret;
 
 	EVDI_CHECKPT();
+
+	/* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
+#if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
+#define INTEL_IOMMU_DUMMY_DOMAIN                ((void *)-1)
+	pdev->dev.archdata.iommu = INTEL_IOMMU_DUMMY_DOMAIN;
+#endif
 
 	dev = drm_dev_alloc(&driver, &pdev->dev);
 	if (IS_ERR(dev))

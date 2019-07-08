@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-2.1-only
- * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  */
 
 #ifndef EVDI_LIB_H
@@ -13,7 +13,7 @@ extern "C" {
 
 #define LIBEVDI_VERSION_MAJOR 1
 #define LIBEVDI_VERSION_MINOR 6
-#define LIBEVDI_VERSION_PATCHLEVEL 0
+#define LIBEVDI_VERSION_PATCHLEVEL 1
 
 struct evdi_lib_version {
 	int version_major;

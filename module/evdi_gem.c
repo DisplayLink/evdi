@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -115,7 +115,11 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	return ret;
 }
 
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 17, 0) <= LINUX_VERSION_CODE
+vm_fault_t evdi_gem_fault(struct vm_fault *vmf)
+{
+	struct vm_area_struct *vma = vmf->vma;
+#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 int evdi_gem_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;

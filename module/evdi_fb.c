@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2016 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -22,6 +22,9 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_atomic.h>
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_damage_helper.h>
+#endif
 #include "evdi_drv.h"
 
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
@@ -225,6 +228,7 @@ static struct fb_ops evdifb_ops = {
 };
 #endif /* CONFIG_FB */
 
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 /*
  * Function taken from
  * https://lists.freedesktop.org/archives/dri-devel/2018-September/188716.html
@@ -309,17 +313,20 @@ out:
 #endif
 	}
 
+	if (state) {
 #if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
-	drm_atomic_state_put(state);
+		drm_atomic_state_put(state);
 #else
-	drm_atomic_state_free(state);
+		drm_atomic_state_free(state);
 #endif
+	}
 
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
 
 	return ret;
 }
+#endif
 
 static int evdi_user_framebuffer_create_handle(struct drm_framebuffer *fb,
 					       struct drm_file *file_priv,
@@ -345,7 +352,11 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 static const struct drm_framebuffer_funcs evdifb_funcs = {
 	.create_handle = evdi_user_framebuffer_create_handle,
 	.destroy = evdi_user_framebuffer_destroy,
+#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
 	.dirty = evdi_user_framebuffer_dirty,
+#else
+	.dirty = drm_atomic_helper_dirtyfb,
+#endif
 };
 
 static int
@@ -439,13 +450,18 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 	efbdev->fb_ops = evdifb_ops;
 	info->fbops = &efbdev->fb_ops;
+
 #if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
-#else
-	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
-#endif
 	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
 			       sizes->fb_height);
+#elif KERNEL_VERSION(5, 2, 0) > LINUX_VERSION_CODE
+	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
+	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
+			       sizes->fb_height);
+#else
+	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);
+#endif
 
 	ret = fb_alloc_cmap(&info->cmap, 256, 0);
 	if (ret) {

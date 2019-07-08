@@ -16,6 +16,10 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
+
 int evdi_driver_setup(struct drm_device *dev)
 {
 	struct platform_device *platdev = NULL;
@@ -63,10 +67,10 @@ err_fb:
 	evdi_fbdev_cleanup(dev);
 #endif /* CONFIG_FB */
 err:
-	kfree(evdi);
 	EVDI_ERROR("%d\n", ret);
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
+	kfree(evdi);
 	return ret;
 }
 

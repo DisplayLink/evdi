@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+
 #include <stddef.h>
 #include <stdint.h>
 #include <libdrm/drm.h>
@@ -27,7 +28,7 @@
 #define MAX_DIRTS           16
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
-#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 6
+#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
 #define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
 
 #define evdi_log(...) do {						\
@@ -151,7 +152,7 @@ static int is_evdi_compatible(int fd)
 		 ver.version_patchlevel);
 
 	if (ver.version_major == EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR &&
-	    ver.version_minor == EVDI_MODULE_COMPATIBILITY_VERSION_MINOR)
+	    ver.version_minor >= EVDI_MODULE_COMPATIBILITY_VERSION_MINOR)
 		return 1;
 
 	evdi_log("Doesn't match LibEvdi compatibility one (%d.%d.%d)",
@@ -159,11 +160,7 @@ static int is_evdi_compatible(int fd)
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
 		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
 
-#ifdef NDEBUG
 	return 0;
-#else
-	return 1;
-#endif
 }
 
 static int is_evdi(int fd)

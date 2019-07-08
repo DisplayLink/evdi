@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2018 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -29,7 +29,7 @@
 
 #define DRIVER_MAJOR      1
 #define DRIVER_MINOR      6
-#define DRIVER_PATCHLEVEL 0
+#define DRIVER_PATCHLEVEL 1
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -119,10 +119,12 @@ int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);
 int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
-#else
+#if KERNEL_VERSION(4, 17, 0) <= LINUX_VERSION_CODE
+vm_fault_t evdi_gem_fault(struct vm_fault *vmf);
+#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 int evdi_gem_fault(struct vm_fault *vmf);
+#else
+int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 #endif
 
 bool evdi_painter_is_connected(struct evdi_device *evdi);
@@ -164,6 +166,7 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 				   struct evdi_cursor *cursor);
 bool evdi_painter_needs_full_modeset(struct evdi_device *evdi);
+void evdi_painter_force_full_modeset(struct evdi_device *evdi);
 struct drm_clip_rect evdi_painter_framebuffer_size(
 			struct evdi_painter *painter);
 

@@ -18,6 +18,10 @@
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
+
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 static inline void drm_framebuffer_put(struct drm_framebuffer *fb)
 {
@@ -122,8 +126,7 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 {
 	int i;
 
-	EVDI_CHECKPT();
-	EVDI_WARN("Not enough space for clip rects! Rects will be collapsed");
+	EVDI_VERBOSE("Not enough space for rects. They will be collapsed");
 
 	for (i = 1; i < *count; ++i)
 		expand_rect(&rects[0], &rects[i]);
@@ -581,10 +584,14 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_display_mode *new_mode)
 {
 	struct evdi_painter *painter = evdi->painter;
-	struct drm_framebuffer *fb = &painter->scanout_fb->base;
+	struct drm_framebuffer *fb;
 	int bits_per_pixel;
 	uint32_t pixel_format;
 
+	if (painter == NULL)
+		return;
+
+	fb = &painter->scanout_fb->base;
 	if (fb == NULL)
 		return;
 
@@ -605,8 +612,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				       new_mode,
 				       bits_per_pixel,
 				       pixel_format);
-	if (painter)
-		painter->needs_full_modeset = false;
+	painter->needs_full_modeset = false;
 }
 
 static int
@@ -952,4 +958,13 @@ bool evdi_painter_needs_full_modeset(struct evdi_device *evdi)
 	if (painter)
 		return painter->needs_full_modeset;
 	return false;
+}
+
+
+void evdi_painter_force_full_modeset(struct evdi_device *evdi)
+{
+	struct evdi_painter *painter = evdi->painter;
+
+	if (painter)
+		painter->needs_full_modeset = true;
 }

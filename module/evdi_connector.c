@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2017 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -18,6 +18,10 @@
 #include <drm/drm_atomic_helper.h>
 #include <linux/version.h>
 #include "evdi_drv.h"
+
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_probe_helper.h>
+#endif
 
 /*
  * dummy connector to just get EDID,
