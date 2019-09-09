@@ -41,6 +41,7 @@ addons:
     packages:
       - bc
       - g++-5
+      - libdrm-dev
       - libelf-dev
 
 script:
