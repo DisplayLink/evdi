@@ -40,8 +40,8 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - bc
-      - g++-4.8
+      - g++-5
       - libelf-dev
 
 script:
-  - CC=gcc-4.8 ./ci/build_against_kernel ${KVER}
+  - CC=gcc-5 ./ci/build_against_kernel ${KVER}
