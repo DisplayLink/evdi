@@ -1,18 +1,19 @@
-*.d
-*.o
-*.so
-*.ko
 *.cmd
+*.d
+*.ko
+*.o
+*.order
 *.rej
+*.so
 *.symvers
-modules.order
 
-module/.tmp_versions/
-module/evdi.mod.c
 module/.cache.mk
+module/.tmp_versions/
+module/evdi.mod
+module/evdi.mod.c
 
-tmp/
 site/
+tmp/
 
 checkpatch.pl
 const_structs.checkpatch
