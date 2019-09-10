@@ -18,6 +18,10 @@
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 
+#if KERNEL_VERSION(4, 6, 0) <= LINUX_VERSION_CODE
+#include <linux/dma-buf.h>
+#endif
+
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_probe_helper.h>
 #endif
@@ -770,6 +774,10 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	struct evdi_framebuffer *efb = NULL;
 	struct drm_clip_rect dirty_rects[MAX_DIRTS];
 	int err;
+#if KERNEL_VERSION(4, 6, 0) <= LINUX_VERSION_CODE
+	int ret;
+	struct dma_buf_attachment *import_attach;
+#endif
 
 	EVDI_CHECKPT();
 
@@ -849,6 +857,18 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		goto err_fb;
 	}
 
+#if KERNEL_VERSION(4, 6, 0) <= LINUX_VERSION_CODE
+	import_attach = efb->obj->base.import_attach;
+	if (import_attach) {
+		ret = dma_buf_begin_cpu_access(import_attach->dmabuf,
+					       DMA_FROM_DEVICE);
+		if (ret) {
+			err = -EFAULT;
+			goto err_fb;
+		}
+	}
+#endif
+
 	err = copy_primary_pixels(efb,
 				  cmd->buffer,
 				  cmd->buf_byte_stride,
@@ -861,6 +881,12 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				   cmd->buffer,
 				   cmd->buf_byte_stride,
 				   evdi->cursor);
+
+#if KERNEL_VERSION(4, 6, 0) <= LINUX_VERSION_CODE
+	if (import_attach)
+		dma_buf_end_cpu_access(import_attach->dmabuf,
+				       DMA_FROM_DEVICE);
+#endif
 
 err_fb:
 	drm_framebuffer_put(&efb->base);
