@@ -58,9 +58,20 @@ struct evdi_device_context {
 	int device_index;
 };
 
-static int do_ioctl(int fd, unsigned int request, void *data, const char *msg)
+static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
-	const int err = ioctl(fd, request, data);
+	int ret;
+
+	do {
+		ret = ioctl(fd, request, arg);
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+
+	return ret;
+}
+
+static int do_ioctl(int fd, unsigned long request, void *data, const char *msg)
+{
+	const int err = drm_ioctl(fd, request, data);
 
 	if (err < 0)
 		evdi_log("Ioctl %s error: %s", msg, strerror(errno));
@@ -344,7 +355,7 @@ static int open_device(int device)
 	fd = wait_for_device(dev);
 
 	if (fd >= 0) {
-		const int err = ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
+		const int err = drm_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
 
 		if (err == 0)
 			evdi_log("Dropped master on %s", dev);
