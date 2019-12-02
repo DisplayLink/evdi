@@ -83,18 +83,18 @@ static int drm_auth_magic(int fd, drm_magic_t magic)
 static int drm_is_master(int fd)
 {
 	/* Detect master by attempting something that requires master.
-	*
-	* Authenticating magic tokens requires master and 0 is an
-	* internal kernel detail which we could use. Attempting this on
-	* a master fd would fail therefore fail with EINVAL because 0
-	* is invalid.
-	*
-	* A non-master fd will fail with EACCES, as the kernel checks
-	* for master before attempting to do anything else.
-	*
-	* Since we don't want to leak implementation details, use
-	* EACCES.
-	*/
+	 *
+	 * Authenticating magic tokens requires master and 0 is an
+	 * internal kernel detail which we could use. Attempting this on
+	 * a master fd would fail therefore fail with EINVAL because 0
+	 * is invalid.
+	 *
+	 * A non-master fd will fail with EACCES, as the kernel checks
+	 * for master before attempting to do anything else.
+	 *
+	 * Since we don't want to leak implementation details, use
+	 * EACCES.
+	 */
 	return drm_auth_magic(fd, 0) != -EACCES;
 }
 
@@ -357,24 +357,27 @@ static int open_as_slave(const char *device_path)
 {
 	int fd = 0;
 	int err = 0;
+
 	fd = open(device_path, O_RDWR);
-	if (fd < 0) {
+	if (fd < 0)
 		return -1;
-	}
 
 	if (drm_is_master(fd)) {
-		evdi_log("Process has master on %s, err: %s", device_path, strerror(errno));
+		evdi_log("Process has master on %s, err: %s",
+			 device_path, strerror(errno));
 		err = drm_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
 	}
 
 	if (err < 0) {
-		evdi_log("Drop master on %s failed, err: %s", device_path, strerror(errno));
+		evdi_log("Drop master on %s failed, err: %s",
+			 device_path, strerror(errno));
 		close(fd);
 		return err;
 	}
 
 	if (drm_is_master(fd)) {
-		evdi_log("Drop master on %s failed, err: %s", device_path, strerror(errno));
+		evdi_log("Drop master on %s failed, err: %s",
+			 device_path, strerror(errno));
 		close(fd);
 		return -1;
 	}
