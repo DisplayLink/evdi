@@ -11,12 +11,14 @@
  * more details.
  */
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
-#include <linux/version.h>
 #include "evdi_drv.h"
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE

@@ -12,7 +12,12 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_vblank.h>
+#endif
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 

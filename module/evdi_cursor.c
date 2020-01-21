@@ -19,7 +19,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc_helper.h>
 #include <linux/compiler.h>
 #include <linux/mutex.h>

@@ -17,7 +17,11 @@
 #endif /* CONFIG_FB */
 #include <linux/dma-buf.h>
 #include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_fourcc.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>

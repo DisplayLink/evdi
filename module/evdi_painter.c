@@ -9,7 +9,13 @@
 
 #include "linux/thread_info.h"
 #include "linux/mm.h"
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_file.h>
+#include <drm/drm_fourcc.h>
+#endif
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
 #include "evdi_drv.h"

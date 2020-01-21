@@ -8,7 +8,15 @@
  * more details.
  */
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_ioctl.h>
+#include <drm/drm_file.h>
+#include <drm/drm_drv.h>
+#include <linux/dma-mapping.h>
+#endif
 #include <drm/drm_crtc_helper.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>

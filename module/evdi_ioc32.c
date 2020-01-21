@@ -21,7 +21,12 @@
 
 #include <linux/compat.h>
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_ioctl.h>
+#endif
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
 
