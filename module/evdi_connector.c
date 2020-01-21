@@ -109,11 +109,21 @@ static void evdi_connector_destroy(struct drm_connector *connector)
 static struct drm_encoder *evdi_best_encoder(struct drm_connector *connector)
 {
 
+#if KERNEL_VERSION(5, 4, 0) >= LINUX_VERSION_CODE
 	return drm_encoder_find(connector->dev,
 #if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 				NULL,
 #endif
 				connector->encoder_ids[0]);
+#else
+	struct drm_encoder *encoder;
+
+	/* return the first found */
+	drm_connector_for_each_possible_encoder(connector, encoder)
+		return encoder;
+
+	return NULL;
+#endif
 }
 
 static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
