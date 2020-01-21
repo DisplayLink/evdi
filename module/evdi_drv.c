@@ -89,7 +89,10 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 }
 
 static struct drm_driver driver = {
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
+	.driver_features = DRIVER_MODESET | DRIVER_GEM
+#if KERNEL_VERSION(5, 3, 0) >= LINUX_VERSION_CODE
+			 | DRIVER_PRIME
+#endif
 			 | DRIVER_ATOMIC,
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	.load = evdi_driver_load,
