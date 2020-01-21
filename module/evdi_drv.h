@@ -123,7 +123,10 @@ uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
-struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
+struct dma_buf *evdi_gem_prime_export(
+#if KERNEL_VERSION(5, 3, 0) >= LINUX_VERSION_CODE
+					  struct drm_device *dev,
+#endif
 				      struct drm_gem_object *obj, int flags);
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);

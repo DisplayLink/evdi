@@ -581,7 +581,10 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 	return ERR_PTR(ret);
 }
 
-struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
+struct dma_buf *evdi_gem_prime_export(
+#if KERNEL_VERSION(5, 3, 0) >= LINUX_VERSION_CODE
+					  __maybe_unused struct drm_device *dev,
+#endif
 				      struct drm_gem_object *obj, int flags)
 {
 	struct evdi_gem_object *evdi_obj = to_evdi_bo(obj);
@@ -594,7 +597,9 @@ struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 		.priv = obj
 	};
 
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 3, 0) <= LINUX_VERSION_CODE
+	return drm_gem_dmabuf_export(obj->dev, &exp_info);
+#elif KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	return drm_gem_dmabuf_export(dev, &exp_info);
 #else
 	return dma_buf_export(&exp_info);
