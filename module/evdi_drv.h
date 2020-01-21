@@ -22,7 +22,11 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
+#if KERNEL_VERSION(5, 3, 0) >= LINUX_VERSION_CODE
 #include <linux/reservation.h>
+#else
+#include <linux/dma-resv.h>
+#endif
 #include "evdi_debug.h"
 
 #define DRIVER_NAME   "evdi"
@@ -53,8 +57,13 @@ struct evdi_gem_object {
 	struct page **pages;
 	void *vmapping;
 	struct sg_table *sg;
+#if KERNEL_VERSION(5, 3, 0) >= LINUX_VERSION_CODE
 	struct reservation_object *resv;
 	struct reservation_object _resv;
+#else
+	struct dma_resv *resv;
+	struct dma_resv _resv;
+#endif
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
