@@ -499,9 +499,11 @@ static void evdi_fbdev_destroy(__always_unused struct drm_device *dev,
 		framebuffer_release(info);
 	}
 	drm_fb_helper_fini(&efbdev->helper);
-	drm_framebuffer_unregister_private(&efbdev->efb.base);
-	drm_framebuffer_cleanup(&efbdev->efb.base);
-	drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+	if (efbdev->efb.obj) {
+		drm_framebuffer_unregister_private(&efbdev->efb.base);
+		drm_framebuffer_cleanup(&efbdev->efb.base);
+		drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+	}
 }
 
 int evdi_fbdev_init(struct drm_device *dev)
