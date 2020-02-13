@@ -5,10 +5,12 @@
 *.order
 *.rej
 *.so
+*.so.*
 *.symvers
 
 module/.cache.mk
 module/.tmp_versions/
+module/built-in.a
 module/evdi.mod
 module/evdi.mod.c
 

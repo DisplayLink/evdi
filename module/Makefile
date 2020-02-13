@@ -71,7 +71,7 @@ install:
 	$(DEPMOD)
 
 clean:
-	$(RM) -rf *.o *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
+	$(RM) -rf *.o *.a *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
 
 uninstall:
 	$(RM) -rf $(DESTDIR)/lib/modules/$(KVER)/$(MOD_KERNEL_PATH)
