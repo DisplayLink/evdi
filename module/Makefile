@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
 #
 # This file is subject to the terms and conditions of the GNU General Public
 # License v2. See the file COPYING in the main directory of this archive for
@@ -43,22 +43,39 @@ obj-$(CONFIG_DRM_EVDI) := evdi.o
 else
 
 # kbuild against specified or current kernel
+RM ?= rm
+
 ifeq ($(KVER),)
 	KVER := $(shell uname -r)
+endif
+
+ifneq ($(RUN_DEPMOD),)
+	DEPMOD := /sbin/depmod -a
+else
+	DEPMOD := true
 endif
 
 ifeq ($(KDIR),)
 	KDIR := /lib/modules/$(KVER)/build
 endif
 
+MOD_KERNEL_PATH := /kernel/drivers/gpu/drm/evdi
+
 default: module
 
 module:
 	$(MAKE) -C $(KDIR) M=$$PWD
 
-clean:
-	rm -rf *.o *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
+install:
+	$(MAKE) -C $(KDIR) M=$$PWD INSTALL_MOD_PATH=$(DESTDIR) INSTALL_MOD_DIR=$(MOD_KERNEL_PATH) modules_install
+	$(DEPMOD)
 
+clean:
+	$(RM) -rf *.o *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
+
+uninstall:
+	$(RM) -rf $(DESTDIR)/lib/modules/$(KVER)/$(MOD_KERNEL_PATH)
+	$(DEPMOD)
 
 endif # ifneq ($(KERNELRELEASE),)
 
