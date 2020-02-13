@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -20,7 +20,11 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
 #include <linux/reservation.h>
+#else
+#include <linux/dma-resv.h>
+#endif
 #include "evdi_debug.h"
 
 #define DRIVER_NAME   "evdi"
@@ -51,8 +55,13 @@ struct evdi_gem_object {
 	struct page **pages;
 	void *vmapping;
 	struct sg_table *sg;
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
 	struct reservation_object *resv;
 	struct reservation_object _resv;
+#else
+	struct dma_resv *resv;
+	struct dma_resv _resv;
+#endif
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
@@ -112,8 +121,12 @@ uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
-struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
-				      struct drm_gem_object *obj, int flags);
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
+				struct drm_gem_object *obj, int flags);
+#else
+struct dma_buf *evdi_gem_prime_export(struct drm_gem_object *obj, int flags);
+#endif
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);

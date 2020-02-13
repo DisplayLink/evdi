@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -61,7 +61,11 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		return NULL;
 	}
 
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
 	reservation_object_init(&obj->_resv);
+#else
+	dma_resv_init(&obj->_resv);
+#endif
 	obj->resv = &obj->_resv;
 
 	return obj;
@@ -254,8 +258,11 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (gem_obj->dev->vma_offset_manager)
 		drm_gem_free_mmap_offset(gem_obj);
-
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
 	reservation_object_fini(&obj->_resv);
+#else
+	dma_resv_fini(&obj->_resv);
+#endif
 	obj->resv = NULL;
 }
 
@@ -569,8 +576,11 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 	return ERR_PTR(ret);
 }
 
-struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
-				      struct drm_gem_object *obj, int flags)
+struct dma_buf *evdi_gem_prime_export(
+#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+				__maybe_unused struct drm_device *dev,
+#endif
+				struct drm_gem_object *obj, int flags)
 {
 	struct evdi_gem_object *evdi_obj = to_evdi_bo(obj);
 	struct dma_buf_export_info exp_info = {
@@ -581,8 +591,8 @@ struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 		.resv = evdi_obj->resv,
 		.priv = obj
 	};
-
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE && \
+	KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
 	return drm_gem_dmabuf_export(dev, &exp_info);
 #else
 	return dma_buf_export(&exp_info);
