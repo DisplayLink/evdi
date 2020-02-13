@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2013 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2013 - 2020 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -9,7 +9,10 @@
 
 #include "linux/thread_info.h"
 #include "linux/mm.h"
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
 #include "evdi_drv.h"

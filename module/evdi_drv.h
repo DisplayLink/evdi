@@ -13,9 +13,18 @@
 #ifndef EVDI_DRV_H
 #define EVDI_DRV_H
 
+#include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
 #include <drm/drmP.h>
+#else
+#include <drm/drm_drv.h>
+#include <drm/drm_fourcc.h>
+#include <drm/drm_ioctl.h>
+#include <drm/drm_irq.h>
+#include <drm/drm_vblank.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>

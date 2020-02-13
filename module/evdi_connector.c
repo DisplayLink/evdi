@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -11,12 +11,11 @@
  * more details.
  */
 
-#include <drm/drmP.h>
+#include <linux/version.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
-#include <linux/version.h>
 #include "evdi_drv.h"
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
@@ -106,12 +105,22 @@ static void evdi_connector_destroy(struct drm_connector *connector)
 
 static struct drm_encoder *evdi_best_encoder(struct drm_connector *connector)
 {
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+	struct drm_encoder *encoder;
 
+	drm_connector_for_each_possible_encoder(connector, encoder) {
+		return encoder;
+	}
+
+	return NULL;
+#elif KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 	return drm_encoder_find(connector->dev,
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 				NULL,
-#endif
 				connector->encoder_ids[0]);
+#else
+	return drm_encoder_find(connector->dev,
+				connector->encoder_ids[0]);
+#endif
 }
 
 static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {

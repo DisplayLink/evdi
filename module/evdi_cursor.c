@@ -3,7 +3,7 @@
  * evdi_cursor.c
  *
  * Copyright (c) 2016 The Chromium OS Authors
- * Copyright (c) 2016 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2016 - 2020 DisplayLink (UK) Ltd.
  *
  * This program is free software; you can redistribute  it and/or modify it
  * under  the terms of  the GNU General  Public License as published by the
@@ -19,10 +19,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <drm/drmP.h>
-#include <drm/drm_crtc_helper.h>
 #include <linux/compiler.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
+
+#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#include <drm/drmP.h>
+#endif
+#include <drm/drm_crtc_helper.h>
 
 #include "evdi_cursor.h"
 #include "evdi_drv.h"
