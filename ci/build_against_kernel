@@ -11,22 +11,30 @@ usage() {
 
   cat << EOF
 ${bold}SYNOPSIS${normal}
-      ${bold}${0}${normal} [OPTION]... [PARAMETER]...
+      ${bold}${0}${normal} [MODE] [OPTION]... [PARAMETER]...
 
 ${bold}DESCRIPTION${normal}
       Script automates ${underline}module${normal} build against specific ${underline}kernel${normal} version.
       It can download fresh copy of sources from ${underline}github${normal}, untar it,
       prepare and build evdi in this 'sandboxed' environment.
 
-${bold}OPTIONS${normal}
+${bold}MODES${normal}
       ${bold}--clean${normal}
             Get clean version of ${bold}tar.gz${normal}.
             This is the ${underline}default${normal} behaviour.
       ${bold}--cached${normal}
-            Use previously downloaded sources.
+            Use previously downloaded ${bold}tar.gz${normal}.
       ${bold}--ci${normal}
-            Use previously extracted sources.
+            Use previously extracted sources from ${bold}tar.gz${normal}.
 
+      ${bold}--repo-clean${normal}
+            Use clean clone from updated local mirror of ${underline}kernel${normal} repository.
+      ${bold}--repo-cached${normal}
+            Use clean clone from local mirror of ${underline}kernel${normal} repository.
+      ${bold}--repo-ci${normal}
+            Use previous clone from local mirror of ${underline}kernel${normal} repository.
+
+${bold}OPTIONS${normal}
       ${bold}-j${normal} ${underline}jobs${normal}, ${bold}--jobs=${normal}${underline}jobs${normal}, ${bold}--jobs${normal} ${underline}jobs${normal}
             Specifies the number of commands to run simultaneously.
             Similar as in ${bold}make${normal}.
@@ -59,6 +67,14 @@ ${bold}EXAMPLES${normal}
       ${bold}${0} -j 4 all${normal}
             Build against ${underline}all${normal} kernels listed in ${bold}.travis.yml${normal}
             file, passing ${underline}--jobs=4${normal} to ${bold}make${normal}.
+
+      ${bold}${0} --repo-cached 5.5${normal}
+            Build against clean clone of ${underline}5.5${normal} kernel from local
+            ${underline}kernel${normal} mirror.
+
+      ${bold}${0} --repo-ci 5.6-rc1${normal}
+            Build against prevously cloned ${underline}5.6-rc1${normal} kernel from
+            local ${underline}kernel${normal} mirror.
 EOF
 }
 
@@ -67,17 +83,11 @@ get_versions_from_file() { # file
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
-prepare_sources() { ( # PACKAGE SOURCES CC
+prepare_tar_gz_sources() { # PACKAGE SOURCES CC
   local PACKAGE="${1}.tar.gz"
   local SOURCES="${2}"
   local CC="${3}"
-  local SRC_DIR="$(pwd)/${TMP}/${SOURCES}"
-
-  if [ ! -d "${TMP}" ]; then
-    mkdir "${TMP}"
-  fi
-
-  cd "${TMP}"
+  local SRC_DIR="$(pwd)/${SOURCES}"
 
   if [ "${MODE}" = "CLEAN" ]; then
     rm -f "${PACKAGE}"
@@ -96,6 +106,47 @@ prepare_sources() { ( # PACKAGE SOURCES CC
     prepare_kernel "${SRC_DIR}" "${CC}"
   elif [ "${MODE}" != "CI" ]; then
     prepare_kernel "${SRC_DIR}" "${CC}"
+  fi
+}
+
+prepare_repo_sources() { # PACKAGE SOURCES CC
+  local PACKAGE="${1}"
+  local SOURCES="${2}"
+  local CC="${3}"
+  local SRC_DIR="$(pwd)/${SOURCES}"
+
+  if [ ! -e linux.git ]; then
+    git clone --bare https://github.com/torvalds/linux linux.git
+  fi
+
+  if [ "${MODE}" = "REPO-CLEAN" ]; then (
+    cd linux.git
+    git fetch
+  ) fi
+
+  if [ "${MODE}" = "REPO-CLEAN" ] || [ "${MODE}" = "REPO-CACHED" ]; then
+    rm -rf "${SOURCES}"
+  fi
+
+  if [ ! -e "${SOURCES}" ]; then
+    git clone --depth 1 --branch "${PACKAGE}" "file://$(pwd)/linux.git" "${SOURCES}"
+    prepare_kernel "${SRC_DIR}" "${CC}"
+  elif [ "${MODE}" != "REPO-CI" ]; then
+    prepare_kernel "${SRC_DIR}" "${CC}"
+  fi
+}
+
+prepare_sources() { ( # PACKAGE SOURCES CC
+  if [ ! -d "${TMP}" ]; then
+    mkdir "${TMP}"
+  fi
+
+  cd "${TMP}"
+
+  if [[ ${MODE} == REPO* ]]; then
+    prepare_repo_sources "${1}" "${2}" "${3}"
+  else
+    prepare_tar_gz_sources "${1}" "${2}" "${3}"
   fi
 ) }
 
@@ -148,6 +199,18 @@ do
 
     --ci)
       MODE="CI"
+ 	     ;;
+
+    --repo-clean)
+      MODE="REPO-CLEAN"
+      ;;
+
+    --repo-cached)
+      MODE="REPO-CACHED"
+      ;;
+
+    --repo-ci)
+      MODE="REPO-CI"
       ;;
 
     -j|--jobs)
