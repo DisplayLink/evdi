@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-# Copyright (c) 2016 - 2019 DisplayLink (UK) Ltd.
+# Copyright (c) 2016 - 2020 DisplayLink (UK) Ltd.
 
 set -e
 set -u
@@ -10,7 +10,6 @@ usage() {
   local normal=$(tput sgr0)
 
   cat << EOF
-
 ${bold}SYNOPSIS${normal}
       ${bold}${0}${normal} [OPTION]... [PARAMETER]...
 
@@ -68,9 +67,11 @@ get_versions_from_file() { # file
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
-get_sources() { ( # PACKAGE SOURCES
+prepare_sources() { ( # PACKAGE SOURCES CC
   local PACKAGE="${1}.tar.gz"
   local SOURCES="${2}"
+  local CC="${3}"
+  local SRC_DIR="$(pwd)/${TMP}/${SOURCES}"
 
   if [ ! -d "${TMP}" ]; then
     mkdir "${TMP}"
@@ -92,16 +93,20 @@ get_sources() { ( # PACKAGE SOURCES
 
   if [ ! -e "${SOURCES}" ]; then
     tar -xzf "${PACKAGE}"
+    prepare_kernel "${SRC_DIR}" "${CC}"
+  elif [ "${MODE}" != "CI" ]; then
+    prepare_kernel "${SRC_DIR}" "${CC}"
   fi
-
-  echo "$(pwd)/${SOURCES}"
 ) }
 
 prepare_kernel() { ( # SRC_DIR CC
-    cd "${1}"
-    make olddefconfig CC="${2}" --jobs=${JOBS}
-    make prepare CC="${2}" --jobs=${JOBS}
+  cd "${1}"
+  make olddefconfig CC="${2}" --jobs=${JOBS}
+  make prepare CC="${2}" --jobs=${JOBS}
+
+  if [[ ${KVER:0:1} < "5" ]]; then
     make scripts CC="${2}" --jobs=${JOBS}
+  fi
 ) }
 
 build_one() { # KVER
@@ -117,12 +122,13 @@ build_one() { # KVER
 
   local src_dir
   if [ "${KVER}" = "master" ]; then
-    src_dir=$(get_sources "master" "linux-master")
+    prepare_sources "master" "linux-master" "${CC}"
+    src_dir="$(pwd)/${TMP}/linux-master"
   else
-    src_dir=$(get_sources "v${KVER}" "linux-${KVER}")
+    prepare_sources "v${KVER}" "linux-${KVER}" "${CC}"
+    src_dir="$(pwd)/${TMP}/linux-${KVER}"
   fi
 
-  prepare_kernel "${src_dir}" "${CC}"
   make KDIR="${src_dir}" CC="${CC}" --jobs=${JOBS}
 }
 
