@@ -5,6 +5,7 @@
 INSTALL ?= install
 LN ?= ln
 RM ?= rm
+CP ?= cp
 
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC $(CFLAGS)
@@ -18,13 +19,14 @@ LIBDIR ?= $(PREFIX)/lib
 default: libevdi.so.$(LIBVER)
 
 clean:
-	rm -rf *.o libevdi.so.$(LIBVER)
+	rm -rf *.o libevdi.so.$(LIBVER) libevdi.so
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 libevdi.so.$(LIBVER): evdi_lib.o
 	$(CC) $^ -shared -Wl,-soname,libevdi.so.$(LIBABI) -o $@ -lc -lgcc $(LDFLAGS)
+	$(CP) libevdi.so.$(LIBVER) libevdi.so
 
 install:
 	$(INSTALL) -d $(DESTDIR)$(LIBDIR)
