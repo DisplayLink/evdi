@@ -27,6 +27,7 @@ ${bold}MODES${normal}
       ${bold}--ci${normal}
             Use previously extracted sources from ${bold}tar.gz${normal}.
 
+      ${bold}--repo${normal}
       ${bold}--repo-clean${normal}
             Use clean clone from updated local mirror of ${underline}kernel${normal} repository.
       ${bold}--repo-cached${normal}
@@ -117,11 +118,12 @@ prepare_repo_sources() { # PACKAGE SOURCES CC
 
   if [ ! -e linux.git ]; then
     git clone --bare https://github.com/torvalds/linux linux.git
+    git remote add github https://github.com/torvalds/linux
   fi
 
   if [ "${MODE}" = "REPO-CLEAN" ]; then (
     cd linux.git
-    git fetch
+    git fetch github
   ) fi
 
   if [ "${MODE}" = "REPO-CLEAN" ] || [ "${MODE}" = "REPO-CACHED" ]; then
@@ -201,7 +203,7 @@ do
       MODE="CI"
  	     ;;
 
-    --repo-clean)
+    --repo|--repo-clean)
       MODE="REPO-CLEAN"
       ;;
 
