@@ -565,7 +565,11 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 		struct fb_info *info;
 
 		info = efbdev->helper.fbdev;
+#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE
+		unregister_framebuffer(info);
+#else
 		unlink_framebuffer(info);
+#endif
 	}
 }
 #endif /* CONFIG_FB */

@@ -463,6 +463,7 @@ static void evdi_unmap_dma_buf(
 {
 }
 
+#if KERNEL_VERSION(5, 6, 0) > LINUX_VERSION_CODE
 static void *evdi_dmabuf_kmap(__always_unused struct dma_buf *dma_buf,
 			__always_unused unsigned long page_num)
 {
@@ -475,6 +476,7 @@ static void evdi_dmabuf_kunmap(
 			__always_unused void *addr)
 {
 }
+#endif
 
 #if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
 static void *evdi_dmabuf_kmap_atomic(__always_unused struct dma_buf *dma_buf,
@@ -513,7 +515,7 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.map_atomic = evdi_dmabuf_kmap_atomic,
 	.unmap = evdi_dmabuf_kunmap,
 	.unmap_atomic = evdi_dmabuf_kunmap_atomic,
-#else
+#elif KERNEL_VERSION(5, 6, 0) > LINUX_VERSION_CODE
 	.map = evdi_dmabuf_kmap,
 	.unmap = evdi_dmabuf_kunmap,
 #endif
