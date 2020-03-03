@@ -23,7 +23,8 @@
 #include <linux/mutex.h>
 #include <linux/version.h>
 
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_crtc_helper.h>

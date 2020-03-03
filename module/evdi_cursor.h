@@ -23,7 +23,8 @@
 
 #include <linux/version.h>
 #include <linux/module.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_crtc.h>

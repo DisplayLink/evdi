@@ -22,7 +22,8 @@
 #include <linux/compat.h>
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_edid.h>
@@ -59,10 +60,10 @@ static int compat_evdi_connect(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
-	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-#else
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#else
+	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
 		|| __put_user(req32.connected, &request->connected)
 		|| __put_user(req32.dev_index, &request->dev_index)
@@ -87,10 +88,10 @@ static int compat_evdi_grabpix(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
-	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-#else
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#else
+	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
 		|| __put_user(req32.mode, &request->mode)
 		|| __put_user(req32.buf_width, &request->buf_width)

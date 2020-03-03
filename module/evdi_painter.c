@@ -10,7 +10,8 @@
 #include "linux/thread_info.h"
 #include "linux/mm.h"
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_edid.h>
@@ -29,7 +30,8 @@
 #include <drm/drm_probe_helper.h>
 #endif
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+#else
 static inline void drm_framebuffer_put(struct drm_framebuffer *fb)
 {
 	drm_framebuffer_unreference(fb);
@@ -259,7 +261,8 @@ static void evdi_painter_send_update_ready(struct evdi_painter *painter)
 		event->update_ready.base.length = sizeof(event->update_ready);
 		event->base.event = &event->update_ready.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -328,7 +331,8 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 
 		event->base.event = &event->cursor_set.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -357,7 +361,8 @@ void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 
 		event->base.event = &event->cursor_move.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -378,7 +383,8 @@ static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
 		event->dpms.mode = mode;
 		event->base.event = &event->dpms.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -400,7 +406,8 @@ static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
 		event->crtc_state.state = state;
 		event->base.event = &event->crtc_state.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -432,7 +439,8 @@ static void evdi_painter_send_mode_changed(
 
 		event->base.event = &event->mode_changed.base;
 		event->base.file_priv = painter->drm_filp;
-#if KERNEL_VERSION(4, 8, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
+#else
 		event->base.destroy =
 		    (void (*)(struct drm_pending_event *))kfree;
 #endif
@@ -603,12 +611,12 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 	if (fb == NULL)
 		return;
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-	bits_per_pixel = fb->bits_per_pixel;
-	pixel_format = fb->pixel_format;
-#else
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 	bits_per_pixel = fb->format->cpp[0] * 8;
 	pixel_format = fb->format->format;
+#else
+	bits_per_pixel = fb->bits_per_pixel;
+	pixel_format = fb->pixel_format;
 #endif
 
 	EVDI_DEBUG("(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",

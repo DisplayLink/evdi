@@ -9,7 +9,8 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_crtc_helper.h>
@@ -65,32 +66,33 @@ static const struct file_operations evdi_driver_fops = {
 };
 
 static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-			      __always_unused int pipe)
-#else
+#if KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
 			      __always_unused unsigned int pipe)
+#else
+			      __always_unused int pipe)
 #endif
 {
 	return 1;
 }
 
 static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-				__always_unused int pipe)
-#else
+#if KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
 				__always_unused unsigned int pipe)
+#else
+				__always_unused int pipe)
 #endif
 {
 }
 
 static struct drm_driver driver = {
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
+#else
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
-#else
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
 #endif
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+#else
 	.load = evdi_driver_load,
 #endif
 	.unload = evdi_driver_unload,
@@ -116,11 +118,13 @@ static struct drm_driver driver = {
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.gem_prime_export = evdi_gem_prime_export,
 
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-	.get_vblank_counter = drm_vblank_count,
-#elif KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
 	.get_vblank_counter = drm_vblank_no_hw_counter,
+#else
+	.get_vblank_counter = drm_vblank_count,
 #endif
+
 	.enable_vblank = evdi_enable_vblank,
 	.disable_vblank = evdi_disable_vblank,
 
@@ -223,10 +227,10 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
-	drm_unplug_dev(drm_dev);
-#else
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 	drm_dev_unplug(drm_dev);
+#else
+	drm_unplug_dev(drm_dev);
 #endif
 
 	return 0;

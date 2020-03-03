@@ -12,7 +12,8 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_atomic.h>
@@ -122,10 +123,10 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	EVDI_CHECKPT();
 	if (handle) {
 		mutex_lock(&dev->struct_mutex);
-#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
-		obj = drm_gem_object_lookup(crtc->dev, file, handle);
-#else
+#if KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
 		obj = drm_gem_object_lookup(file, handle);
+#else
+		obj = drm_gem_object_lookup(crtc->dev, file, handle);
 #endif
 		if (obj)
 			eobj = to_evdi_bo(obj);
@@ -185,7 +186,8 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.destroy                = evdi_crtc_destroy,
 	.set_config             = drm_atomic_helper_set_config,
 	.page_flip              = drm_atomic_helper_page_flip,
-#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+#else
 	.set_property           = drm_atomic_helper_crtc_set_property,
 #endif
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
@@ -288,10 +290,10 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 						fb->height,
 						0,
 						0,
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-						fb->pixel_format,
-#else
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 						fb->format->format,
+#else
+						fb->pixel_format,
 #endif
 						stride);
 			}
@@ -464,7 +466,8 @@ void evdi_modeset_init(struct drm_device *dev)
 
 	dev->mode_config.funcs = &evdi_mode_funcs;
 
-#if KERNEL_VERSION(4, 9, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+#else
 	drm_mode_create_dirty_info_property(dev);
 #endif
 

@@ -9,7 +9,8 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include "evdi_drv.h"
@@ -19,7 +20,8 @@
 #include <drm/drm_cache.h>
 #endif
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+#else
 static inline void drm_gem_object_put(struct drm_gem_object *obj)
 {
 	drm_gem_object_unreference(obj);
@@ -63,10 +65,10 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		return NULL;
 	}
 
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
-	reservation_object_init(&obj->_resv);
-#else
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 	dma_resv_init(&obj->_resv);
+#else
+	reservation_object_init(&obj->_resv);
 #endif
 	obj->resv = &obj->_resv;
 
@@ -192,10 +194,10 @@ static int evdi_gem_get_pages(struct evdi_gem_object *obj,
 static void evdi_gem_put_pages(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
-#if KERNEL_VERSION(4, 13, 0) > LINUX_VERSION_CODE
-		drm_free_large(obj->pages);
-#else
+#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
 		kvfree(obj->pages);
+#else
+		drm_free_large(obj->pages);
 #endif
 		obj->pages = NULL;
 		return;
@@ -260,10 +262,10 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (gem_obj->dev->vma_offset_manager)
 		drm_gem_free_mmap_offset(gem_obj);
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
-	reservation_object_fini(&obj->_resv);
-#else
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 	dma_resv_fini(&obj->_resv);
+#else
+	reservation_object_fini(&obj->_resv);
 #endif
 	obj->resv = NULL;
 }
@@ -280,10 +282,10 @@ int evdi_gem_mmap(struct drm_file *file,
 	int ret = 0;
 
 	mutex_lock(&dev->struct_mutex);
-#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
-	obj = drm_gem_object_lookup(dev, file, handle);
-#else
+#if KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
 	obj = drm_gem_object_lookup(file, handle);
+#else
+	obj = drm_gem_object_lookup(dev, file, handle);
 #endif
 	if (obj == NULL) {
 		ret = -ENOENT;
@@ -324,10 +326,10 @@ static int evdi_prime_create(struct drm_device *dev,
 		return -ENOMEM;
 
 	obj->sg = sg;
-#if KERNEL_VERSION(4, 13, 0) > LINUX_VERSION_CODE
-	obj->pages = drm_malloc_ab(npages, sizeof(struct page *));
-#else
+#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
 	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+#else
+	obj->pages = drm_malloc_ab(npages, sizeof(struct page *));
 #endif
 
 	if (obj->pages == NULL) {
@@ -348,7 +350,8 @@ struct evdi_drm_dmabuf_attachment {
 };
 
 static int evdi_attach_dma_buf(__always_unused struct dma_buf *dmabuf,
-#if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+#else
 			       __always_unused struct device *dev,
 #endif
 			       struct dma_buf_attachment *attach)
@@ -463,7 +466,8 @@ static void evdi_unmap_dma_buf(
 {
 }
 
-#if KERNEL_VERSION(5, 6, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE
+#else
 static void *evdi_dmabuf_kmap(__always_unused struct dma_buf *dma_buf,
 			__always_unused unsigned long page_num)
 {
@@ -478,7 +482,8 @@ static void evdi_dmabuf_kunmap(
 }
 #endif
 
-#if KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+#else
 static void *evdi_dmabuf_kmap_atomic(__always_unused struct dma_buf *dma_buf,
 				     __always_unused unsigned long page_num)
 {
@@ -505,19 +510,20 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.detach = evdi_detach_dma_buf,
 	.map_dma_buf = evdi_map_dma_buf,
 	.unmap_dma_buf = evdi_unmap_dma_buf,
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-	.kmap = evdi_dmabuf_kmap,
-	.kmap_atomic = evdi_dmabuf_kmap_atomic,
-	.kunmap = evdi_dmabuf_kunmap,
-	.kunmap_atomic = evdi_dmabuf_kunmap_atomic,
-#elif KERNEL_VERSION(4, 19, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	.map = evdi_dmabuf_kmap,
+	.unmap = evdi_dmabuf_kunmap,
+#elif KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 	.map = evdi_dmabuf_kmap,
 	.map_atomic = evdi_dmabuf_kmap_atomic,
 	.unmap = evdi_dmabuf_kunmap,
 	.unmap_atomic = evdi_dmabuf_kunmap_atomic,
-#elif KERNEL_VERSION(5, 6, 0) > LINUX_VERSION_CODE
-	.map = evdi_dmabuf_kmap,
-	.unmap = evdi_dmabuf_kunmap,
+#else
+	.kmap = evdi_dmabuf_kmap,
+	.kmap_atomic = evdi_dmabuf_kmap_atomic,
+	.kunmap = evdi_dmabuf_kunmap,
+	.kunmap_atomic = evdi_dmabuf_kunmap_atomic,
 #endif
 	.mmap = evdi_dmabuf_mmap,
 	.release = drm_gem_dmabuf_release,
@@ -581,7 +587,8 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 }
 
 struct dma_buf *evdi_gem_prime_export(
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#else
 				__maybe_unused struct drm_device *dev,
 #endif
 				struct drm_gem_object *obj, int flags)
@@ -595,8 +602,10 @@ struct dma_buf *evdi_gem_prime_export(
 		.resv = evdi_obj->resv,
 		.priv = obj
 	};
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE && \
-	KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+	return dma_buf_export(&exp_info);
+#elif KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	return drm_gem_dmabuf_export(dev, &exp_info);
 #else
 	return dma_buf_export(&exp_info);

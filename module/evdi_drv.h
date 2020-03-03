@@ -16,23 +16,23 @@
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
-#include <drm/drmP.h>
-#else
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_drv.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_ioctl.h>
 #include <drm/drm_irq.h>
 #include <drm/drm_vblank.h>
+#else
+#include <drm/drmP.h>
 #endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
-#include <linux/reservation.h>
-#else
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-resv.h>
+#else
+#include <linux/reservation.h>
 #endif
 #include "evdi_debug.h"
 
@@ -64,12 +64,12 @@ struct evdi_gem_object {
 	struct page **pages;
 	void *vmapping;
 	struct sg_table *sg;
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
-	struct reservation_object *resv;
-	struct reservation_object _resv;
-#else
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 	struct dma_resv *resv;
 	struct dma_resv _resv;
+#else
+	struct reservation_object *resv;
+	struct reservation_object _resv;
 #endif
 };
 
@@ -91,10 +91,10 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_driver_unload(struct drm_device *dev);
-#else
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 void evdi_driver_unload(struct drm_device *dev);
+#else
+int evdi_driver_unload(struct drm_device *dev);
 #endif
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
@@ -111,10 +111,10 @@ void evdi_fbdev_unplug(struct drm_device *dev);
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
 				struct drm_file *file,
-#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
-				struct drm_mode_fb_cmd2 *mode_cmd);
-#else
+#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 				const struct drm_mode_fb_cmd2 *mode_cmd);
+#else
+				struct drm_mode_fb_cmd2 *mode_cmd);
 #endif
 
 int evdi_dumb_create(struct drm_file *file_priv,
@@ -130,11 +130,11 @@ uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf);
-#if KERNEL_VERSION(5, 4, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+struct dma_buf *evdi_gem_prime_export(struct drm_gem_object *obj, int flags);
+#else
 struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 				struct drm_gem_object *obj, int flags);
-#else
-struct dma_buf *evdi_gem_prime_export(struct drm_gem_object *obj, int flags);
 #endif
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);

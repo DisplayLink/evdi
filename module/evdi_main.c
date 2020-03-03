@@ -13,7 +13,8 @@
 
 #include <linux/version.h>
 #include <linux/platform_device.h>
-#if KERNEL_VERSION(5, 5, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
 #endif
 #include "evdi_drv.h"
@@ -77,7 +78,8 @@ err:
 	return ret;
 }
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
+#else
 int evdi_driver_load(struct drm_device *dev,
 		     __always_unused unsigned long flags)
 {
@@ -85,17 +87,18 @@ int evdi_driver_load(struct drm_device *dev,
 }
 #endif
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_driver_unload(struct drm_device *dev)
-#else
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 void evdi_driver_unload(struct drm_device *dev)
+#else
+int evdi_driver_unload(struct drm_device *dev)
 #endif
 {
 	struct evdi_device *evdi = dev->dev_private;
 
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+#else
 	drm_vblank_cleanup(dev);
 #endif
 
@@ -120,7 +123,8 @@ void evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#else
 	return 0;
 #endif
 }
