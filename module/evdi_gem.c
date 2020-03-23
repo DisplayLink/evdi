@@ -252,10 +252,8 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 	if (obj->vmapping)
 		evdi_gem_vunmap(obj);
 
-	if (gem_obj->import_attach) {
+	if (gem_obj->import_attach)
 		drm_prime_gem_destroy(gem_obj, obj->sg);
-		put_device(gem_obj->dev->dev);
-	}
 
 	if (obj->pages)
 		evdi_gem_put_pages(obj);
