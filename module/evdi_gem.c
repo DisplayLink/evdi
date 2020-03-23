@@ -288,11 +288,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 
 	npages = PAGE_ALIGN(attach->dmabuf->size) / PAGE_SIZE;
 	DRM_DEBUG_PRIME("Importing %d pages\n", npages);
-#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
 	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
-#else
-	obj->pages = drm_malloc_ab(npages, sizeof(struct page *));
-#endif
 	if (!obj->pages) {
 		evdi_gem_free_object(&obj->base);
 		return ERR_PTR(-ENOMEM);
@@ -306,8 +302,6 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
-
-<<<<<<< HEAD
 	return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
 }
 
