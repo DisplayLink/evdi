@@ -83,10 +83,6 @@ static struct drm_driver driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
 #endif
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#else
-	.load = evdi_driver_load,
-#endif
 	.unload = evdi_driver_unload,
 	.preclose = evdi_driver_preclose,
 
@@ -112,10 +108,6 @@ static struct drm_driver driver = {
 	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
 	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#else
-	.get_vblank_counter = drm_vblank_no_hw_counter,
-#endif
 	.enable_vblank = evdi_enable_vblank,
 	.disable_vblank = evdi_disable_vblank,
 
@@ -168,7 +160,6 @@ static int evdi_add_devices(unsigned int val)
 	return 0;
 }
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 static int evdi_platform_probe(struct platform_device *pdev)
 {
 	struct drm_device *dev;
@@ -197,20 +188,7 @@ static int evdi_platform_probe(struct platform_device *pdev)
 	return 0;
 
 err_free:
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 	drm_dev_put(dev);
-#else
-	drm_dev_unref(dev);
-#endif
-	return ret;
-}
-#else
-static int evdi_platform_probe(struct platform_device *pdev)
-{
-	EVDI_CHECKPT();
-	return drm_platform_init(&driver, pdev);
-}
-#endif
 
 static int evdi_platform_remove(struct platform_device *pdev)
 {
@@ -218,11 +196,7 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 	drm_dev_unplug(drm_dev);
-#else
-	drm_unplug_dev(drm_dev);
-#endif
 
 	return 0;
 }

@@ -91,11 +91,7 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 void evdi_driver_unload(struct drm_device *dev);
-#else
-int evdi_driver_unload(struct drm_device *dev);
-#endif
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 
@@ -111,11 +107,7 @@ void evdi_fbdev_unplug(struct drm_device *dev);
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
 				struct drm_file *file,
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 				const struct drm_mode_fb_cmd2 *mode_cmd);
-#else
-				struct drm_mode_fb_cmd2 *mode_cmd);
-#endif
 
 int evdi_dumb_create(struct drm_file *file_priv,
 		     struct drm_device *dev, struct drm_mode_create_dumb *args);
@@ -140,10 +132,8 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
 #if KERNEL_VERSION(4, 17, 0) <= LINUX_VERSION_CODE
 vm_fault_t evdi_gem_fault(struct vm_fault *vmf);
-#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
-int evdi_gem_fault(struct vm_fault *vmf);
 #else
-int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
+int evdi_gem_fault(struct vm_fault *vmf);
 #endif
 
 bool evdi_painter_is_connected(struct evdi_device *evdi);
