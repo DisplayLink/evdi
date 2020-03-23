@@ -58,9 +58,7 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
-#if KERNEL_VERSION(4, 3, 0) <= LINUX_VERSION_CODE
 	, __always_unused struct drm_crtc_state *old_state
-#endif
 	)
 {
 	struct drm_crtc_state *state = crtc->state;

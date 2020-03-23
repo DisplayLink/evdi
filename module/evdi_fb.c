@@ -282,11 +282,7 @@ static int evdi_user_framebuffer_dirty(
 retry:
 #endif
 
-#if KERNEL_VERSION(4, 3, 0) <= LINUX_VERSION_CODE
 	drm_for_each_plane(plane, fb->dev) {
-#else
-	list_for_each_entry(plane, &fb->dev->mode_config.plane_list, head) {
-#endif
 		struct drm_plane_state *plane_state;
 
 		if (plane->state->fb != fb)
