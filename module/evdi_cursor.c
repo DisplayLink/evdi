@@ -52,17 +52,10 @@ struct evdi_cursor {
 static void evdi_cursor_set_gem(struct evdi_cursor *cursor,
 				struct evdi_gem_object *obj)
 {
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 	if (obj)
 		drm_gem_object_get(&obj->base);
 	if (cursor->obj)
 		drm_gem_object_put_unlocked(&cursor->obj->base);
-#else
-	if (obj)
-		drm_gem_object_reference(&obj->base);
-	if (cursor->obj)
-		drm_gem_object_unreference_unlocked(&cursor->obj->base);
-#endif
 
 	cursor->obj = obj;
 }
