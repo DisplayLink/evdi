@@ -113,12 +113,9 @@ static struct drm_encoder *evdi_best_encoder(struct drm_connector *connector)
 	}
 
 	return NULL;
-#elif KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
-	return drm_encoder_find(connector->dev,
-				NULL,
-				connector->encoder_ids[0]);
 #else
 	return drm_encoder_find(connector->dev,
+				NULL,
 				connector->encoder_ids[0]);
 #endif
 }
@@ -130,17 +127,9 @@ static struct drm_connector_helper_funcs evdi_connector_helper_funcs = {
 };
 
 static const struct drm_connector_funcs evdi_connector_funcs = {
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
-#else
-	.dpms = drm_atomic_helper_connector_dpms,
-#endif
 	.detect = evdi_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.destroy = evdi_connector_destroy,
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
-#else
-	.set_property = drm_atomic_helper_connector_set_property,
-#endif
 	.reset = drm_atomic_helper_connector_reset,
 	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
 	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state
@@ -167,12 +156,5 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 #else
 	drm_mode_connector_attach_encoder(connector, encoder);
 #endif
-
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
-#else
-	drm_object_attach_property(&connector->base,
-				   dev->mode_config.dirty_info_property, 1);
-#endif
-
 	return 0;
 }

@@ -30,17 +30,6 @@
 #endif
 #include "evdi_drv.h"
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#else
-static inline void drm_gem_object_put(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference(obj);
-}
-static inline void drm_gem_object_put_unlocked(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference_unlocked(obj);
-}
-#endif
 
 struct evdi_fbdev {
 	struct drm_fb_helper helper;
