@@ -248,14 +248,11 @@ static int evdi_user_framebuffer_dirty(
 	EVDI_CHECKPT();
 
 	drm_modeset_acquire_init(&ctx,
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 		/*
 		 * When called from ioctl, we are interruptable,
 		 * but not when called internally (ie. defio worker)
 		 */
-		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :
-#endif
-		0);
+		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :	0);
 
 	state = drm_atomic_state_alloc(fb->dev);
 	if (!state) {
@@ -267,9 +264,7 @@ static int evdi_user_framebuffer_dirty(
 	for (i = 0; i < num_clips; ++i)
 		evdi_painter_mark_dirty(evdi, &clips[i]);
 
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 retry:
-#endif
 
 	drm_for_each_plane(plane, fb->dev) {
 		struct drm_plane_state *plane_state;
