@@ -16,21 +16,7 @@
 #include "evdi_drv.h"
 #include <linux/shmem_fs.h>
 #include <linux/dma-buf.h>
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_cache.h>
-#endif
-
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#else
-static inline void drm_gem_object_put(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference(obj);
-}
-static inline void drm_gem_object_put_unlocked(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference_unlocked(obj);
-}
-#endif
 
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
@@ -127,35 +113,23 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 vm_fault_t evdi_gem_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
-#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#else
 int evdi_gem_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
-#else
-int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
 #endif
 	struct evdi_gem_object *obj = to_evdi_bo(vma->vm_private_data);
 	struct page *page;
 	unsigned int page_offset;
 	int ret = 0;
 
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	page_offset = (vmf->address - vma->vm_start) >> PAGE_SHIFT;
-#else
-	page_offset = ((unsigned long)vmf->virtual_address - vma->vm_start) >>
-	    PAGE_SHIFT;
-#endif
 
 	if (!obj->pages)
 		return VM_FAULT_SIGBUS;
 
 	page = obj->pages[page_offset];
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	ret = vm_insert_page(vma, vmf->address, page);
-#else
-	ret = vm_insert_page(vma, (unsigned long)vmf->virtual_address, page);
-#endif
 	switch (ret) {
 	case -EAGAIN:
 	case 0:
@@ -194,11 +168,7 @@ static int evdi_gem_get_pages(struct evdi_gem_object *obj,
 static void evdi_gem_put_pages(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
-#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
 		kvfree(obj->pages);
-#else
-		drm_free_large(obj->pages);
-#endif
 		obj->pages = NULL;
 		return;
 	}
@@ -280,11 +250,7 @@ int evdi_gem_mmap(struct drm_file *file,
 	int ret = 0;
 
 	mutex_lock(&dev->struct_mutex);
-#if KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
 	obj = drm_gem_object_lookup(file, handle);
-#else
-	obj = drm_gem_object_lookup(dev, file, handle);
-#endif
 	if (obj == NULL) {
 		ret = -ENOENT;
 		goto unlock;
@@ -341,6 +307,7 @@ struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
 
+<<<<<<< HEAD
 	return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
 }
 
