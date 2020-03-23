@@ -189,6 +189,8 @@ static int evdi_platform_probe(struct platform_device *pdev)
 
 err_free:
 	drm_dev_put(dev);
+	return ret;
+}
 
 static int evdi_platform_remove(struct platform_device *pdev)
 {
