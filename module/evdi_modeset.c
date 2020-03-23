@@ -25,9 +25,7 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_gem_framebuffer_helper.h>
-#endif
 
 static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
 			   __always_unused int mode)
@@ -121,11 +119,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	EVDI_CHECKPT();
 	if (handle) {
 		mutex_lock(&dev->struct_mutex);
-#if KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
 		obj = drm_gem_object_lookup(file, handle);
-#else
-		obj = drm_gem_object_lookup(crtc->dev, file, handle);
-#endif
 		if (obj)
 			eobj = to_evdi_bo(obj);
 		else
@@ -137,11 +131,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 			eobj, width, height, hot_x, hot_y,
 			format, stride);
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 	drm_gem_object_put_unlocked(obj);
-#else
-	drm_gem_object_unreference_unlocked(obj);
-#endif
 
 	/*
 	 * For now we don't care whether the application wanted the mouse set,
@@ -184,10 +174,6 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.destroy                = evdi_crtc_destroy,
 	.set_config             = drm_atomic_helper_set_config,
 	.page_flip              = drm_atomic_helper_page_flip,
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
-#else
-	.set_property           = drm_atomic_helper_crtc_set_property,
-#endif
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
 	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
 
@@ -288,11 +274,7 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 						fb->height,
 						0,
 						0,
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 						fb->format->format,
-#else
-						fb->pixel_format,
-#endif
 						stride);
 			}
 
@@ -320,16 +302,12 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
 	.atomic_update = evdi_plane_atomic_update,
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_fb_prepare_fb
-#endif
 };
 
 static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
 	.atomic_update = evdi_cursor_atomic_update,
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_fb_prepare_fb
-#endif
 };
 
 static const struct drm_plane_funcs evdi_plane_funcs = {
@@ -369,13 +347,9 @@ static struct drm_plane *evdi_create_plane(
 				       &evdi_plane_funcs,
 				       formats,
 				       ARRAY_SIZE(formats),
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
 				       NULL,
-#endif
-				       type
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
-				     , NULL
-#endif
+				       type,
+				       NULL
 				       );
 
 	if (ret) {
@@ -405,10 +379,8 @@ static int evdi_crtc_init(struct drm_device *dev)
 					  &evdi_plane_helper_funcs);
 	status = drm_crtc_init_with_planes(dev, crtc,
 					   primary_plane, cursor_plane,
-					   &evdi_crtc_funcs
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
-					 , NULL
-#endif
+					   &evdi_crtc_funcs,
+					   NULL
 					   );
 
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
@@ -426,11 +398,7 @@ static int evdi_atomic_check(struct drm_device *dev,
 	struct evdi_device *evdi = dev->dev_private;
 
 	if (evdi_painter_needs_full_modeset(evdi)) {
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 		for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
-#else
-		for_each_crtc_in_state(state, crtc, crtc_state, i) {
-#endif
 			crtc_state->active_changed = true;
 			crtc_state->mode_changed = true;
 		}
@@ -464,18 +432,6 @@ void evdi_modeset_init(struct drm_device *dev)
 
 	dev->mode_config.funcs = &evdi_mode_funcs;
 
-#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
-#else
-	drm_mode_create_dirty_info_property(dev);
-#endif
-
-#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
-
-#elif KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
-	drm_dev_set_unique(dev, dev_name(dev->dev));
-#else
-	drm_dev_set_unique(dev, "%s", dev_name(dev->dev));
-#endif
 	evdi_crtc_init(dev);
 
 	encoder = evdi_encoder_init(dev);

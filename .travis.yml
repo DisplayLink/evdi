@@ -4,17 +4,6 @@ language: c
 cache: ccache
 
 env:
-  - KVER=4.4
-  - KVER=4.5
-  - KVER=4.6
-  - KVER=4.7
-  - KVER=4.8
-  - KVER=4.9
-  - KVER=4.10
-  - KVER=4.11
-  - KVER=4.12
-  - KVER=4.13
-  - KVER=4.14
   - KVER=4.15
   - KVER=4.16
   - KVER=4.17
