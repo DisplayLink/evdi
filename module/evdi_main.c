@@ -78,39 +78,15 @@ err:
 	return ret;
 }
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#else
-int evdi_driver_load(struct drm_device *dev,
-		     __always_unused unsigned long flags)
-{
-	return evdi_driver_setup(dev);
-}
-#endif
 
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
 void evdi_driver_unload(struct drm_device *dev)
-#else
-int evdi_driver_unload(struct drm_device *dev)
-#endif
 {
 	struct evdi_device *evdi = dev->dev_private;
 
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
-#else
-	drm_vblank_cleanup(dev);
-#endif
-
 	drm_kms_helper_poll_fini(dev);
 
-#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
-
-#elif KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
-	drm_connector_unregister_all(dev);
-#else
-	drm_connector_unplug_all(dev);
-#endif
 #ifdef CONFIG_FB
 	evdi_fbdev_unplug(dev);
 #endif /* CONFIG_FB */
@@ -123,10 +99,6 @@ int evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
-#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
-#else
-	return 0;
-#endif
 }
 
 static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
