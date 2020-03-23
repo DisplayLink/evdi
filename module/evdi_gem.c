@@ -529,6 +529,35 @@ static struct dma_buf_ops evdi_dmabuf_ops = {
 	.release = drm_gem_dmabuf_release,
 };
 
+struct drm_gem_object *
+evdi_prime_import_sg_table(struct drm_device *dev,
+			   struct dma_buf_attachment *attach,
+			   struct sg_table *sg)
+{
+	struct evdi_gem_object *obj;
+	int npages;
+
+	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
+	if (IS_ERR(obj))
+		return ERR_CAST(obj);
+
+	npages = PAGE_ALIGN(attach->dmabuf->size) / PAGE_SIZE;
+	DRM_DEBUG_PRIME("Importing %d pages\n", npages);
+#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
+	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+#else
+	obj->pages = drm_malloc_ab(npages, sizeof(struct page *));
+#endif
+	if (!obj->pages) {
+		evdi_gem_free_object(&obj->base);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
+	obj->sg = sg;
+	return &obj->base;
+}
+
 struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 					     struct dma_buf *dma_buf)
 {
@@ -585,6 +614,15 @@ struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
 	put_device(dev->dev);
 	return ERR_PTR(ret);
 }
+
+struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
+{
+	struct evdi_gem_object *bo = to_evdi_bo(obj);
+
+	return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
+}
+
+
 
 struct dma_buf *evdi_gem_prime_export(
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE

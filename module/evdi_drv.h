@@ -136,6 +136,11 @@ struct dma_buf *evdi_gem_prime_export(struct drm_gem_object *obj, int flags);
 struct dma_buf *evdi_gem_prime_export(__maybe_unused struct drm_device *dev,
 				struct drm_gem_object *obj, int flags);
 #endif
+struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj);
+struct drm_gem_object *
+evdi_prime_import_sg_table(struct drm_device *dev,
+			   struct dma_buf_attachment *attach,
+			   struct sg_table *sg);
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);

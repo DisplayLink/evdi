@@ -114,9 +114,11 @@ static struct drm_driver driver = {
 	.fops = &evdi_driver_fops,
 
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
-	.gem_prime_import = evdi_gem_prime_import,
+	.gem_prime_import = drm_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
-	.gem_prime_export = evdi_gem_prime_export,
+	.gem_prime_export = drm_gem_prime_export,
+	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
+	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
 #if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 #elif KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
