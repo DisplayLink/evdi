@@ -128,8 +128,6 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				      struct drm_gem_object *obj);
 
-struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
-					     struct dma_buf *dma_buf);
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 struct dma_buf *evdi_gem_prime_export(struct drm_gem_object *obj, int flags);
 #else

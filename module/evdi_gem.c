@@ -310,39 +310,6 @@ int evdi_gem_mmap(struct drm_file *file,
 	return ret;
 }
 
-static int evdi_prime_create(struct drm_device *dev,
-			     size_t size,
-			     struct sg_table *sg,
-			     struct evdi_gem_object **obj_p)
-{
-	struct evdi_gem_object *obj;
-	int npages;
-
-	npages = size / PAGE_SIZE;
-
-	*obj_p = NULL;
-	obj = evdi_gem_alloc_object(dev, npages * PAGE_SIZE);
-	if (!obj)
-		return -ENOMEM;
-
-	obj->sg = sg;
-#if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
-	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
-#else
-	obj->pages = drm_malloc_ab(npages, sizeof(struct page *));
-#endif
-
-	if (obj->pages == NULL) {
-		DRM_ERROR("obj pages is NULL %d\n", npages);
-		return -ENOMEM;
-	}
-
-	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
-
-	*obj_p = obj;
-	return 0;
-}
-
 struct evdi_drm_dmabuf_attachment {
 	struct sg_table sgt;
 	enum dma_data_direction dir;
@@ -556,63 +523,6 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
 	obj->sg = sg;
 	return &obj->base;
-}
-
-struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
-					     struct dma_buf *dma_buf)
-{
-	struct dma_buf_attachment *attach;
-	struct sg_table *sg;
-	struct evdi_gem_object *uobj;
-	int ret;
-
-	/* check if our object */
-	if (dma_buf->ops == &evdi_dmabuf_ops) {
-		uobj = to_evdi_bo(dma_buf->priv);
-		if (uobj->base.dev == dev) {
-
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-			drm_gem_object_get(&uobj->base);
-#else
-			drm_gem_object_reference(&uobj->base);
-#endif
-
-			return &uobj->base;
-		}
-	}
-
-	/* need to attach */
-	get_device(dev->dev);
-	attach = dma_buf_attach(dma_buf, dev->dev);
-	if (IS_ERR(attach)) {
-		put_device(dev->dev);
-		return ERR_CAST(attach);
-	}
-
-	get_dma_buf(dma_buf);
-
-	sg = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
-	if (IS_ERR(sg)) {
-		ret = PTR_ERR(sg);
-		goto fail_detach;
-	}
-
-	ret = evdi_prime_create(dev, dma_buf->size, sg, &uobj);
-	if (ret)
-		goto fail_unmap;
-
-	uobj->base.import_attach = attach;
-	uobj->resv = attach->dmabuf->resv;
-
-	return &uobj->base;
-
- fail_unmap:
-	dma_buf_unmap_attachment(attach, sg, DMA_BIDIRECTIONAL);
- fail_detach:
-	dma_buf_detach(dma_buf, attach);
-	dma_buf_put(dma_buf);
-	put_device(dev->dev);
-	return ERR_PTR(ret);
 }
 
 struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
