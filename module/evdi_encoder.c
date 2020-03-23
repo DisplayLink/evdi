@@ -53,13 +53,8 @@ struct drm_encoder *evdi_encoder_init(struct drm_device *dev)
 	if (!encoder)
 		goto err;
 
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
 			       DRM_MODE_ENCODER_TMDS, dev_name(dev->dev));
-#else
-	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
-			       DRM_MODE_ENCODER_TMDS);
-#endif
 	if (ret) {
 		EVDI_ERROR("Failed to initialize encoder: %d\n", ret);
 		goto err_encoder;
