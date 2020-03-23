@@ -66,21 +66,13 @@ static const struct file_operations evdi_driver_fops = {
 };
 
 static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
 			      __always_unused unsigned int pipe)
-#else
-			      __always_unused int pipe)
-#endif
 {
 	return 1;
 }
 
 static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
 				__always_unused unsigned int pipe)
-#else
-				__always_unused int pipe)
-#endif
 {
 }
 
@@ -121,12 +113,9 @@ static struct drm_driver driver = {
 	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
 #if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
-#elif KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
-	.get_vblank_counter = drm_vblank_no_hw_counter,
 #else
-	.get_vblank_counter = drm_vblank_count,
+	.get_vblank_counter = drm_vblank_no_hw_counter,
 #endif
-
 	.enable_vblank = evdi_enable_vblank,
 	.disable_vblank = evdi_disable_vblank,
 
