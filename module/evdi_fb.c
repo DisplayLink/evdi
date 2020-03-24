@@ -294,9 +294,8 @@ out:
 			goto retry;
 	}
 
-	if (state) {
+	if (state)
 		drm_atomic_state_put(state);
-	}
 
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
