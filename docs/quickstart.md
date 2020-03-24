@@ -79,7 +79,7 @@ This also includes finding out which areas of the buffer are in fact modified, c
 
 ## Events and notifications
 
-Due to its design and split of responsibilities between the kernel and userspace code, EVDI's working model is an asynchronous.
+Due to its design and split of responsibilities between the kernel and userspace code, EVDI's working model is an asynchronous one.
 Therefore, your application should monitor a file descriptor exposed by `evdi_get_event_ready` function, and once it becomes ready to read,
 call `evdi_handle_events` to dispatch events that are being signalled to the right handlers.
 

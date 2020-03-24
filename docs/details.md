@@ -173,7 +173,7 @@ or while handling the `update_ready` notification.
 	void (*dpms_handler)(int dpms_mode, void* user_data);
 
 This notification is sent when a DPMS mode changes.
-The possible modes are as defined by the standard, and values are bit-compatible with DRM and Xorg:
+The possible modes are as defined by the standard, and values are bit-compatible with DRM interface:
 
 ```
 /* DPMS flags */
@@ -283,7 +283,9 @@ to the `buffer` member of the structure. This memory will be filled by the kerne
 and `stride` is a width stride - tells what is the increment in bytes between data for lines in memory.
 
 Stride can be equal to width of a single line multiplied by the number of bytes necessary for encoding color value for one pixel (e.g. 4 for RGB32) if the data for lines are contigous in the memory,
-but you can use larger value to indicate extra space/padding between them.
+but you can use larger value to indicate extra space/padding between them, e.g. oftentimes an additional requirement for the value of stride is it being divisbile by 8;
+note that those values might be specific to particular hardware/graphic drivers.
+Please consult documentation of your GPU for details.
 
 Last two structure members, `rects` and `rect_counts` are updated during grabbing pixels to inform about the number and coordinates of areas that are changed from the last update.
 
@@ -338,7 +340,7 @@ Parameters `width` and `height` define size of the cursor bitmap stored in a `bu
 
 Remaining `stride` and `pixel_format` describe data organization in the buffer. `stride` is a size of a single line in a buffer.
 Usually it is width of the cursor multiplied by bytes per pixel value plus additional extra padding. It ensures proper alignment of subsequent pixel rows.
-Pixel encoding is described by FourCC code in `pixel_format` field. Usually it is `ARGB_8888` however the value is system dependent and might change in the future.
+Pixel encoding is described by FourCC code in `pixel_format` field.
 
 ### evdi_cursor_move
 
@@ -360,7 +362,7 @@ It is defined as top left corner of the cursor bitmap.
 	};
 
 Structure contains two fields:
-* `function` which is a pointer to the actuall callback. The `fmt` and `...` are the same as in case of `printf`.
+* `function` which is a pointer to the actual callback. The `fmt` and `...` are the same as in case of `printf`.
 * `user_data` a pointer provided by the client when registering callback
 
 !!! note
