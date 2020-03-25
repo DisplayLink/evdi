@@ -315,47 +315,53 @@ static uint32_t evdi_painter_get_gem_handle(struct evdi_painter *painter,
 	return handle;
 }
 
-void evdi_painter_send_cursor_set(struct evdi_painter *painter,
-				  struct evdi_cursor *cursor)
+static struct drm_pending_event *create_cursor_set_event(
+		struct evdi_painter *painter,
+		struct evdi_cursor *cursor)
 {
 	struct evdi_event_cursor_set_pending *event;
 	struct evdi_gem_object *eobj = NULL;
 
-	if (painter->drm_filp) {
-		event = kzalloc(sizeof(*event), GFP_KERNEL);
-		event->cursor_set.base.type = DRM_EVDI_EVENT_CURSOR_SET;
-		event->cursor_set.base.length =
-			sizeof(event->cursor_set);
-
-		evdi_cursor_lock(cursor);
-		event->cursor_set.enabled = evdi_cursor_enabled(cursor);
-		evdi_cursor_hotpoint(cursor,
-			&event->cursor_set.hot_x,
-			&event->cursor_set.hot_y);
-		evdi_cursor_size(cursor,
-			&event->cursor_set.width,
-			&event->cursor_set.height);
-		evdi_cursor_format(cursor,
-			&event->cursor_set.pixel_format);
-		evdi_cursor_stride(cursor,
-			&event->cursor_set.stride);
-		eobj = evdi_cursor_gem(cursor);
-		event->cursor_set.buffer_handle =
-			evdi_painter_get_gem_handle(painter, eobj);
-		if (eobj)
-			event->cursor_set.buffer_length = eobj->base.size;
-		if (!event->cursor_set.buffer_handle) {
-			event->cursor_set.enabled = false;
-			event->cursor_set.buffer_length = 0;
-		}
-		evdi_cursor_unlock(cursor);
-
-		event->base.event = &event->cursor_set.base;
-		event->base.file_priv = painter->drm_filp;
-		evdi_painter_send_event(painter->drm_filp, &event->base.link);
-	} else {
-		EVDI_WARN("Painter is not connected!");
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		EVDI_ERROR("Failed to create cursor set event");
+		return NULL;
 	}
+
+	event->cursor_set.base.type = DRM_EVDI_EVENT_CURSOR_SET;
+	event->cursor_set.base.length = sizeof(event->cursor_set);
+
+	evdi_cursor_lock(cursor);
+	event->cursor_set.enabled = evdi_cursor_enabled(cursor);
+	evdi_cursor_hotpoint(cursor, &event->cursor_set.hot_x,
+				     &event->cursor_set.hot_y);
+	evdi_cursor_size(cursor,
+		&event->cursor_set.width,
+		&event->cursor_set.height);
+	evdi_cursor_format(cursor, &event->cursor_set.pixel_format);
+	evdi_cursor_stride(cursor, &event->cursor_set.stride);
+	eobj = evdi_cursor_gem(cursor);
+	event->cursor_set.buffer_handle =
+		evdi_painter_get_gem_handle(painter, eobj);
+	if (eobj)
+		event->cursor_set.buffer_length = eobj->base.size;
+	if (!event->cursor_set.buffer_handle) {
+		event->cursor_set.enabled = false;
+		event->cursor_set.buffer_length = 0;
+	}
+	evdi_cursor_unlock(cursor);
+
+	event->base.event = &event->cursor_set.base;
+	return &event->base;
+}
+
+void evdi_painter_send_cursor_set(struct evdi_painter *painter,
+				  struct evdi_cursor *cursor)
+{
+	struct drm_pending_event *event =
+		create_cursor_set_event(painter, cursor);
+
+	evdi_painter_send_event2(painter, event);
 }
 
 void evdi_painter_send_cursor_move(struct evdi_painter *painter,
