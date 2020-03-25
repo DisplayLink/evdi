@@ -270,20 +270,27 @@ static void evdi_painter_send_event(struct drm_file *drm_filp,
 	wake_up_interruptible(&drm_filp->event_wait);
 }
 
-static void evdi_painter_send_update_ready(struct evdi_painter *painter)
+static struct drm_pending_event *create_update_ready_event(void)
 {
 	struct evdi_event_update_ready_pending *event;
 
-	if (painter->drm_filp) {
-		event = kzalloc(sizeof(*event), GFP_KERNEL);
-		event->update_ready.base.type = DRM_EVDI_EVENT_UPDATE_READY;
-		event->update_ready.base.length = sizeof(event->update_ready);
-		event->base.event = &event->update_ready.base;
-		event->base.file_priv = painter->drm_filp;
-		evdi_painter_send_event(painter->drm_filp, &event->base.link);
-	} else {
-		EVDI_WARN("Painter is not connected!");
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		EVDI_ERROR("Failed to create update ready event");
+		return NULL;
 	}
+
+	event->update_ready.base.type = DRM_EVDI_EVENT_UPDATE_READY;
+	event->update_ready.base.length = sizeof(event->update_ready);
+	event->base.event = &event->update_ready.base;
+	return &event->base;
+}
+
+static void evdi_painter_send_update_ready(struct evdi_painter *painter)
+{
+	struct drm_pending_event *event = create_update_ready_event();
+
+	evdi_painter_send_event2(painter, event);
 }
 
 static uint32_t evdi_painter_get_gem_handle(struct evdi_painter *painter,
