@@ -397,21 +397,28 @@ void evdi_painter_send_cursor_move(struct evdi_painter *painter,
 	evdi_painter_send_event2(painter, event);
 }
 
-static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
+static struct drm_pending_event *create_dpms_event(int mode)
 {
 	struct evdi_event_dpms_pending *event;
 
-	if (painter->drm_filp) {
-		event = kzalloc(sizeof(*event), GFP_KERNEL);
-		event->dpms.base.type = DRM_EVDI_EVENT_DPMS;
-		event->dpms.base.length = sizeof(event->dpms);
-		event->dpms.mode = mode;
-		event->base.event = &event->dpms.base;
-		event->base.file_priv = painter->drm_filp;
-		evdi_painter_send_event(painter->drm_filp, &event->base.link);
-	} else {
-		EVDI_WARN("Painter is not connected!");
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		EVDI_ERROR("Failed to create dpms event");
+		return NULL;
 	}
+
+	event->dpms.base.type = DRM_EVDI_EVENT_DPMS;
+	event->dpms.base.length = sizeof(event->dpms);
+	event->dpms.mode = mode;
+	event->base.event = &event->dpms.base;
+	return &event->base;
+}
+
+static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
+{
+	struct drm_pending_event *event = create_dpms_event(mode);
+
+	evdi_painter_send_event2(painter, event);
 }
 
 static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
