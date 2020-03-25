@@ -364,29 +364,37 @@ void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 	evdi_painter_send_event2(painter, event);
 }
 
-void evdi_painter_send_cursor_move(struct evdi_painter *painter,
-				   struct evdi_cursor *cursor)
+static struct drm_pending_event *create_cursor_move_event(
+		struct evdi_cursor *cursor)
 {
 	struct evdi_event_cursor_move_pending *event;
 
-	if (painter->drm_filp) {
-		event = kzalloc(sizeof(*event), GFP_KERNEL);
-		event->cursor_move.base.type = DRM_EVDI_EVENT_CURSOR_MOVE;
-		event->cursor_move.base.length = sizeof(event->cursor_move);
-
-		evdi_cursor_lock(cursor);
-		evdi_cursor_position(
-			cursor,
-			&event->cursor_move.x,
-			&event->cursor_move.y);
-		evdi_cursor_unlock(cursor);
-
-		event->base.event = &event->cursor_move.base;
-		event->base.file_priv = painter->drm_filp;
-		evdi_painter_send_event(painter->drm_filp, &event->base.link);
-	} else {
-		EVDI_WARN("Painter is not connected!");
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		EVDI_ERROR("Failed to create cursor move event");
+		return NULL;
 	}
+
+	event->cursor_move.base.type = DRM_EVDI_EVENT_CURSOR_MOVE;
+	event->cursor_move.base.length = sizeof(event->cursor_move);
+
+	evdi_cursor_lock(cursor);
+	evdi_cursor_position(
+		cursor,
+		&event->cursor_move.x,
+		&event->cursor_move.y);
+	evdi_cursor_unlock(cursor);
+
+	event->base.event = &event->cursor_move.base;
+	return &event->base;
+}
+
+void evdi_painter_send_cursor_move(struct evdi_painter *painter,
+				   struct evdi_cursor *cursor)
+{
+	struct drm_pending_event *event = create_cursor_move_event(cursor);
+
+	evdi_painter_send_event2(painter, event);
 }
 
 static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
