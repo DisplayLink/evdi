@@ -73,6 +73,7 @@ struct evdi_painter {
 	struct evdi_framebuffer *scanout_fb;
 
 	struct drm_file *drm_filp;
+	struct drm_device *drm_device;
 
 	bool was_update_requested;
 	bool needs_full_modeset;
@@ -228,6 +229,38 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 	}
 	painter_unlock(evdi->painter);
 	return block;
+}
+
+static void evdi_painter_send_event2(struct evdi_painter *painter,
+				      struct drm_pending_event *event)
+{
+	int ret = 0;
+
+	if (!event) {
+		EVDI_ERROR("Null drm event!");
+		return;
+	}
+
+	if (!painter->drm_filp) {
+		EVDI_WARN("Painter is not connected!");
+		drm_event_cancel_free(painter->drm_device, event);
+		return;
+	}
+
+	if (!painter->drm_device) {
+		EVDI_WARN("Painter is not connected to drm device!");
+		drm_event_cancel_free(painter->drm_device, event);
+		return;
+	}
+
+	ret = drm_event_reserve_init(painter->drm_device,
+				     painter->drm_filp, event, event->event);
+	if (!ret)
+		drm_send_event(painter->drm_device, event);
+	else {
+		EVDI_ERROR("Failed to send drm event");
+		drm_event_cancel_free(painter->drm_device, event);
+	}
 }
 
 static void evdi_painter_send_event(struct drm_file *drm_filp,
@@ -882,6 +915,7 @@ int evdi_painter_init(struct evdi_device *dev)
 		dev->painter->edid = NULL;
 		dev->painter->edid_length = 0;
 		dev->painter->needs_full_modeset = true;
+		dev->painter->drm_device = dev->ddev;
 		return 0;
 	}
 	return -ENOMEM;
@@ -897,6 +931,7 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 		kfree(painter->edid);
 		painter->edid_length = 0;
 		painter->edid = 0;
+		painter->drm_device = NULL;
 		painter_unlock(painter);
 	} else {
 		EVDI_WARN("Painter does not exist\n");
