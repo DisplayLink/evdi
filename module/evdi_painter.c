@@ -421,22 +421,29 @@ static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
 	evdi_painter_send_event2(painter, event);
 }
 
-static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
-					 int state)
+static struct drm_pending_event *create_crtc_state_event(int state)
 {
 	struct evdi_event_crtc_state_pending *event;
 
-	if (painter->drm_filp) {
-		event = kzalloc(sizeof(*event), GFP_KERNEL);
-		event->crtc_state.base.type = DRM_EVDI_EVENT_CRTC_STATE;
-		event->crtc_state.base.length = sizeof(event->crtc_state);
-		event->crtc_state.state = state;
-		event->base.event = &event->crtc_state.base;
-		event->base.file_priv = painter->drm_filp;
-		evdi_painter_send_event(painter->drm_filp, &event->base.link);
-	} else {
-		EVDI_WARN("Painter is not connected!");
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		EVDI_ERROR("Failed to create crtc state event");
+		return NULL;
 	}
+
+	event->crtc_state.base.type = DRM_EVDI_EVENT_CRTC_STATE;
+	event->crtc_state.base.length = sizeof(event->crtc_state);
+	event->crtc_state.state = state;
+	event->base.event = &event->crtc_state.base;
+	return &event->base;
+}
+
+static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
+					 int state)
+{
+	struct drm_pending_event *event = create_crtc_state_event(state);
+
+	evdi_painter_send_event2(painter, event);
 }
 
 static void evdi_painter_send_mode_changed(
