@@ -209,18 +209,22 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 
 	if (state->fb) {
 		struct drm_framebuffer *fb = state->fb;
+		struct drm_framebuffer *old_fb = old_state->fb;
 		struct evdi_framebuffer *efb = to_evdi_fb(fb);
 
 		const struct drm_clip_rect fullscreen_rect = {
 			0, 0, fb->width, fb->height
 		};
 
-		if (!old_state->fb && crtc) {
-			evdi_painter_mode_changed_notify(evdi, &crtc->mode);
+		if (!old_fb && crtc)
 			evdi_painter_force_full_modeset(evdi);
-		}
 
-		if (state->fb != old_state->fb ||
+		if (old_fb &&
+		    fb->format && old_fb->format &&
+		    fb->format->format != old_fb->format->format)
+			evdi_painter_force_full_modeset(evdi);
+
+		if (fb != old_fb ||
 		    evdi_painter_needs_full_modeset(evdi)) {
 
 			evdi_painter_set_scanout_buffer(evdi, efb);
