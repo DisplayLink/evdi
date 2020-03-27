@@ -43,7 +43,11 @@ obj-$(CONFIG_DRM_EVDI) := evdi.o
 else
 
 # kbuild against specified or current kernel
+CP ?= cp
+DKMS ?= dkms
 RM ?= rm
+
+MODVER=1.6.4
 
 ifeq ($(KVER),)
 	KVER := $(shell uname -r)
@@ -66,16 +70,23 @@ default: module
 module:
 	$(MAKE) -C $(KDIR) M=$$PWD
 
+clean:
+	$(RM) -rf *.o *.a *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
+
 install:
 	$(MAKE) -C $(KDIR) M=$$PWD INSTALL_MOD_PATH=$(DESTDIR) INSTALL_MOD_DIR=$(MOD_KERNEL_PATH) modules_install
 	$(DEPMOD)
 
-clean:
-	$(RM) -rf *.o *.a *.ko .tmp* .*.*.cmd Module.symvers evdi.mod.c modules.order
-
 uninstall:
 	$(RM) -rf $(DESTDIR)/lib/modules/$(KVER)/$(MOD_KERNEL_PATH)
 	$(DEPMOD)
+
+install_dkms:
+	$(DKMS) install .
+
+uninstall_dkms:
+	$(DKMS) remove evdi/$(MODVER) --all
+	$(RM) -rf /usr/src/evdi-$(MODVER)
 
 endif # ifneq ($(KERNELRELEASE),)
 

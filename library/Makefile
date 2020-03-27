@@ -3,9 +3,9 @@
 #
 
 INSTALL ?= install
+CP ?= cp
 LN ?= ln
 RM ?= rm
-CP ?= cp
 
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC $(CFLAGS)
