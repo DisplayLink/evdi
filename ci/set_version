@@ -1,0 +1,32 @@
+#! /usr/bin/env bash
+# Copyright (c) 2020 DisplayLink (UK) Ltd.
+
+set -e
+set -u
+
+if [ "${#}" -lt "2" ]; then
+  echo "Usage: ${0} MAJOR MINOR [PATCH]"
+  exit 1
+fi
+
+MAJOR="${1}"
+MINOR="${2}"
+PATCH="${3-0}"
+
+sed -i "s/^#define LIBEVDI_VERSION_MAJOR .*$/#define LIBEVDI_VERSION_MAJOR ${MAJOR}/" library/evdi_lib.h
+sed -i "s/^#define LIBEVDI_VERSION_MINOR .*$/#define LIBEVDI_VERSION_MINOR ${MINOR}/" library/evdi_lib.h
+sed -i "s/^#define LIBEVDI_VERSION_PATCH .*$/#define LIBEVDI_VERSION_PATCH ${PATCH}/" library/evdi_lib.h
+
+sed -i "s/^LIBVER := .*$/LIBVER := ${MAJOR}.${MINOR}.${PATCH}/" library/Makefile
+
+sed -i "s/^PACKAGE_VERSION=.*$/PACKAGE_VERSION=${MAJOR}.${MINOR}.${PATCH}/" module/dkms.conf
+
+
+sed -i "s/^#define DRIVER_MAJOR .*$/#define DRIVER_MAJOR ${MAJOR}/" module/evdi_drv.h
+sed -i "s/^#define DRIVER_MINOR .*$/#define DRIVER_MINOR ${MINOR}/" module/evdi_drv.h
+sed -i "s/^#define DRIVER_PATCH .*$/#define DRIVER_PATCH ${PATCH}/" module/evdi_drv.h
+
+sed -i "s/^MODVER=.*/MODVER=${MAJOR}.${MINOR}.${PATCH}/" module/Makefile
+
+
+sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"/" module/evdi_drv.h
