@@ -116,7 +116,7 @@ static struct drm_driver driver = {
 	.date = DRIVER_DATE,
 	.major = DRIVER_MAJOR,
 	.minor = DRIVER_MINOR,
-	.patchlevel = DRIVER_PATCHLEVEL,
+	.patchlevel = DRIVER_PATCH,
 };
 
 static void evdi_add_device(void)
@@ -234,7 +234,7 @@ static ssize_t version_show(__always_unused struct device *dev,
 			    char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u.%u.%u\n", DRIVER_MAJOR,
-			DRIVER_MINOR, DRIVER_PATCHLEVEL);
+			DRIVER_MINOR, DRIVER_PATCH);
 }
 
 static ssize_t count_show(__always_unused struct device *dev,

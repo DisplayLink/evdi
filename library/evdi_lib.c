@@ -29,7 +29,7 @@
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
-#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
+#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCH 0
 
 #define evdi_log(...) do {						\
 	if (g_evdi_logging.function) {					\
@@ -181,7 +181,7 @@ static int is_evdi_compatible(int fd)
 	evdi_log("LibEvdi version (%d.%d.%d)",
 		 LIBEVDI_VERSION_MAJOR,
 		 LIBEVDI_VERSION_MINOR,
-		 LIBEVDI_VERSION_PATCHLEVEL);
+		 LIBEVDI_VERSION_PATCH);
 
 	if (do_ioctl(fd, DRM_IOCTL_VERSION, &ver, "version") != 0)
 		return 0;
@@ -198,7 +198,7 @@ static int is_evdi_compatible(int fd)
 	evdi_log("Doesn't match LibEvdi compatibility one (%d.%d.%d)",
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
-		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
+		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCH);
 
 	return 0;
 }
@@ -788,7 +788,7 @@ void evdi_get_lib_version(struct evdi_lib_version *version)
 	if (version != NULL) {
 		version->version_major = LIBEVDI_VERSION_MAJOR;
 		version->version_minor = LIBEVDI_VERSION_MINOR;
-		version->version_patchlevel = LIBEVDI_VERSION_PATCHLEVEL;
+		version->version_patchlevel = LIBEVDI_VERSION_PATCH;
 	}
 }
 
