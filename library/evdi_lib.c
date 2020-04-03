@@ -448,12 +448,12 @@ evdi_handle evdi_open(int device)
 	return h;
 }
 
-enum evdi_device_status evdi_check_device(int device)
+static enum evdi_device_status evdi_device_to_platform(int device, char *path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
 	enum evdi_device_status status = UNRECOGNIZED;
-	char path[PATH_MAX];
+	char card_path[PATH_MAX];
 
 	if (!device_exists(device))
 		return NOT_PRESENT;
@@ -469,10 +469,9 @@ enum evdi_device_status evdi_check_device(int device)
 			continue;
 
 		snprintf(path, PATH_MAX,
-			"/sys/devices/platform/%s/drm/card%d",
-			fd_entry->d_name,
-			device);
-		if (path_exists(path)) {
+			"/sys/devices/platform/%s", fd_entry->d_name);
+		snprintf(card_path, PATH_MAX, "%s/drm/card%d", path, device);
+		if (path_exists(card_path)) {
 			status = AVAILABLE;
 			break;
 		}
@@ -480,6 +479,13 @@ enum evdi_device_status evdi_check_device(int device)
 
 	closedir(fd_dir);
 	return status;
+}
+
+enum evdi_device_status evdi_check_device(int device)
+{
+	char path[PATH_MAX];
+
+	return evdi_device_to_platform(device, path);
 }
 
 int evdi_add_device(void)
@@ -530,6 +536,37 @@ void evdi_disconnect(evdi_handle handle)
 	struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0 };
 
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
+}
+
+void evdi_enable_cursor_events(evdi_handle handle)
+{
+	char path[PATH_MAX] = {0};
+	int path_len = 0;
+	int fd;
+
+	if (evdi_device_to_platform(handle->device_index, path) !=
+	    AVAILABLE) {
+		evdi_log("Failed to enable cursor events");
+		evdi_log("Device /dev/dri/card%d, device is not available.",
+			handle->device_index);
+		return;
+	}
+
+	path_len = strlen(path);
+	snprintf(path+path_len, PATH_MAX-path_len, "/cursor_events");
+	fd = open(path, O_WRONLY);
+	if (fd < 0) {
+		evdi_log("Failed to open %s, err: %s", path, strerror(errno));
+		return;
+	}
+
+	if (write(fd, "Y", sizeof("Y") < 0))
+		evdi_log("Failed to write to /dev/dri/card%d err: %s",
+			 handle->device_index, strerror(errno));
+
+	close(fd);
+	evdi_log("Enabling cursor events on /dev/dri/card%d",
+		handle->device_index);
 }
 
 void evdi_grab_pixels(evdi_handle handle,

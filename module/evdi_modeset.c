@@ -100,7 +100,6 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	struct evdi_device *evdi = dev->dev_private;
 	struct drm_gem_object *obj = NULL;
 	struct evdi_gem_object *eobj = NULL;
-
 	/*
 	 * evdi_crtc_cursor_set is callback function using
 	 * deprecated cursor entry point.
@@ -137,10 +136,10 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	 * For now we don't care whether the application wanted the mouse set,
 	 * or not.
 	 */
-	if (evdi_enable_cursor_blending)
-		evdi_mark_full_screen_dirty(evdi);
-	else
+	if (evdi->cursor_events_enabled)
 		evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
+	else
+		evdi_mark_full_screen_dirty(evdi);
 	return 0;
 }
 
@@ -152,10 +151,10 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	EVDI_CHECKPT();
 	evdi_cursor_move(evdi->cursor, x, y);
 
-	if (evdi_enable_cursor_blending)
-		evdi_mark_full_screen_dirty(evdi);
-	else
+	if (evdi->cursor_events_enabled)
 		evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
+	else
+		evdi_mark_full_screen_dirty(evdi);
 
 	return 0;
 }
@@ -287,7 +286,7 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 		}
 
 		mutex_unlock(&plane->dev->struct_mutex);
-		if (evdi_enable_cursor_blending) {
+		if (!evdi->cursor_events_enabled) {
 			evdi_cursor_atomic_get_rect(&old_rect, old_state);
 			evdi_cursor_atomic_get_rect(&rect, state);
 

@@ -178,16 +178,14 @@ static void copy_cursor_pixels(struct evdi_framebuffer *efb,
 			       int buf_byte_stride,
 			       struct evdi_cursor *cursor)
 {
-	if (evdi_enable_cursor_blending) {
-		evdi_cursor_lock(cursor);
-		if (evdi_cursor_compose_and_copy(cursor,
-						 efb,
-						 buffer,
-						 buf_byte_stride))
-			EVDI_ERROR("Failed to blend cursor\n");
+	evdi_cursor_lock(cursor);
+	if (evdi_cursor_compose_and_copy(cursor,
+					 efb,
+					 buffer,
+					 buf_byte_stride))
+		EVDI_ERROR("Failed to blend cursor\n");
 
-		evdi_cursor_unlock(cursor);
-	}
+	evdi_cursor_unlock(cursor);
 }
 
 #define painter_lock(painter)                           \
@@ -740,6 +738,7 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	evdi->dev_index = -1;
 
 	painter->was_update_requested = false;
+	evdi->cursor_events_enabled = false;
 
 	painter_unlock(painter);
 
@@ -894,7 +893,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				  dirty_rects,
 				  cmd->buf_width,
 				  cmd->buf_height);
-	if (err == 0)
+	if (err == 0 && !evdi->cursor_events_enabled)
 		copy_cursor_pixels(efb,
 				   cmd->buffer,
 				   cmd->buf_byte_stride,

@@ -42,6 +42,15 @@ int evdi_driver_setup(struct drm_device *dev)
 	if (ret)
 		goto err;
 
+	evdi->cursor_attr = (struct dev_ext_attribute) {
+	    __ATTR(cursor_events, 0644, device_show_bool, device_store_bool),
+	    &evdi->cursor_events_enabled
+	};
+	ret = device_create_file(dev->dev, &evdi->cursor_attr.attr);
+	if (ret)
+		goto err_fb;
+
+
 	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
 
@@ -92,6 +101,8 @@ void evdi_driver_unload(struct drm_device *dev)
 #endif /* CONFIG_FB */
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
+
+	device_remove_file(dev->dev, &evdi->cursor_attr.attr);
 	evdi_painter_cleanup(evdi);
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);

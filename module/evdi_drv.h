@@ -16,6 +16,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/version.h>
+#include <linux/device.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_drv.h>
 #include <drm/drm_fourcc.h>
@@ -51,6 +52,9 @@ struct evdi_device {
 	struct device *dev;
 	struct drm_device *ddev;
 	struct evdi_cursor *cursor;
+	struct dev_ext_attribute cursor_attr;
+	bool cursor_events_enabled;
+
 	uint32_t sku_area_limit;
 
 	struct evdi_fbdev *fbdev;
