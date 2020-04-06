@@ -11,6 +11,5 @@
 
 extern unsigned int evdi_loglevel;
 extern unsigned short int evdi_initial_device_count;
-extern bool evdi_enable_cursor_blending;
 
 #endif /* EVDI_PARAMS_H */

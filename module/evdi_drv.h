@@ -42,8 +42,8 @@
 #define DRIVER_DATE   "20200327"
 
 #define DRIVER_MAJOR 1
-#define DRIVER_MINOR 6
-#define DRIVER_PATCH 4
+#define DRIVER_MINOR 7
+#define DRIVER_PATCH 0
 
 struct evdi_fbdev;
 struct evdi_painter;

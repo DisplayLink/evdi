@@ -65,8 +65,8 @@ Mouse cursor is an important part of the desktop. Because of this, evdi provides
 There are two ways to handle cursor:
 
  * Automatic cursor compositing on framebuffer(default). Every cursor change causes `update_ready` event to be raised. In the following grab pixels operation evdi will compose cursor
-on the user supplied framebuffer. This option is enabled by `enable_cursor_blending` module parameter.
- * Cursor change notifications. Enabled when `enable_cursor_blending` is set to N(no).
+on the user supplied framebuffer.
+ * Cursor change notifications. Enabled with `evdi_enable_cursor_events` function call.
 In that mode the responsibility for cursor blending is passed to the library client. Instead of `update_ready` event the `cursor_set` and `cursor_move` notifications are sent.
 
 ## Running loop
