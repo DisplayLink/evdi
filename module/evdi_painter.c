@@ -231,10 +231,45 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 	return block;
 }
 
+static bool is_evdi_event_squashable(struct drm_pending_event *event)
+{
+	return event->event->type == DRM_EVDI_EVENT_CURSOR_SET ||
+	       event->event->type == DRM_EVDI_EVENT_CURSOR_MOVE;
+}
+
+static void evdi_painter_add_event_to_pending_list(
+	struct evdi_painter *painter,
+	struct drm_pending_event *event)
+{
+	unsigned long flags;
+	struct drm_pending_event *last_event = NULL;
+	struct list_head *list = NULL;
+
+	spin_lock_irqsave(&painter->drm_device->event_lock, flags);
+
+	list = &painter->pending_events;
+	if (!list_empty(list)) {
+		last_event =
+		  list_last_entry(list, struct drm_pending_event, link);
+	}
+
+	if (last_event &&
+	    event->event->type == last_event->event->type &&
+	    is_evdi_event_squashable(event)) {
+		list_replace(&last_event->link, &event->link);
+		kfree(last_event);
+	} else
+		list_add_tail(&event->link, list);
+
+	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
+}
+
 static void evdi_painter_send_event(struct evdi_painter *painter,
 				      struct drm_pending_event *event)
 {
-	int ret = 0;
+	bool has_space = false;
+	unsigned long flags;
+	struct drm_pending_event *event_to_be_sent = NULL;
 
 	if (!event) {
 		EVDI_ERROR("Null drm event!");
@@ -253,14 +288,25 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 		return;
 	}
 
-	ret = drm_event_reserve_init(painter->drm_device,
-				     painter->drm_filp, event, event->event);
-	if (!ret)
-		drm_send_event(painter->drm_device, event);
-	else {
-		EVDI_ERROR("Failed to send drm event");
-		drm_event_cancel_free(painter->drm_device, event);
+	evdi_painter_add_event_to_pending_list(painter, event);
+
+	spin_lock_irqsave(&painter->drm_device->event_lock, flags);
+	event_to_be_sent = list_first_entry_or_null(
+		&painter->pending_events, struct drm_pending_event, link);
+	if (event_to_be_sent) {
+		has_space = drm_event_reserve_init_locked(painter->drm_device,
+		    painter->drm_filp, event_to_be_sent,
+		    event_to_be_sent->event) == 0;
+		if (has_space)
+			list_del_init(&event_to_be_sent->link);
 	}
+	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
+
+
+	if (has_space)
+		drm_send_event(painter->drm_device, event_to_be_sent);
+	else
+		EVDI_ERROR("Failed to send drm event");
 }
 
 static struct drm_pending_event *create_update_ready_event(void)
