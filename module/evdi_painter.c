@@ -264,13 +264,39 @@ static void evdi_painter_add_event_to_pending_list(
 	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
 }
 
+static bool evdi_painter_flush_pending_events(struct evdi_painter *painter)
+{
+	unsigned long flags;
+	struct drm_pending_event *event_to_be_sent = NULL;
+	struct list_head *list = NULL;
+	bool has_space = false;
+	bool flushed_all = false;
+
+	spin_lock_irqsave(&painter->drm_device->event_lock, flags);
+
+	list = &painter->pending_events;
+	while ((event_to_be_sent = list_first_entry_or_null(
+			list, struct drm_pending_event, link))) {
+		has_space = drm_event_reserve_init_locked(painter->drm_device,
+		    painter->drm_filp, event_to_be_sent,
+		    event_to_be_sent->event) == 0;
+		if (has_space) {
+			list_del_init(&event_to_be_sent->link);
+			drm_send_event_locked(painter->drm_device,
+					      event_to_be_sent);
+		} else
+			break;
+	}
+
+	flushed_all = list_empty(&painter->pending_events);
+	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
+
+	return flushed_all;
+}
+
 static void evdi_painter_send_event(struct evdi_painter *painter,
 				      struct drm_pending_event *event)
 {
-	bool has_space = false;
-	unsigned long flags;
-	struct drm_pending_event *event_to_be_sent = NULL;
-
 	if (!event) {
 		EVDI_ERROR("Null drm event!");
 		return;
@@ -289,24 +315,8 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 	}
 
 	evdi_painter_add_event_to_pending_list(painter, event);
-
-	spin_lock_irqsave(&painter->drm_device->event_lock, flags);
-	event_to_be_sent = list_first_entry_or_null(
-		&painter->pending_events, struct drm_pending_event, link);
-	if (event_to_be_sent) {
-		has_space = drm_event_reserve_init_locked(painter->drm_device,
-		    painter->drm_filp, event_to_be_sent,
-		    event_to_be_sent->event) == 0;
-		if (has_space)
-			list_del_init(&event_to_be_sent->link);
-	}
-	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
-
-
-	if (has_space)
-		drm_send_event(painter->drm_device, event_to_be_sent);
-	else
-		EVDI_ERROR("Failed to send drm event");
+	if (!evdi_painter_flush_pending_events(painter))
+		EVDI_ERROR("Failed to flush all drm events");
 }
 
 static struct drm_pending_event *create_update_ready_event(void)
