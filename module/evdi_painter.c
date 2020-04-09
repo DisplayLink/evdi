@@ -79,6 +79,7 @@ struct evdi_painter {
 	bool needs_full_modeset;
 
 	struct list_head pending_events;
+	struct delayed_work send_events_work;
 };
 
 static void expand_rect(struct drm_clip_rect *a, const struct drm_clip_rect *b)
@@ -315,8 +316,13 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 	}
 
 	evdi_painter_add_event_to_pending_list(painter, event);
-	if (!evdi_painter_flush_pending_events(painter))
-		EVDI_ERROR("Failed to flush all drm events");
+	if (delayed_work_pending(&painter->send_events_work))
+		return;
+
+	if (evdi_painter_flush_pending_events(painter))
+		return;
+
+	schedule_delayed_work(&painter->send_events_work, msecs_to_jiffies(5));
 }
 
 static struct drm_pending_event *create_update_ready_event(void)
@@ -1001,6 +1007,17 @@ int evdi_painter_request_update_ioctl(struct drm_device *drm_dev,
 	}
 }
 
+static void evdi_send_events_work(struct work_struct *work)
+{
+	struct evdi_painter *painter =
+		container_of(work, struct evdi_painter,	send_events_work.work);
+
+	if (evdi_painter_flush_pending_events(painter))
+		return;
+
+	schedule_delayed_work(&painter->send_events_work, msecs_to_jiffies(5));
+}
+
 int evdi_painter_init(struct evdi_device *dev)
 {
 	EVDI_CHECKPT();
@@ -1012,6 +1029,8 @@ int evdi_painter_init(struct evdi_device *dev)
 		dev->painter->needs_full_modeset = true;
 		dev->painter->drm_device = dev->ddev;
 		INIT_LIST_HEAD(&dev->painter->pending_events);
+		INIT_DELAYED_WORK(&dev->painter->send_events_work,
+			evdi_send_events_work);
 		return 0;
 	}
 	return -ENOMEM;
@@ -1021,6 +1040,7 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct drm_pending_event *event, *temp;
+	unsigned long flags;
 
 	EVDI_CHECKPT();
 	if (!painter) {
@@ -1033,10 +1053,14 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	painter->edid_length = 0;
 	painter->edid = 0;
 
+	spin_lock_irqsave(&painter->drm_device->event_lock, flags);
 	list_for_each_entry_safe(event, temp, &painter->pending_events, link) {
 		list_del(&event->link);
 		kfree(event);
 	}
+	spin_unlock_irqrestore(&painter->drm_device->event_lock, flags);
+
+	cancel_delayed_work_sync(&painter->send_events_work);
 	painter->drm_device = NULL;
 	painter_unlock(painter);
 }
