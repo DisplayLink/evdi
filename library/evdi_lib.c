@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
 
 #include <stddef.h>
 #include <stdint.h>
