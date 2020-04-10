@@ -482,13 +482,20 @@ int evdi_fbdev_init(struct drm_device *dev)
 	evdi->fbdev = efbdev;
 	drm_fb_helper_prepare(dev, &efbdev->helper, &evdi_fb_helper_funcs);
 
+#if KERNEL_VERSION(5, 7, 0) <= LINUX_VERSION_CODE
+	ret = drm_fb_helper_init(dev, &efbdev->helper);
+#else
 	ret = drm_fb_helper_init(dev, &efbdev->helper, 1);
+#endif
 	if (ret) {
 		kfree(efbdev);
 		return ret;
 	}
 
+#if KERNEL_VERSION(5, 7, 0) <= LINUX_VERSION_CODE
+#else
 	drm_fb_helper_single_add_all_connectors(&efbdev->helper);
+#endif
 
 	ret = drm_fb_helper_initial_config(&efbdev->helper, 32);
 	if (ret) {

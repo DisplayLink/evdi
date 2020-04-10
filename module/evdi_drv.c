@@ -317,7 +317,8 @@ static int __init evdi_init(void)
 		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
 
 	evdi_context.root_dev = root_device_register("evdi");
-	if (!PTR_RET(evdi_context.root_dev))
+
+	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
 			device_create_file(evdi_context.root_dev,
 					   &evdi_device_attributes[i]);
@@ -341,7 +342,7 @@ static void __exit evdi_exit(void)
 	evdi_remove_all();
 	platform_driver_unregister(&evdi_platform_driver);
 
-	if (!PTR_RET(evdi_context.root_dev)) {
+	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev)) {
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
 			device_remove_file(evdi_context.root_dev,
 					   &evdi_device_attributes[i]);
