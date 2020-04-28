@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Detailed description";
     var mkdocs_page_input_path = "details.md";
-    var mkdocs_page_url = "/details/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> EVDI Docs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -145,6 +146,7 @@
 <li><a href="#crtc-state-change">CRTC state change</a></li>
 </ul>
 </li>
+<li><a href="#logging">Logging</a></li>
 </ul>
 </li>
 <li><a href="#types">Types</a><ul>
@@ -158,6 +160,7 @@
 <li><a href="#evdi_lib_version">evdi_lib_version</a></li>
 <li><a href="#evdi_cursor_set">evdi_cursor_set</a></li>
 <li><a href="#evdi_cursor_move">evdi_cursor_move</a></li>
+<li><a href="#evdi_logging">evdi_logging</a></li>
 </ul>
 </li>
 </ul>
@@ -171,7 +174,7 @@
 </pre></div>
 </td></tr></table>
 
-<p>Function returns library version. 
+<p>Function returns library version.
 It uses semantic versioning to mark compatibility changes.
 Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
 <ul>
@@ -182,7 +185,7 @@ Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
 <h4 id="module-parameters">Module parameters<a class="headerlink" href="#module-parameters" title="Permanent link">&para;</a></h4>
 <p>User can modify driver behaviour by its parameters that can be set at module load time or changed during runtime.</p>
 <ul>
-<li><code>enable_cursor_blending</code> Enables cursor compositing on user supplied framebuffer via <code>EVDI_GRABPIX</code> ioctl (default: true)</li>
+<li><code>initial_device_count</code> Number of evdi devices added at module load time (default: 0)</li>
 </ul>
 <h3 id="evdi-nodes">EVDI nodes<a class="headerlink" href="#evdi-nodes" title="Permanent link">&para;</a></h3>
 <h4 id="finding-an-available-evdi-node-to-use">Finding an available EVDI node to use<a class="headerlink" href="#finding-an-available-evdi-node-to-use" title="Permanent link">&para;</a></h4>
@@ -284,7 +287,7 @@ For more details, see <a href="./#evdi_buffer">struct evdi_buffer</a> descriptio
 <p><strong>Arguments</strong>:</p>
 <ul>
 <li><code>handle</code> to an opened device.</li>
-<li><code>bufferId</code> is an indentifier for a buffer that should be updated.</li>
+<li><code>bufferId</code> is an identifier for a buffer that should be updated.</li>
 </ul>
 <p><strong>Return value:</strong></p>
 <p>The function can return <code>true</code> if the data for the buffer is ready to be grabbed immediately after the call.
@@ -320,7 +323,7 @@ the array does not contain more than 16 slots for rects.</p>
 </td></tr></table>
 
 <p>This notification is sent when a <abbr title="Display Power Management Signaling">DPMS</abbr> mode changes.
-The possible modes are as defined by the standard, and values are bit-compatible with DRM and Xorg:</p>
+The possible modes are as defined by the standard, and values are bit-compatible with DRM interface:</p>
 <div class="codehilite"><pre><span></span><span class="cm">/* DPMS flags */</span><span class="w"></span>
 <span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_ON<span class="w">        </span><span class="m">0</span><span class="w"></span>
 <span class="err">#</span>define<span class="w"> </span>DRM_MODE_DPMS_STANDBY<span class="w">   </span><span class="m">1</span><span class="w"></span>
@@ -362,6 +365,13 @@ Such situation happens when cursor is moved on and off the screen respectively.<
 </td></tr></table>
 
 <p>Sent when DRM's CRTC changes state. The <code>state</code> is a value that's forwarded from the kernel.</p>
+<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
+<p>Client can register their own callback to be used for logging instead of default <code>printf</code>.</p>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_set_logging</span><span class="p">(</span><span class="k">struct</span> <span class="n">evdi_logging</span> <span class="n">evdi_logging</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>For more on argument see <a href="./#Types">struct evdi_logging</a>.</p>
 <h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
 <h3 id="evdi_handle">evdi_handle<a class="headerlink" href="#evdi_handle" title="Permanent link">&para;</a></h3>
 <p>This is a handle to an opened device node that you get from an <code>evdi_open</code> call,
@@ -408,7 +418,9 @@ to the <code>buffer</code> member of the structure. This memory will be filled b
 <p><code>width</code>, <code>height</code> and <code>stride</code> are properties of the buffer - the first two indicate what the size of the frame is,
 and <code>stride</code> is a width stride - tells what is the increment in bytes between data for lines in memory.</p>
 <p>Stride can be equal to width of a single line multiplied by the number of bytes necessary for encoding color value for one pixel (e.g. 4 for RGB32) if the data for lines are contigous in the memory,
-but you can use larger value to indicate extra space/padding between them.</p>
+but you can use larger value to indicate extra space/padding between them, e.g. oftentimes an additional requirement for the value of stride is it being divisbile by 8;
+note that those values might be specific to particular hardware/graphic drivers.
+Please consult documentation of your GPU for details.</p>
 <p>Last two structure members, <code>rects</code> and <code>rect_counts</code> are updated during grabbing pixels to inform about the number and coordinates of areas that are changed from the last update.</p>
 <h3 id="evdi_event_context">evdi_event_context<a class="headerlink" href="#evdi_event_context" title="Permanent link">&para;</a></h3>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
@@ -479,7 +491,7 @@ Parameters <code>width</code> and <code>height</code> define size of the cursor 
 </div>
 <p>Remaining <code>stride</code> and <code>pixel_format</code> describe data organization in the buffer. <code>stride</code> is a size of a single line in a buffer.
 Usually it is width of the cursor multiplied by bytes per pixel value plus additional extra padding. It ensures proper alignment of subsequent pixel rows.
-Pixel encoding is described by FourCC code in <code>pixel_format</code> field. Usually it is <code>ARGB_8888</code> however the value is system dependent and might change in the future.</p>
+Pixel encoding is described by FourCC code in <code>pixel_format</code> field.</p>
 <h3 id="evdi_cursor_move">evdi_cursor_move<a class="headerlink" href="#evdi_cursor_move" title="Permanent link">&para;</a></h3>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
@@ -493,6 +505,24 @@ Pixel encoding is described by FourCC code in <code>pixel_format</code> field. U
 
 <p>The <code>evdi_cursor_move</code> structure contains current cursor position.
 It is defined as top left corner of the cursor bitmap.</p>
+<h3 id="evdi_logging">evdi_logging<a class="headerlink" href="#evdi_logging" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">struct</span> <span class="n">evdi_logging</span> <span class="p">{</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">function</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">fmt</span><span class="p">,</span> <span class="p">...);</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</td></tr></table>
+
+<p>Structure contains two fields:
+* <code>function</code> which is a pointer to the actual callback. The <code>fmt</code> and <code>...</code> are the same as in case of <code>printf</code>.
+* <code>user_data</code> a pointer provided by the client when registering callback</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By setting <code>function</code> to NULL libevdi will switch to default behaviour of using <code>printf</code>.</p>
+</div>
               
             </div>
           </div>
@@ -515,12 +545,12 @@ It is defined as top left corner of the cursor bitmap.</p>
 
   Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
     </section>
-    
+
   </div>
 
   <div class="rst-versions" role="note" style="cursor: pointer">
@@ -532,7 +562,9 @@ It is defined as top left corner of the cursor bitmap.</p>
       
     </span>
 </div>
-    <script src="../js/theme.js"></script>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

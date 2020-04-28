@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Quick Start";
     var mkdocs_page_input_path = "quickstart.md";
-    var mkdocs_page_url = "/quickstart/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> EVDI Docs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -75,6 +76,8 @@
             <li><a class="toctree-l3" href="#running-loop">Running loop</a></li>
         
             <li><a class="toctree-l3" href="#events-and-notifications">Events and notifications</a></li>
+        
+            <li><a class="toctree-l3" href="#logging">Logging</a></li>
         
         </ul>
     
@@ -136,12 +139,13 @@
 <li><a href="#types-of-events">Types of events</a></li>
 </ul>
 </li>
+<li><a href="#logging">Logging</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>This section explains how to write a basic client for EVDI. Details of API calls are ommitted here for brevity.</p>
+<p>This section explains how to write a basic client for EVDI. Details of API calls are omitted here for brevity.</p>
 <h1 id="typical-application">Typical application<a class="headerlink" href="#typical-application" title="Permanent link">&para;</a></h1>
 <p>Applications using EVDI will typically:</p>
 <ul>
@@ -178,14 +182,14 @@ Think of this as something similar to plugging a monitor with a cable to a port 
 <p>The library itself does <em>not</em> allocate any memory for buffers - this is to allow more control in the client application.
 Therefore, before you request screen updates for the screens you're managing, an appropriate amount of memory must be allocated to hold screen data within your application.
 The application can register as many buffers as you like, and subsequent update requests can refer to any buffer that was previously registered.</p>
-<p>Allocated memory is made available for EVDI library to use by calling <code>evdi_register_buffer</code>. Symetrically, <code>evdi_unregister_buffer</code> is used to tell the library not to use the buffer anymore.</p>
+<p>Allocated memory is made available for EVDI library to use by calling <code>evdi_register_buffer</code>. Symmetrically, <code>evdi_unregister_buffer</code> is used to tell the library not to use the buffer anymore.</p>
 <h2 id="cursor">Cursor<a class="headerlink" href="#cursor" title="Permanent link">&para;</a></h2>
 <p>Mouse cursor is an important part of the desktop. Because of this, evdi provides special control over it.</p>
 <p>There are two ways to handle cursor:</p>
 <ul>
 <li>Automatic cursor compositing on framebuffer(default). Every cursor change causes <code>update_ready</code> event to be raised. In the following grab pixels operation evdi will compose cursor
-on the user supplied framebuffer. This option is enabled by <code>enable_cursor_blending</code> module parameter.</li>
-<li>Cursor change notifications. Enabled when <code>enable_cursor_blending</code> is set to N(no).
+on the user supplied framebuffer.</li>
+<li>Cursor change notifications. Enabled with <code>evdi_enable_cursor_events</code> function call.
 In that mode the responsibility for cursor blending is passed to the library client. Instead of <code>update_ready</code> event the <code>cursor_set</code> and <code>cursor_move</code> notifications are sent.</li>
 </ul>
 <h2 id="running-loop">Running loop<a class="headerlink" href="#running-loop" title="Permanent link">&para;</a></h2>
@@ -194,7 +198,7 @@ You should call it when you intend to consume pixels for the screen.</p>
 <p>Once the request to update buffer is handled by the kernel module, you can use <code>evdi_grab_pixels</code> to get the data in your app.
 This also includes finding out which areas of the buffer are in fact modified, compared to a previous update.</p>
 <h2 id="events-and-notifications">Events and notifications<a class="headerlink" href="#events-and-notifications" title="Permanent link">&para;</a></h2>
-<p>Due to its design and split of responsibilities between the kernel and userspace code, EVDI's working model is an asynchronous.
+<p>Due to its design and split of responsibilities between the kernel and userspace code, EVDI's working model is an asynchronous one.
 Therefore, your application should monitor a file descriptor exposed by <code>evdi_get_event_ready</code> function, and once it becomes ready to read,
 call <code>evdi_handle_events</code> to dispatch events that are being signalled to the right handlers.</p>
 <p>The handlers are defined in your application and are shared with the library through a <code>evdi_event_context</code> structure that <code>evdi_handle_events</code> uses for dispatching the call.</p>
@@ -209,6 +213,9 @@ call <code>evdi_handle_events</code> to dispatch events that are being signalled
 </ul>
 <p>You will start receiving first notifications from the kernel module right after connecting to EVDI.
 Your application should use this information before you ask for screen updates to make sure the buffers are the right size.</p>
+<h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
+<p>By default libevdi uses <code>printf</code> to print messages to stdout. Client application can provide its own callback which will be used instead by calling <code>evdi_set_logging</code>.
+The same function can be used to switch back to default behaviour (by setting callback to <code>NULL</code>);</p>
               
             </div>
           </div>
@@ -233,12 +240,12 @@ Your application should use this information before you ask for screen updates t
 
   Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
     </section>
-    
+
   </div>
 
   <div class="rst-versions" role="note" style="cursor: pointer">
@@ -252,7 +259,9 @@ Your application should use this information before you ask for screen updates t
       
     </span>
 </div>
-    <script src="../js/theme.js"></script>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>
