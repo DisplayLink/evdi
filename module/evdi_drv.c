@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
  * more details.
  */
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc_helper.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -62,29 +66,22 @@ static const struct file_operations evdi_driver_fops = {
 };
 
 static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-			      __always_unused int pipe)
-#else
 			      __always_unused unsigned int pipe)
-#endif
 {
 	return 1;
 }
 
 static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-				__always_unused int pipe)
-#else
 				__always_unused unsigned int pipe)
-#endif
 {
 }
 
 static struct drm_driver driver = {
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
+#else
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-	.load = evdi_driver_load,
 #endif
 	.unload = evdi_driver_unload,
 	.preclose = evdi_driver_preclose,
@@ -105,15 +102,12 @@ static struct drm_driver driver = {
 	.fops = &evdi_driver_fops,
 
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
-	.gem_prime_import = evdi_gem_prime_import,
+	.gem_prime_import = drm_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
-	.gem_prime_export = evdi_gem_prime_export,
+	.gem_prime_export = drm_gem_prime_export,
+	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
+	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
-#if KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE
-	.get_vblank_counter = drm_vblank_count,
-#elif KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-	.get_vblank_counter = drm_vblank_no_hw_counter,
-#endif
 	.enable_vblank = evdi_enable_vblank,
 	.disable_vblank = evdi_disable_vblank,
 
@@ -122,7 +116,7 @@ static struct drm_driver driver = {
 	.date = DRIVER_DATE,
 	.major = DRIVER_MAJOR,
 	.minor = DRIVER_MINOR,
-	.patchlevel = DRIVER_PATCHLEVEL,
+	.patchlevel = DRIVER_PATCH,
 };
 
 static void evdi_add_device(void)
@@ -166,7 +160,6 @@ static int evdi_add_devices(unsigned int val)
 	return 0;
 }
 
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 static int evdi_platform_probe(struct platform_device *pdev)
 {
 	struct drm_device *dev;
@@ -195,20 +188,9 @@ static int evdi_platform_probe(struct platform_device *pdev)
 	return 0;
 
 err_free:
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 	drm_dev_put(dev);
-#else
-	drm_dev_unref(dev);
-#endif
 	return ret;
 }
-#else
-static int evdi_platform_probe(struct platform_device *pdev)
-{
-	EVDI_CHECKPT();
-	return drm_platform_init(&driver, pdev);
-}
-#endif
 
 static int evdi_platform_remove(struct platform_device *pdev)
 {
@@ -216,11 +198,7 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
-	drm_unplug_dev(drm_dev);
-#else
 	drm_dev_unplug(drm_dev);
-#endif
 
 	return 0;
 }
@@ -256,7 +234,7 @@ static ssize_t version_show(__always_unused struct device *dev,
 			    char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%u.%u.%u\n", DRIVER_MAJOR,
-			DRIVER_MINOR, DRIVER_PATCHLEVEL);
+			DRIVER_MINOR, DRIVER_PATCH);
 }
 
 static ssize_t count_show(__always_unused struct device *dev,
@@ -339,7 +317,8 @@ static int __init evdi_init(void)
 		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
 
 	evdi_context.root_dev = root_device_register("evdi");
-	if (!PTR_RET(evdi_context.root_dev))
+
+	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
 			device_create_file(evdi_context.root_dev,
 					   &evdi_device_attributes[i]);
@@ -363,7 +342,7 @@ static void __exit evdi_exit(void)
 	evdi_remove_all();
 	platform_driver_unregister(&evdi_platform_driver);
 
-	if (!PTR_RET(evdi_context.root_dev)) {
+	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev)) {
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
 			device_remove_file(evdi_context.root_dev,
 					   &evdi_device_attributes[i]);

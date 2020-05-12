@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -13,23 +13,37 @@
 #ifndef EVDI_DRV_H
 #define EVDI_DRV_H
 
+#include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/version.h>
+#include <linux/device.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_drv.h>
+#include <drm/drm_fourcc.h>
+#include <drm/drm_ioctl.h>
+#include <drm/drm_irq.h>
+#include <drm/drm_vblank.h>
+#else
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#include <linux/dma-resv.h>
+#else
 #include <linux/reservation.h>
+#endif
 #include "evdi_debug.h"
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20180913"
+#define DRIVER_DATE   "20200327"
 
-#define DRIVER_MAJOR      1
-#define DRIVER_MINOR      6
-#define DRIVER_PATCHLEVEL 1
+#define DRIVER_MAJOR 1
+#define DRIVER_MINOR 7
+#define DRIVER_PATCH 0
 
 struct evdi_fbdev;
 struct evdi_painter;
@@ -38,6 +52,9 @@ struct evdi_device {
 	struct device *dev;
 	struct drm_device *ddev;
 	struct evdi_cursor *cursor;
+	struct dev_ext_attribute cursor_attr;
+	bool cursor_events_enabled;
+
 	uint32_t sku_area_limit;
 
 	struct evdi_fbdev *fbdev;
@@ -51,8 +68,13 @@ struct evdi_gem_object {
 	struct page **pages;
 	void *vmapping;
 	struct sg_table *sg;
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+	struct dma_resv *resv;
+	struct dma_resv _resv;
+#else
 	struct reservation_object *resv;
 	struct reservation_object _resv;
+#endif
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
@@ -73,11 +95,7 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_driver_unload(struct drm_device *dev);
-#else
 void evdi_driver_unload(struct drm_device *dev);
-#endif
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 
@@ -93,11 +111,7 @@ void evdi_fbdev_unplug(struct drm_device *dev);
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
 				struct drm_file *file,
-#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
-				struct drm_mode_fb_cmd2 *mode_cmd);
-#else
 				const struct drm_mode_fb_cmd2 *mode_cmd);
-#endif
 
 int evdi_dumb_create(struct drm_file *file_priv,
 		     struct drm_device *dev, struct drm_mode_create_dumb *args);
@@ -110,10 +124,11 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				      struct drm_gem_object *obj);
 
-struct drm_gem_object *evdi_gem_prime_import(struct drm_device *dev,
-					     struct dma_buf *dma_buf);
-struct dma_buf *evdi_gem_prime_export(struct drm_device *dev,
-				      struct drm_gem_object *obj, int flags);
+struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj);
+struct drm_gem_object *
+evdi_prime_import_sg_table(struct drm_device *dev,
+			   struct dma_buf_attachment *attach,
+			   struct sg_table *sg);
 
 int evdi_gem_vmap(struct evdi_gem_object *obj);
 void evdi_gem_vunmap(struct evdi_gem_object *obj);
@@ -121,10 +136,8 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
 #if KERNEL_VERSION(4, 17, 0) <= LINUX_VERSION_CODE
 vm_fault_t evdi_gem_fault(struct vm_fault *vmf);
-#elif KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
-int evdi_gem_fault(struct vm_fault *vmf);
 #else
-int evdi_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
+int evdi_gem_fault(struct vm_fault *vmf);
 #endif
 
 bool evdi_painter_is_connected(struct evdi_device *evdi);

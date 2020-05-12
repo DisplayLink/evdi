@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -17,7 +17,10 @@
 #endif /* CONFIG_FB */
 #include <linux/dma-buf.h>
 #include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
@@ -27,16 +30,6 @@
 #endif
 #include "evdi_drv.h"
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-static inline void drm_gem_object_put(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference(obj);
-}
-static inline void drm_gem_object_put_unlocked(struct drm_gem_object *obj)
-{
-	drm_gem_object_unreference_unlocked(obj);
-}
-#endif
 
 struct evdi_fbdev {
 	struct drm_fb_helper helper;
@@ -228,7 +221,8 @@ static struct fb_ops evdifb_ops = {
 };
 #endif /* CONFIG_FB */
 
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#else
 /*
  * Function taken from
  * https://lists.freedesktop.org/archives/dri-devel/2018-September/188716.html
@@ -254,14 +248,11 @@ static int evdi_user_framebuffer_dirty(
 	EVDI_CHECKPT();
 
 	drm_modeset_acquire_init(&ctx,
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 		/*
 		 * When called from ioctl, we are interruptable,
 		 * but not when called internally (ie. defio worker)
 		 */
-		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :
-#endif
-		0);
+		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :	0);
 
 	state = drm_atomic_state_alloc(fb->dev);
 	if (!state) {
@@ -273,15 +264,9 @@ static int evdi_user_framebuffer_dirty(
 	for (i = 0; i < num_clips; ++i)
 		evdi_painter_mark_dirty(evdi, &clips[i]);
 
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 retry:
-#endif
 
-#if KERNEL_VERSION(4, 3, 0) <= LINUX_VERSION_CODE
 	drm_for_each_plane(plane, fb->dev) {
-#else
-	list_for_each_entry(plane, &fb->dev->mode_config.plane_list, head) {
-#endif
 		struct drm_plane_state *plane_state;
 
 		if (plane->state->fb != fb)
@@ -304,22 +289,13 @@ retry:
 out:
 	if (ret == -EDEADLK) {
 		drm_atomic_state_clear(state);
-#if KERNEL_VERSION(4, 15, 0) <= LINUX_VERSION_CODE
 		ret = drm_modeset_backoff(&ctx);
 		if (!ret)
 			goto retry;
-#else
-		drm_modeset_backoff(&ctx);
-#endif
 	}
 
-	if (state) {
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
+	if (state)
 		drm_atomic_state_put(state);
-#else
-		drm_atomic_state_free(state);
-#endif
-	}
 
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
@@ -352,29 +328,21 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 static const struct drm_framebuffer_funcs evdifb_funcs = {
 	.create_handle = evdi_user_framebuffer_create_handle,
 	.destroy = evdi_user_framebuffer_destroy,
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
-	.dirty = evdi_user_framebuffer_dirty,
-#else
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	.dirty = drm_atomic_helper_dirtyfb,
+#else
+	.dirty = evdi_user_framebuffer_dirty,
 #endif
 };
 
 static int
 evdi_framebuffer_init(struct drm_device *dev,
 		      struct evdi_framebuffer *efb,
-#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
-		      struct drm_mode_fb_cmd2 *mode_cmd,
-#else
 		      const struct drm_mode_fb_cmd2 *mode_cmd,
-#endif
 		      struct evdi_gem_object *obj)
 {
 	efb->obj = obj;
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-	drm_helper_mode_fill_fb_struct(&efb->base, mode_cmd);
-#else
 	drm_helper_mode_fill_fb_struct(dev, &efb->base, mode_cmd);
-#endif
 	return drm_framebuffer_init(dev, &efb->base, &evdifb_funcs);
 }
 
@@ -442,25 +410,21 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	info->fix.smem_len = size;
 	info->fix.smem_start = (unsigned long)efbdev->efb.obj->vmapping;
 
-#if KERNEL_VERSION(4, 20, 0) > LINUX_VERSION_CODE
-	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
-#else
+#if KERNEL_VERSION(4, 20, 0) <= LINUX_VERSION_CODE
 	info->flags = FBINFO_DEFAULT;
+#else
+	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
 #endif
 
 	efbdev->fb_ops = evdifb_ops;
 	info->fbops = &efbdev->fb_ops;
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
-	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
-			       sizes->fb_height);
-#elif KERNEL_VERSION(5, 2, 0) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 2, 0) <= LINUX_VERSION_CODE
+	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);
+#else
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
 	drm_fb_helper_fill_var(info, &efbdev->helper, sizes->fb_width,
 			       sizes->fb_height);
-#else
-	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);
 #endif
 
 	ret = fb_alloc_cmap(&info->cmap, 256, 0);
@@ -497,9 +461,11 @@ static void evdi_fbdev_destroy(__always_unused struct drm_device *dev,
 		framebuffer_release(info);
 	}
 	drm_fb_helper_fini(&efbdev->helper);
-	drm_framebuffer_unregister_private(&efbdev->efb.base);
-	drm_framebuffer_cleanup(&efbdev->efb.base);
-	drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+	if (efbdev->efb.obj) {
+		drm_framebuffer_unregister_private(&efbdev->efb.base);
+		drm_framebuffer_cleanup(&efbdev->efb.base);
+		drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+	}
 }
 
 int evdi_fbdev_init(struct drm_device *dev)
@@ -516,8 +482,8 @@ int evdi_fbdev_init(struct drm_device *dev)
 	evdi->fbdev = efbdev;
 	drm_fb_helper_prepare(dev, &efbdev->helper, &evdi_fb_helper_funcs);
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-	ret = drm_fb_helper_init(dev, &efbdev->helper, 1, 1);
+#if KERNEL_VERSION(5, 7, 0) <= LINUX_VERSION_CODE
+	ret = drm_fb_helper_init(dev, &efbdev->helper);
 #else
 	ret = drm_fb_helper_init(dev, &efbdev->helper, 1);
 #endif
@@ -526,7 +492,10 @@ int evdi_fbdev_init(struct drm_device *dev)
 		return ret;
 	}
 
+#if KERNEL_VERSION(5, 7, 0) <= LINUX_VERSION_CODE
+#else
 	drm_fb_helper_single_add_all_connectors(&efbdev->helper);
+#endif
 
 	ret = drm_fb_helper_initial_config(&efbdev->helper, 32);
 	if (ret) {
@@ -561,36 +530,28 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 		struct fb_info *info;
 
 		info = efbdev->helper.fbdev;
+#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE
+		unregister_framebuffer(info);
+#else
 		unlink_framebuffer(info);
+#endif
 	}
 }
 #endif /* CONFIG_FB */
 
 int evdi_fb_get_bpp(uint32_t format)
 {
-#if KERNEL_VERSION(4, 10, 0) <= LINUX_VERSION_CODE
 	const struct drm_format_info *info = drm_format_info(format);
 
 	if (!info)
 		return 0;
 	return info->cpp[0] * 8;
-#else
-	unsigned int depth;
-	int bpp;
-
-	drm_fb_get_bpp_depth(format, &depth, &bpp);
-	return bpp;
-#endif
 }
 
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
-#if KERNEL_VERSION(4, 5, 0) > LINUX_VERSION_CODE
-					struct drm_mode_fb_cmd2 *mode_cmd)
-#else
 					const struct drm_mode_fb_cmd2 *mode_cmd)
-#endif
 {
 	struct drm_gem_object *obj;
 	struct evdi_framebuffer *efb;
@@ -603,27 +564,24 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 		return ERR_PTR(-EINVAL);
 	}
 
-#if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
-	obj = drm_gem_object_lookup(dev, file, mode_cmd->handles[0]);
-#else
 	obj = drm_gem_object_lookup(file, mode_cmd->handles[0]);
-#endif
 	if (obj == NULL)
 		return ERR_PTR(-ENOENT);
 
-	size = mode_cmd->pitches[0] * mode_cmd->height;
+	size = mode_cmd->offsets[0] + mode_cmd->pitches[0] * mode_cmd->height;
 	size = ALIGN(size, PAGE_SIZE);
 
 	if (size > obj->size) {
-		DRM_ERROR("object size not sufficient for fb %d %zu %d %d\n",
-			  size, obj->size, mode_cmd->pitches[0],
-			  mode_cmd->height);
+		DRM_ERROR("object size not sufficient for fb %d %zu %u %d %d\n",
+			  size, obj->size, mode_cmd->offsets[0],
+			  mode_cmd->pitches[0], mode_cmd->height);
 		goto err_no_mem;
 	}
 
 	efb = kzalloc(sizeof(*efb), GFP_KERNEL);
 	if (efb == NULL)
 		goto err_no_mem;
+	efb->base.obj[0] = obj;
 
 	ret = evdi_framebuffer_init(dev, efb, mode_cmd, to_evdi_bo(obj));
 	if (ret)

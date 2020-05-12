@@ -3,7 +3,7 @@
  * evdi_ioc32.c
  *
  * Copyright (c) 2016 The Chromium OS Authors
- * Copyright (c) 2017 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2017 - 2020 DisplayLink (UK) Ltd.
  *
  * This program is free software; you can redistribute  it and/or modify it
  * under  the terms of  the GNU General  Public License as published by the
@@ -21,7 +21,11 @@
 
 #include <linux/compat.h>
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
 
@@ -56,10 +60,10 @@ static int compat_evdi_connect(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
-	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-#else
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#else
+	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
 		|| __put_user(req32.connected, &request->connected)
 		|| __put_user(req32.dev_index, &request->dev_index)
@@ -84,10 +88,10 @@ static int compat_evdi_grabpix(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE
-	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
-#else
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#else
+	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
 		|| __put_user(req32.mode, &request->mode)
 		|| __put_user(req32.buf_width, &request->buf_width)

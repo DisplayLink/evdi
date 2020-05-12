@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
 
 #include <stddef.h>
 #include <stdint.h>
@@ -29,7 +29,7 @@
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
-#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL 0
+#define EVDI_MODULE_COMPATIBILITY_VERSION_PATCH 0
 
 #define evdi_log(...) do {						\
 	if (g_evdi_logging.function) {					\
@@ -58,9 +58,49 @@ struct evdi_device_context {
 	int device_index;
 };
 
-static int do_ioctl(int fd, unsigned int request, void *data, const char *msg)
+static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
-	const int err = ioctl(fd, request, data);
+	int ret;
+
+	do {
+		ret = ioctl(fd, request, arg);
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+
+	return ret;
+}
+
+static int drm_auth_magic(int fd, drm_magic_t magic)
+{
+	drm_auth_t auth;
+
+	memset(&auth, 0, sizeof(auth));
+	auth.magic = magic;
+	if (drm_ioctl(fd, DRM_IOCTL_AUTH_MAGIC, &auth))
+		return -errno;
+	return 0;
+}
+
+static int drm_is_master(int fd)
+{
+	/* Detect master by attempting something that requires master.
+	 *
+	 * Authenticating magic tokens requires master and 0 is an
+	 * internal kernel detail which we could use. Attempting this on
+	 * a master fd would fail therefore fail with EINVAL because 0
+	 * is invalid.
+	 *
+	 * A non-master fd will fail with EACCES, as the kernel checks
+	 * for master before attempting to do anything else.
+	 *
+	 * Since we don't want to leak implementation details, use
+	 * EACCES.
+	 */
+	return drm_auth_magic(fd, 0) != -EACCES;
+}
+
+static int do_ioctl(int fd, unsigned long request, void *data, const char *msg)
+{
+	const int err = drm_ioctl(fd, request, data);
 
 	if (err < 0)
 		evdi_log("Ioctl %s error: %s", msg, strerror(errno));
@@ -141,7 +181,7 @@ static int is_evdi_compatible(int fd)
 	evdi_log("LibEvdi version (%d.%d.%d)",
 		 LIBEVDI_VERSION_MAJOR,
 		 LIBEVDI_VERSION_MINOR,
-		 LIBEVDI_VERSION_PATCHLEVEL);
+		 LIBEVDI_VERSION_PATCH);
 
 	if (do_ioctl(fd, DRM_IOCTL_VERSION, &ver, "version") != 0)
 		return 0;
@@ -158,7 +198,7 @@ static int is_evdi_compatible(int fd)
 	evdi_log("Doesn't match LibEvdi compatibility one (%d.%d.%d)",
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR,
 		 EVDI_MODULE_COMPATIBILITY_VERSION_MINOR,
-		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCHLEVEL);
+		 EVDI_MODULE_COMPATIBILITY_VERSION_PATCH);
 
 	return 0;
 }
@@ -313,6 +353,39 @@ static void wait_for_master(const char *device_path)
 		evdi_log("Wait for master timed out");
 }
 
+static int open_as_slave(const char *device_path)
+{
+	int fd = 0;
+	int err = 0;
+
+	fd = open(device_path, O_RDWR);
+	if (fd < 0)
+		return -1;
+
+	if (drm_is_master(fd)) {
+		evdi_log("Process has master on %s, err: %s",
+			 device_path, strerror(errno));
+		err = drm_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
+	}
+
+	if (err < 0) {
+		evdi_log("Drop master on %s failed, err: %s",
+			 device_path, strerror(errno));
+		close(fd);
+		return err;
+	}
+
+	if (drm_is_master(fd)) {
+		evdi_log("Drop master on %s failed, err: %s",
+			 device_path, strerror(errno));
+		close(fd);
+		return -1;
+	}
+
+	evdi_log("Opened %s as slave drm device", device_path);
+	return fd;
+}
+
 static int wait_for_device(const char *device_path)
 {
 	const unsigned int TOTAL_WAIT_US = 5000000L;
@@ -322,7 +395,7 @@ static int wait_for_device(const char *device_path)
 
 	int fd = 0;
 
-	while ((fd = open(device_path, O_RDWR)) < 0 && cnt--)
+	while ((fd = open_as_slave(device_path)) < 0 && cnt--)
 		usleep(SLEEP_INTERVAL_US);
 
 	if (fd < 0)
@@ -344,7 +417,7 @@ static int open_device(int device)
 	fd = wait_for_device(dev);
 
 	if (fd >= 0) {
-		const int err = ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
+		const int err = drm_ioctl(fd, DRM_IOCTL_DROP_MASTER, NULL);
 
 		if (err == 0)
 			evdi_log("Dropped master on %s", dev);
@@ -375,12 +448,12 @@ evdi_handle evdi_open(int device)
 	return h;
 }
 
-enum evdi_device_status evdi_check_device(int device)
+static enum evdi_device_status evdi_device_to_platform(int device, char *path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
 	enum evdi_device_status status = UNRECOGNIZED;
-	char path[PATH_MAX];
+	char card_path[PATH_MAX];
 
 	if (!device_exists(device))
 		return NOT_PRESENT;
@@ -396,10 +469,9 @@ enum evdi_device_status evdi_check_device(int device)
 			continue;
 
 		snprintf(path, PATH_MAX,
-			"/sys/devices/platform/%s/drm/card%d",
-			fd_entry->d_name,
-			device);
-		if (path_exists(path)) {
+			"/sys/devices/platform/%s", fd_entry->d_name);
+		snprintf(card_path, PATH_MAX, "%s/drm/card%d", path, device);
+		if (path_exists(card_path)) {
 			status = AVAILABLE;
 			break;
 		}
@@ -407,6 +479,13 @@ enum evdi_device_status evdi_check_device(int device)
 
 	closedir(fd_dir);
 	return status;
+}
+
+enum evdi_device_status evdi_check_device(int device)
+{
+	char path[PATH_MAX];
+
+	return evdi_device_to_platform(device, path);
 }
 
 int evdi_add_device(void)
@@ -457,6 +536,41 @@ void evdi_disconnect(evdi_handle handle)
 	struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0 };
 
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
+}
+
+void evdi_enable_cursor_events(evdi_handle handle)
+{
+	char path[PATH_MAX] = {0};
+	static const char enable[] = "Y";
+	int path_len = 0;
+	FILE *cursor_evs = NULL;
+	size_t written = 0;
+	const size_t elem_bytes = 1;
+	int errcode = 0;
+
+	if (evdi_device_to_platform(handle->device_index, path) !=
+	    AVAILABLE) {
+		evdi_log("Failed to enable cursor events");
+		evdi_log("Device /dev/dri/card%d, device is not available.",
+			handle->device_index);
+		return;
+	}
+
+	path_len = strlen(path);
+	snprintf(path+path_len, PATH_MAX-path_len, "/cursor_events");
+	cursor_evs = fopen(path, "w");
+	if (cursor_evs == NULL) {
+		evdi_log("Failed to open %s, err: %s", path, strerror(errno));
+		return;
+	}
+
+	written = fwrite(enable, elem_bytes, sizeof(enable), cursor_evs);
+	errcode = errno;
+	fclose(cursor_evs);
+	evdi_log("Enabling cursor events on /dev/dri/card%d %s %s",
+		handle->device_index,
+		written < sizeof(enable) ? "failed: " : "succeeded",
+		written < sizeof(enable) ? strerror(errcode) : "");
 }
 
 void evdi_grab_pixels(evdi_handle handle,
@@ -715,7 +829,7 @@ void evdi_get_lib_version(struct evdi_lib_version *version)
 	if (version != NULL) {
 		version->version_major = LIBEVDI_VERSION_MAJOR;
 		version->version_minor = LIBEVDI_VERSION_MINOR;
-		version->version_patchlevel = LIBEVDI_VERSION_PATCHLEVEL;
+		version->version_patchlevel = LIBEVDI_VERSION_PATCH;
 	}
 }
 

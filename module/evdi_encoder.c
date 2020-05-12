@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -11,10 +11,13 @@
  * more details.
  */
 
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
+#endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#include <linux/version.h>
 #include "evdi_drv.h"
 
 /* dummy encoder */
@@ -50,13 +53,8 @@ struct drm_encoder *evdi_encoder_init(struct drm_device *dev)
 	if (!encoder)
 		goto err;
 
-#if KERNEL_VERSION(4, 5, 0) <= LINUX_VERSION_CODE
 	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
 			       DRM_MODE_ENCODER_TMDS, dev_name(dev->dev));
-#else
-	ret = drm_encoder_init(dev, encoder, &evdi_enc_funcs,
-			       DRM_MODE_ENCODER_TMDS);
-#endif
 	if (ret) {
 		EVDI_ERROR("Failed to initialize encoder: %d\n", ret);
 		goto err_encoder;

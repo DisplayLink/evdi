@@ -16,7 +16,15 @@ done
 
 chmod +x checkpatch.pl
 
+set +e
+
+result=0
 ./checkpatch.pl --terse --no-tree --ignore NEW_TYPEDEFS -f ./library/*
+result=$((result || $?))
+
 ./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE,PREFER_PR_LEVEL -f ./module/*
+result=$((result || $?))
 
 rm ${files[@]}
+
+exit ${result}

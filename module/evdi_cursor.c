@@ -3,7 +3,7 @@
  * evdi_cursor.c
  *
  * Copyright (c) 2016 The Chromium OS Authors
- * Copyright (c) 2016 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2016 - 2020 DisplayLink (UK) Ltd.
  *
  * This program is free software; you can redistribute  it and/or modify it
  * under  the terms of  the GNU General  Public License as published by the
@@ -19,10 +19,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <drm/drmP.h>
-#include <drm/drm_crtc_helper.h>
 #include <linux/compiler.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
+
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
+#include <drm/drmP.h>
+#endif
+#include <drm/drm_crtc_helper.h>
 
 #include "evdi_cursor.h"
 #include "evdi_drv.h"
@@ -47,17 +52,10 @@ struct evdi_cursor {
 static void evdi_cursor_set_gem(struct evdi_cursor *cursor,
 				struct evdi_gem_object *obj)
 {
-#if KERNEL_VERSION(4, 12, 0) <= LINUX_VERSION_CODE
 	if (obj)
 		drm_gem_object_get(&obj->base);
 	if (cursor->obj)
 		drm_gem_object_put_unlocked(&cursor->obj->base);
-#else
-	if (obj)
-		drm_gem_object_reference(&obj->base);
-	if (cursor->obj)
-		drm_gem_object_unreference_unlocked(&cursor->obj->base);
-#endif
 
 	cursor->obj = obj;
 }
@@ -239,7 +237,7 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 			cursor_pix = h_cursor_w+x +
 				    (h_cursor_h+y)*cursor->width;
 			curs_val = le32_to_cpu(cursor_buffer[cursor_pix]);
-			fbsrc = (int *)efb->obj->vmapping;
+			fbsrc = (int *)(efb->obj->vmapping + fb->offsets[0]);
 			fb_value = *(fbsrc + ((fb->pitches[0]>>2) *
 						  mouse_pix_y + mouse_pix_x));
 			cmd_offset = (buf_byte_stride * mouse_pix_y) +

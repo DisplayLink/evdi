@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -11,8 +11,12 @@
  * more details.
  */
 
+#include <linux/version.h>
 #include <linux/platform_device.h>
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#else
 #include <drm/drmP.h>
+#endif
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 
@@ -37,6 +41,15 @@ int evdi_driver_setup(struct drm_device *dev)
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err;
+
+	evdi->cursor_attr = (struct dev_ext_attribute) {
+	    __ATTR(cursor_events, 0644, device_show_bool, device_store_bool),
+	    &evdi->cursor_events_enabled
+	};
+	ret = device_create_file(dev->dev, &evdi->cursor_attr.attr);
+	if (ret)
+		goto err_fb;
+
 
 	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
@@ -74,42 +87,22 @@ err:
 	return ret;
 }
 
-#if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
-int evdi_driver_load(struct drm_device *dev,
-		     __always_unused unsigned long flags)
-{
-	return evdi_driver_setup(dev);
-}
-#endif
 
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-int evdi_driver_unload(struct drm_device *dev)
-#else
 void evdi_driver_unload(struct drm_device *dev)
-#endif
 {
 	struct evdi_device *evdi = dev->dev_private;
 
 	EVDI_CHECKPT();
 
-#if KERNEL_VERSION(4, 14, 0) > LINUX_VERSION_CODE
-	drm_vblank_cleanup(dev);
-#endif
-
 	drm_kms_helper_poll_fini(dev);
 
-#if KERNEL_VERSION(4, 8, 0) <= LINUX_VERSION_CODE
-
-#elif KERNEL_VERSION(4, 7, 0) <= LINUX_VERSION_CODE
-	drm_connector_unregister_all(dev);
-#else
-	drm_connector_unplug_all(dev);
-#endif
 #ifdef CONFIG_FB
 	evdi_fbdev_unplug(dev);
 #endif /* CONFIG_FB */
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
+
+	device_remove_file(dev->dev, &evdi->cursor_attr.attr);
 	evdi_painter_cleanup(evdi);
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
@@ -117,9 +110,6 @@ void evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
-#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
-	return 0;
-#endif
 }
 
 static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)

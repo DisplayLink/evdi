@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-2.1-only
- * Copyright (c) 2015 - 2019 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  */
 
 #ifndef EVDI_LIB_H
@@ -12,8 +12,8 @@ extern "C" {
 #endif
 
 #define LIBEVDI_VERSION_MAJOR 1
-#define LIBEVDI_VERSION_MINOR 6
-#define LIBEVDI_VERSION_PATCHLEVEL 1
+#define LIBEVDI_VERSION_MINOR 7
+#define LIBEVDI_VERSION_PATCH 0
 
 struct evdi_lib_version {
 	int version_major;
@@ -98,6 +98,8 @@ void evdi_connect(evdi_handle handle, const unsigned char *edid,
 		  const unsigned int edid_length,
 		  const uint32_t sku_area_limit);
 void evdi_disconnect(evdi_handle handle);
+void evdi_enable_cursor_events(evdi_handle handle);
+
 void evdi_grab_pixels(evdi_handle handle,
 		      struct evdi_rect *rects,
 		      int *num_rects);
