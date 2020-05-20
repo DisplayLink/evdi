@@ -16,6 +16,8 @@
 #include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_connector.h>
+#include <drm/drm_probe_helper.h>
 #include "evdi_drv.h"
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
@@ -38,6 +40,8 @@ static int evdi_get_modes(struct drm_connector *connector)
 	if (!edid) {
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
 		drm_connector_update_edid_property(connector, NULL);
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
+		drm_connector_update_edid_property(connector, NULL);
 #else
 		drm_mode_connector_update_edid_property(connector, NULL);
 #endif
@@ -45,6 +49,8 @@ static int evdi_get_modes(struct drm_connector *connector)
 	}
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	ret = drm_connector_update_edid_property(connector, edid);
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	ret = drm_connector_update_edid_property(connector, edid);
 #else
 	ret = drm_mode_connector_update_edid_property(connector, edid);
@@ -152,6 +158,8 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 	drm_connector_register(connector);
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+	drm_connector_attach_encoder(connector, encoder);
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	drm_connector_attach_encoder(connector, encoder);
 #else
 	drm_mode_connector_attach_encoder(connector, encoder);

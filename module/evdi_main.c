@@ -17,6 +17,7 @@
 #else
 #include <drm/drmP.h>
 #endif
+#include <drm/drm_probe_helper.h>
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 

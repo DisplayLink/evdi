@@ -22,6 +22,7 @@
 #include <linux/compat.h>
 
 #include <linux/version.h>
+#include <linux/uaccess.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
@@ -62,6 +63,8 @@ static int compat_evdi_connect(struct file *file,
 	request = compat_alloc_user_space(sizeof(*request));
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
+	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
@@ -89,6 +92,8 @@ static int compat_evdi_grabpix(struct file *file,
 
 	request = compat_alloc_user_space(sizeof(*request));
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+	if (!access_ok(request, sizeof(*request))
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
