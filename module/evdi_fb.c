@@ -415,8 +415,6 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 #if KERNEL_VERSION(4, 20, 0) <= LINUX_VERSION_CODE
 	info->flags = FBINFO_DEFAULT;
-#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
-	info->flags = FBINFO_DEFAULT;
 #elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE && defined(RHEL_VERSION)
 	info->flags = FBINFO_DEFAULT;
 #else
