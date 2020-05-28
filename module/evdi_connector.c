@@ -43,8 +43,6 @@ static int evdi_get_modes(struct drm_connector *connector)
 	if (!edid) {
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
 		drm_connector_update_edid_property(connector, NULL);
-#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
-		drm_connector_update_edid_property(connector, NULL);
 #elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
                 drm_connector_update_edid_property(connector, NULL);
 #else
@@ -54,8 +52,6 @@ static int evdi_get_modes(struct drm_connector *connector)
 	}
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
-	ret = drm_connector_update_edid_property(connector, edid);
-#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	ret = drm_connector_update_edid_property(connector, edid);
 #elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
 	ret = drm_connector_update_edid_property(connector, edid);
@@ -165,8 +161,6 @@ int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder)
 	drm_connector_register(connector);
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
-	drm_connector_attach_encoder(connector, encoder);
-#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	drm_connector_attach_encoder(connector, encoder);
 #elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
 	drm_connector_attach_encoder(connector, encoder);
