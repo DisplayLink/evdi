@@ -22,7 +22,6 @@
 #include <linux/compat.h>
 
 #include <linux/version.h>
-#include <linux/uaccess.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
