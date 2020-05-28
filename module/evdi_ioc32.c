@@ -32,6 +32,10 @@
 
 #include "evdi_drv.h"
 
+#ifdef RHEL_VERSION
+#include <linux/uaccess.h>
+#endif
+
 struct drm_evdi_connect32 {
 	int32_t connected;
 	int32_t dev_index;
@@ -65,6 +69,8 @@ static int compat_evdi_connect(struct file *file,
 	if (!access_ok(request, sizeof(*request))
 #elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
+#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE && defined(RHEL_VERSION)
+	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
 #endif
@@ -94,6 +100,8 @@ static int compat_evdi_grabpix(struct file *file,
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
 #elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE
+	if (!access_ok(request, sizeof(*request))
+#elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
 	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))

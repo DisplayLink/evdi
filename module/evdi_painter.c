@@ -30,6 +30,11 @@
 #include <drm/drm_probe_helper.h>
 #endif
 
+#ifdef RHEL_VERSION
+#include <drm/drm_crtc_helper.h>
+#include <drm/drm_probe_helper.h>
+#endif
+
 struct evdi_event_cursor_set_pending {
 	struct drm_pending_event base;
 	struct drm_evdi_event_cursor_set cursor_set;

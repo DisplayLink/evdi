@@ -45,6 +45,12 @@
 #define DRIVER_MINOR 7
 #define DRIVER_PATCH 0
 
+#if defined __has_include
+#  if __has_include("/etc/redhat-release")
+      #define RHEL_VERSION "rhel"
+#  endif
+#endif
+
 struct evdi_fbdev;
 struct evdi_painter;
 

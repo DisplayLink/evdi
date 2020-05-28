@@ -25,6 +25,10 @@
 #include <drm/drm_probe_helper.h>
 #endif
 
+#ifdef RHEL_VERSION
+#include <drm/drm_probe_helper.h>
+#endif
+
 int evdi_driver_setup(struct drm_device *dev)
 {
 	struct platform_device *platdev = NULL;
