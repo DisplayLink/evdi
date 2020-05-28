@@ -44,7 +44,7 @@ static int evdi_get_modes(struct drm_connector *connector)
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
 		drm_connector_update_edid_property(connector, NULL);
 #elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
-                drm_connector_update_edid_property(connector, NULL);
+		drm_connector_update_edid_property(connector, NULL);
 #else
 		drm_mode_connector_update_edid_property(connector, NULL);
 #endif

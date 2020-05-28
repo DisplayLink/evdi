@@ -66,7 +66,7 @@ static int compat_evdi_connect(struct file *file,
 	request = compat_alloc_user_space(sizeof(*request));
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 	if (!access_ok(request, sizeof(*request))
-#elif KERNEL_VERSION(4, 18, 0) <= LINUX_VERSION_CODE && defined(RHEL_VERSION)
+#elif KERNEL_VERSION(4, 18, 0) == LINUX_VERSION_CODE && defined(RHEL_VERSION)
 	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
