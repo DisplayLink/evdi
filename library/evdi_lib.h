@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 #define LIBEVDI_VERSION_MAJOR 1
-#define LIBEVDI_VERSION_MINOR 7
+#define LIBEVDI_VERSION_MINOR 8
 #define LIBEVDI_VERSION_PATCH 0
 
 struct evdi_lib_version {
@@ -71,6 +71,13 @@ struct evdi_cursor_move {
 	int32_t y;
 };
 
+struct evdi_ddcci_data {
+	uint16_t address;
+	uint16_t flags;
+	uint32_t buffer_length;
+	uint8_t *buffer;
+};
+
 struct evdi_event_context {
 	void (*dpms_handler)(int dpms_mode, void *user_data);
 	void (*mode_changed_handler)(struct evdi_mode mode, void *user_data);
@@ -80,6 +87,8 @@ struct evdi_event_context {
 				   void *user_data);
 	void (*cursor_move_handler)(struct evdi_cursor_move cursor_move,
 				    void *user_data);
+	void (*ddcci_data_handler)(struct evdi_ddcci_data ddcci_data,
+				   void *user_data);
 	void *user_data;
 };
 
@@ -106,6 +115,9 @@ void evdi_grab_pixels(evdi_handle handle,
 void evdi_register_buffer(evdi_handle handle, struct evdi_buffer buffer);
 void evdi_unregister_buffer(evdi_handle handle, int bufferId);
 bool evdi_request_update(evdi_handle handle, int bufferId);
+void evdi_ddcci_response(evdi_handle handle, const unsigned char *buffer,
+		const uint32_t buffer_length,
+		const bool result);
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx);
 evdi_selectable evdi_get_event_ready(evdi_handle handle);
