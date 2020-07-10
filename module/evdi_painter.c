@@ -19,8 +19,10 @@
 #include "evdi_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
+#include "evdi_i2c.h"
 #include <linux/mutex.h>
 #include <linux/compiler.h>
+#include <linux/platform_device.h>
 
 #include <linux/dma-buf.h>
 
@@ -725,6 +727,58 @@ static void evdi_painter_events_cleanup(struct evdi_painter *painter)
 	cancel_delayed_work_sync(&painter->send_events_work);
 }
 
+static void evdi_add_i2c_adapter(struct evdi_device *evdi)
+{
+	struct drm_device *ddev = evdi->ddev;
+	struct platform_device *platdev = to_platform_device(ddev->dev);
+	int result = 0;
+
+	evdi->i2c_adapter = kzalloc(sizeof(*evdi->i2c_adapter), GFP_KERNEL);
+
+	if (!evdi->i2c_adapter) {
+		EVDI_ERROR("(dev=%d) Failed to allocate for i2c adapter",
+			evdi->dev_index);
+		return;
+	}
+
+	result = evdi_i2c_add(evdi->i2c_adapter, &platdev->dev, ddev->dev_private);
+
+	if (result) {
+		kfree(evdi->i2c_adapter);
+		evdi->i2c_adapter = NULL;
+		EVDI_ERROR("(dev=%d) Failed to add i2c adapter, error %d",
+			evdi->dev_index, result);
+		return;
+	}
+
+	EVDI_DEBUG("(dev=%d) Added i2c adapter bus number %d",
+		evdi->dev_index, evdi->i2c_adapter->nr);
+
+	result = sysfs_create_link(&evdi->conn->kdev->kobj,
+			&evdi->i2c_adapter->dev.kobj, "ddc");
+
+	if (result) {
+		EVDI_ERROR("(dev=%d) Failed to create sysfs link, error %d",
+			evdi->dev_index, result);
+		return;
+	}
+}
+
+static void evdi_remove_i2c_adapter(struct evdi_device *evdi)
+{
+	if (evdi->i2c_adapter) {
+		EVDI_DEBUG("(dev=%d) Removing i2c adapter bus number %d",
+			evdi->dev_index, evdi->i2c_adapter->nr);
+
+		sysfs_remove_link(&evdi->conn->kdev->kobj, "ddc");
+
+		evdi_i2c_remove(evdi->i2c_adapter);
+
+		kfree(evdi->i2c_adapter);
+		evdi->i2c_adapter = NULL;
+	}
+}
+
 static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
@@ -783,6 +837,8 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter->is_connected = true;
 	painter->needs_full_modeset = true;
 
+	evdi_add_i2c_adapter(evdi);
+
 	painter_unlock(painter);
 
 	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
@@ -819,6 +875,8 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	evdi_painter_events_cleanup(painter);
 
 	evdi_cursor_enable(evdi->cursor, false);
+
+	evdi_remove_i2c_adapter(evdi);
 
 	painter->drm_filp = NULL;
 	evdi->dev_index = -1;

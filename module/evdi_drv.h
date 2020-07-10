@@ -39,18 +39,18 @@
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20200327"
+#define DRIVER_DATE   "20200707"
 
 #define DRIVER_MAJOR 1
-#define DRIVER_MINOR 7
+#define DRIVER_MINOR 8
 #define DRIVER_PATCH 0
 
 struct evdi_fbdev;
 struct evdi_painter;
 
 struct evdi_device {
-	struct device *dev;
 	struct drm_device *ddev;
+	struct drm_connector *conn;
 	struct evdi_cursor *cursor;
 	struct dev_ext_attribute cursor_attr;
 	bool cursor_events_enabled;
@@ -59,6 +59,7 @@ struct evdi_device {
 
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
+	struct i2c_adapter *i2c_adapter;
 
 	int dev_index;
 };
