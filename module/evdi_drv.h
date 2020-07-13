@@ -183,6 +183,7 @@ bool evdi_painter_needs_full_modeset(struct evdi_device *evdi);
 void evdi_painter_force_full_modeset(struct evdi_device *evdi);
 struct drm_clip_rect evdi_painter_framebuffer_size(
 			struct evdi_painter *painter);
+bool evdi_painter_i2c_data_notify(struct evdi_device *evdi, struct i2c_msg *msg);
 
 int evdi_fb_get_bpp(uint32_t format);
 #endif

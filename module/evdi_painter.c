@@ -60,9 +60,15 @@ struct evdi_event_crtc_state_pending {
 	struct drm_evdi_event_crtc_state crtc_state;
 };
 
+struct evdi_event_ddcci_data_pending {
+	struct drm_pending_event base;
+	struct drm_evdi_event_ddcci_data ddcci_data;
+};
+
 #define MAX_DIRTS 16
 #define EDID_EXT_BLOCK_SIZE 128
 #define MAX_EDID_SIZE (255 * EDID_EXT_BLOCK_SIZE + sizeof(struct edid))
+#define I2C_ADDRESS_DDCCI 0x37
 
 struct evdi_painter {
 	bool is_connected;
@@ -1173,4 +1179,60 @@ void evdi_painter_force_full_modeset(struct evdi_device *evdi)
 
 	if (painter)
 		painter->needs_full_modeset = true;
+}
+
+static struct drm_pending_event *create_ddcci_data_event(struct i2c_msg *msg)
+{
+	struct evdi_event_ddcci_data_pending *event;
+
+	event = kzalloc(sizeof(*event), GFP_KERNEL);
+	if (!event || !msg) {
+		EVDI_ERROR("Failed to create ddcci data event");
+		return NULL;
+	}
+
+	event->ddcci_data.base.type = DRM_EVDI_EVENT_DDCCI_DATA;
+	event->ddcci_data.base.length = sizeof(event->ddcci_data);
+	// Truncate buffers to a maximum of 64 bytes
+	event->ddcci_data.buffer_length = min(msg->len,
+		sizeof(event->ddcci_data.buffer));
+	memcpy(event->ddcci_data.buffer, msg->buf,
+		event->ddcci_data.buffer_length);
+	event->ddcci_data.flags = msg->flags;
+	event->ddcci_data.address = msg->addr;
+
+	event->base.event = &event->ddcci_data.base;
+	return &event->base;
+}
+
+static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg *msg)
+{
+	struct drm_pending_event *event = create_ddcci_data_event(msg);
+
+	evdi_painter_send_event(painter, event);
+
+	// TODO: Wait for response to complete a read
+}
+
+bool evdi_painter_i2c_data_notify(struct evdi_device *evdi, struct i2c_msg *msg)
+{
+	struct evdi_painter *painter = evdi->painter;
+
+	if (!painter) {
+		EVDI_WARN("Painter does not exist!");
+		return false;
+	}
+
+	if (!msg) {
+		EVDI_WARN("Ignored NULL ddc/ci message");
+		return false;
+	}
+
+	if (msg->addr != I2C_ADDRESS_DDCCI) {
+		EVDI_DEBUG("Ignored ddc/ci data for address 0x%x\n", msg->addr);
+		return false;
+	}
+
+	evdi_painter_ddcci_data(painter, msg);
+	return true;
 }

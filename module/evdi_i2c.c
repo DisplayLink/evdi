@@ -9,18 +9,17 @@
 
 #include "evdi_i2c.h"
 #include "evdi_debug.h"
+#include "evdi_drv.h"
 
-static int dli2c_access_master(__always_unused struct i2c_adapter *adapter,
+static int dli2c_access_master(struct i2c_adapter *adapter,
 	struct i2c_msg *msgs, int num)
 {
 	int i = 0, result = 0;
+	struct evdi_device *evdi = adapter->algo_data;
 
 	for (i = 0; i < num; i++) {
-
-		// TODO: Pass messages to painter and on to device
-		EVDI_DEBUG("ddc/ci message addr = 0x%.4x\n", msgs[i].addr);
-
-		result++;
+		if (evdi_painter_i2c_data_notify(evdi, &msgs[i]))
+			result++;
 	}
 
 	return result;

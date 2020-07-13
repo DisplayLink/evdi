@@ -94,9 +94,11 @@ struct drm_evdi_ddcci_response {
 	uint8_t result;
 };
 
+#define DDCCI_BUFFER_SIZE 64
+
 struct drm_evdi_event_ddcci_data {
 	struct drm_event base;
-	unsigned char buffer[256];
+	unsigned char buffer[DDCCI_BUFFER_SIZE];
 	uint32_t buffer_length;
 	uint16_t flags;
 	uint16_t address;
