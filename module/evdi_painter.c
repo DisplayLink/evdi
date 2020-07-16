@@ -23,6 +23,7 @@
 #include <linux/mutex.h>
 #include <linux/compiler.h>
 #include <linux/platform_device.h>
+#include <linux/completion.h>
 
 #include <linux/dma-buf.h>
 
@@ -69,6 +70,7 @@ struct evdi_event_ddcci_data_pending {
 #define EDID_EXT_BLOCK_SIZE 128
 #define MAX_EDID_SIZE (255 * EDID_EXT_BLOCK_SIZE + sizeof(struct edid))
 #define I2C_ADDRESS_DDCCI 0x37
+#define DDCCI_TIMEOUT_MS 50
 
 struct evdi_painter {
 	bool is_connected;
@@ -88,6 +90,10 @@ struct evdi_painter {
 
 	struct list_head pending_events;
 	struct delayed_work send_events_work;
+
+	struct completion ddcci_response_received;
+	char *ddcci_buffer;
+	unsigned int ddcci_buffer_length;
 };
 
 static void expand_rect(struct drm_clip_rect *a, const struct drm_clip_rect *b)
@@ -882,6 +888,10 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 
 	evdi_cursor_enable(evdi->cursor, false);
 
+	kfree(painter->ddcci_buffer);
+	painter->ddcci_buffer = NULL;
+	painter->ddcci_buffer_length = 0;
+
 	evdi_remove_i2c_adapter(evdi);
 
 	painter->drm_filp = NULL;
@@ -891,6 +901,9 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	evdi->cursor_events_enabled = false;
 
 	painter_unlock(painter);
+
+	// Signal anything waiting for ddc/ci response with NULL buffer
+	complete(&painter->ddcci_response_received);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
 	return 0;
@@ -1117,6 +1130,7 @@ int evdi_painter_init(struct evdi_device *dev)
 		INIT_LIST_HEAD(&dev->painter->pending_events);
 		INIT_DELAYED_WORK(&dev->painter->send_events_work,
 			evdi_send_events_work);
+		init_completion(&dev->painter->ddcci_response_received);
 		return 0;
 	}
 	return -ENOMEM;
@@ -1209,17 +1223,37 @@ static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg
 {
 	struct drm_pending_event *event = create_ddcci_data_event(msg);
 
+	reinit_completion(&painter->ddcci_response_received);
 	evdi_painter_send_event(painter, event);
 
-	// TODO: Wait for response to complete a read
+	if (wait_for_completion_interruptible_timeout(
+		&painter->ddcci_response_received,
+		msecs_to_jiffies(DDCCI_TIMEOUT_MS)) > 0) {
+
+		// Match expected buffer length including any truncation
+		const uint32_t expected_response_length = min(msg->len, DDCCI_BUFFER_SIZE);
+
+		painter_lock(painter);
+
+		if (expected_response_length != painter->ddcci_buffer_length)
+			EVDI_WARN("DDCCI buffer length mismatch");
+		else if (painter->ddcci_buffer)
+			memcpy(msg->buf, painter->ddcci_buffer, painter->ddcci_buffer_length);
+		else
+			EVDI_WARN("Ignoring NULL DDCCI buffer");
+
+		painter_unlock(painter);
+	} else {
+		EVDI_WARN("DDCCI response timeout");
+	}
 }
 
 bool evdi_painter_i2c_data_notify(struct evdi_device *evdi, struct i2c_msg *msg)
 {
 	struct evdi_painter *painter = evdi->painter;
 
-	if (!painter) {
-		EVDI_WARN("Painter does not exist!");
+	if (!evdi_painter_is_connected(evdi)) {
+		EVDI_WARN("Painter not connected");
 		return false;
 	}
 
@@ -1235,4 +1269,41 @@ bool evdi_painter_i2c_data_notify(struct evdi_device *evdi, struct i2c_msg *msg)
 
 	evdi_painter_ddcci_data(painter, msg);
 	return true;
+}
+
+int evdi_painter_ddcci_response_ioctl(struct drm_device *drm_dev, void *data,
+				__always_unused struct drm_file *file)
+{
+	struct evdi_device *evdi = drm_dev->dev_private;
+	struct evdi_painter *painter = evdi->painter;
+	struct drm_evdi_ddcci_response *cmd = data;
+	int result = 0;
+
+	painter_lock(painter);
+
+	// Truncate any read to 64 bytes
+	painter->ddcci_buffer_length = min(cmd->buffer_length, DDCCI_BUFFER_SIZE);
+
+	kfree(painter->ddcci_buffer);
+	painter->ddcci_buffer = kzalloc(painter->ddcci_buffer_length, GFP_KERNEL);
+	if (!painter->ddcci_buffer) {
+		EVDI_ERROR("DDC buffer allocation failed\n");
+		result = -ENOMEM;
+		goto unlock;
+	}
+
+	if (copy_from_user(painter->ddcci_buffer, cmd->buffer,
+		painter->ddcci_buffer_length)) {
+		EVDI_ERROR("Failed to read ddcci_buffer\n");
+		kfree(painter->ddcci_buffer);
+		painter->ddcci_buffer = NULL;
+		result = -EFAULT;
+		goto unlock;
+	}
+
+	complete(&painter->ddcci_response_received);
+
+unlock:
+	painter_unlock(painter);
+	return result;
 }

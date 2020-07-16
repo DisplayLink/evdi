@@ -163,6 +163,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 			       struct drm_file *file);
 int evdi_painter_request_update_ioctl(struct drm_device *drm_dev, void *data,
 				      struct drm_file *file);
+int evdi_painter_ddcci_response_ioctl(struct drm_device *drm_dev, void *data,
+				      struct drm_file *file);
 
 int evdi_painter_init(struct evdi_device *evdi);
 void evdi_painter_cleanup(struct evdi_device *evdi);
