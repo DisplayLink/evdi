@@ -164,6 +164,24 @@ or while handling the `update_ready` notification.
    and the client should only care about as many. In particular, a failed grab will be indicated by `0` valid rectangles
    to take into account (this can happen when there was a mode change between the request and the grab).
 
+### DDC/CI response
+
+    #!c
+	void evdi_ddcci_response(evdi_handle handle, const unsigned char *buffer,
+		const uint32_t buffer_length, const bool result);
+
+Pass back DDC/CI data following the most recent DDC/CI request to the EVDI kernel driver (see [DDC/CI data notification](details.md#ddcci-data-notification)).
+
+**Arguments**:
+
+* `handle` to an opened device.
+* `buffer` a pointer to the response buffer. This will be copied into kernel space.
+* `buffer_length` the length of the response buffer.
+* `result` the boolean result. The caller should set `result` to true if the most recent DDC/CI request was successful and false if it was unsuccessful.  If false, `buffer` and `buffer_length` are ignored.
+
+!!! note
+	The `buffer_length` will be truncated to 64 bytes (`DDCCI_BUFFER_SIZE`).
+
 ### Events and handlers
 
 #### DPMS mode change
@@ -221,6 +239,15 @@ This notification is sent for a cursor position change. It is raised only when c
 	void (*crtc_state_handler)(int state, void* user_data);
 
 Sent when DRM's CRTC changes state. The `state` is a value that's forwarded from the kernel.
+
+#### DDC/CI data notification
+
+	#!c
+	void (*ddcci_data_handler)(struct evdi_ddcci_data ddcci_data, void *user_data);
+
+This notification is sent when an i2c request has been made to the DDC/CI address (0x37).
+
+The module will wait for a maximum of DDCCI_TIMEOUT_MS (50ms - The default DDC request timeout) for a response to this request to be passed back via `evdi_ddcci_response`.
 
 ### Logging
 
@@ -296,6 +323,9 @@ Last two structure members, `rects` and `rect_counts` are updated during grabbin
 	  void (*mode_changed_handler)(evdi_mode mode, void* user_data);
 	  void (*update_ready_handler)(int buffer_to_be_updated, void* user_data);
 	  void (*crtc_state_handler)(int state, void* user_data);
+	  void (*cursor_set_handler)(struct evdi_cursor_set cursor_set, void *user_data);
+	  void (*cursor_move_handler)(struct evdi_cursor_move cursor_move, void *user_data);
+	  void (*ddcci_data_handler)(struct evdi_ddcci_data ddcci_data, void *user_data);
 	  void* user_data;
 	} evdi_event_context;
 
@@ -352,7 +382,27 @@ Pixel encoding is described by FourCC code in `pixel_format` field.
 The `evdi_cursor_move` structure contains current cursor position.
 It is defined as top left corner of the cursor bitmap.
 
-###  evdi_logging
+### evdi_ddcci_data
+
+    #!c
+	struct evdi_ddcci_data {
+		uint16_t address;
+		uint16_t flags;
+		uint32_t buffer_length;
+		uint8_t *buffer;
+	};
+
+The `evdi_ddcci_data` structure contains:
+
+* `address` i2c address, will always be 0x37.
+* `flags` read/write flags.  Read = 1, Write = 0.
+* `buffer_length` the length of the buffer.
+* `buffer` pointer to the ddc/ci buffer.  For both read and write this will be truncated to 64 bytes (`DDCCI_BUFFER_SIZE`).
+
+!!! warning
+	Although the DDC spec advices the maximum buffer length is 32 bytes, we have identified monitors which support bigger buffers.
+
+### evdi_logging
 
 	#!c
 	struct evdi_logging {
@@ -361,6 +411,7 @@ It is defined as top left corner of the cursor bitmap.
 	};
 
 Structure contains two fields:
+
 * `function` which is a pointer to the actual callback. The `fmt` and `...` are the same as in case of `printf`.
 * `user_data` a pointer provided by the client when registering callback
 

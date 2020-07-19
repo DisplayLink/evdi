@@ -69,6 +69,11 @@ on the user supplied framebuffer.
  * Cursor change notifications. Enabled with `evdi_enable_cursor_events` function call.
 In that mode the responsibility for cursor blending is passed to the library client. Instead of `update_ready` event the `cursor_set` and `cursor_move` notifications are sent.
 
+## DDC/CI
+
+As part of creating an EVDI node, the module also creates an i2c adapter. This can be used to pass DDC/CI buffers to and from the connected monitor to adjust brightness and contrast.
+Data requests to this adapter for DDC/CI (on address 0x37) are passed to userspace as DDC/CI data notifications via `ddcci_data_handler` and responses are passed back using `evdi_ddcci_response`.
+
 ## Running loop
 
 After registering buffers, the application should start requesting updates for them. This is done using `evdi_request_update`.
@@ -94,6 +99,7 @@ The notifications your application can (and should) be handling, are:
 * DPMS notifications (telling the new power state of a connector)
 * CRTC state change event (exposing DRM CRTC state)
 * Cursor events (send when cursor position or state changes)
+* DDC/CI notification (sent when an i2c request for DDC/CI data is made)
 
 You will start receiving first notifications from the kernel module right after connecting to EVDI.
 Your application should use this information before you ask for screen updates to make sure the buffers are the right size.
