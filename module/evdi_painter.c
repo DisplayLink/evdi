@@ -1208,7 +1208,7 @@ static struct drm_pending_event *create_ddcci_data_event(struct i2c_msg *msg)
 	event->ddcci_data.base.type = DRM_EVDI_EVENT_DDCCI_DATA;
 	event->ddcci_data.base.length = sizeof(event->ddcci_data);
 	// Truncate buffers to a maximum of 64 bytes
-	event->ddcci_data.buffer_length = min(msg->len,
+	event->ddcci_data.buffer_length = min_t(__u16, msg->len,
 		sizeof(event->ddcci_data.buffer));
 	memcpy(event->ddcci_data.buffer, msg->buf,
 		event->ddcci_data.buffer_length);
@@ -1231,7 +1231,7 @@ static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg
 		msecs_to_jiffies(DDCCI_TIMEOUT_MS)) > 0) {
 
 		// Match expected buffer length including any truncation
-		const uint32_t expected_response_length = min(msg->len, DDCCI_BUFFER_SIZE);
+		const uint32_t expected_response_length = min_t(__u16, msg->len, DDCCI_BUFFER_SIZE);
 
 		painter_lock(painter);
 
@@ -1282,7 +1282,7 @@ int evdi_painter_ddcci_response_ioctl(struct drm_device *drm_dev, void *data,
 	painter_lock(painter);
 
 	// Truncate any read to 64 bytes
-	painter->ddcci_buffer_length = min(cmd->buffer_length, DDCCI_BUFFER_SIZE);
+	painter->ddcci_buffer_length = min_t(uint32_t, cmd->buffer_length, DDCCI_BUFFER_SIZE);
 
 	kfree(painter->ddcci_buffer);
 	painter->ddcci_buffer = kzalloc(painter->ddcci_buffer_length, GFP_KERNEL);
