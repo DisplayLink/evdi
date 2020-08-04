@@ -7,13 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Detailed description - EVDI Docs</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
   
   <script>
     // Current page data
@@ -24,7 +25,7 @@
   
   <script src="../js/jquery-2.1.1.min.js" defer></script>
   <script src="../js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
@@ -35,6 +36,7 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
         <a href=".." class="icon icon-home"> EVDI Docs</a>
         <div role="search">
@@ -45,41 +47,116 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="..">Home</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../quickstart/">Quick Start</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
-    <a class="current" href="./">Detailed description</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#api-details">API Details</a></li>
-    
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quick Start</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Detailed description</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#functions-by-group">Functions by group</a>
         <ul>
-        
-            <li><a class="toctree-l3" href="#functions-by-group">Functions by group</a></li>
-        
-            <li><a class="toctree-l3" href="#types">Types</a></li>
-        
+    <li class="toctree-l3"><a class="reference internal" href="#versioning">Versioning</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#module-parameters">Module parameters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi-nodes">EVDI nodes</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#finding-an-available-evdi-node-to-use">Finding an available EVDI node to use</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#adding-new-evdi-node">Adding new EVDI node</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#opening-device-nodes">Opening device nodes</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#closing-devices">Closing devices</a>
+    </li>
         </ul>
-    
-
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connection">Connection</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#opening-connections">Opening connections</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#disconnecting">Disconnecting</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#buffers">Buffers</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#registering">Registering</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#unregistering">Unregistering</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#screen-updates">Screen updates</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#requesting-an-update">Requesting an update</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#grabbing-pixels">Grabbing pixels</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ddcci-response">DDC/CI response</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#events-and-handlers">Events and handlers</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#dpms-mode-change">DPMS mode change</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#mode-change-notification">Mode change notification</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#update-ready-notification">Update ready notification</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#cursor-change-notification">Cursor change notification</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#cursor-move-notification">Cursor move notification</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#crtc-state-change">CRTC state change</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#ddcci-data-notification">DDC/CI data notification</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#types">Types</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_handle">evdi_handle</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_selectable">evdi_selectable</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_device_status">evdi_device_status</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_rect">evdi_rect</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_mode">evdi_mode</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_buffer">evdi_buffer</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_event_context">evdi_event_context</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_lib_version">evdi_lib_version</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_cursor_set">evdi_cursor_set</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_cursor_move">evdi_cursor_move</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_ddcci_data">evdi_ddcci_data</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#evdi_logging">evdi_logging</a>
+    </li>
+        </ul>
+    </li>
     </ul>
-	    </li>
-          
-        </ul>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -104,6 +181,7 @@
       
     </li>
   </ul>
+  
   <hr/>
 </div>
           <div role="main">
@@ -137,6 +215,7 @@
 <li><a href="#grabbing-pixels">Grabbing pixels</a></li>
 </ul>
 </li>
+<li><a href="#ddcci-response">DDC/CI response</a></li>
 <li><a href="#events-and-handlers">Events and handlers</a><ul>
 <li><a href="#dpms-mode-change">DPMS mode change</a></li>
 <li><a href="#mode-change-notification">Mode change notification</a></li>
@@ -144,6 +223,7 @@
 <li><a href="#cursor-change-notification">Cursor change notification</a></li>
 <li><a href="#cursor-move-notification">Cursor move notification</a></li>
 <li><a href="#crtc-state-change">CRTC state change</a></li>
+<li><a href="#ddcci-data-notification">DDC/CI data notification</a></li>
 </ul>
 </li>
 <li><a href="#logging">Logging</a></li>
@@ -160,6 +240,7 @@
 <li><a href="#evdi_lib_version">evdi_lib_version</a></li>
 <li><a href="#evdi_cursor_set">evdi_cursor_set</a></li>
 <li><a href="#evdi_cursor_move">evdi_cursor_move</a></li>
+<li><a href="#evdi_ddcci_data">evdi_ddcci_data</a></li>
 <li><a href="#evdi_logging">evdi_logging</a></li>
 </ul>
 </li>
@@ -316,6 +397,25 @@ the array does not contain more than 16 slots for rects.</p>
    and the client should only care about as many. In particular, a failed grab will be indicated by <code>0</code> valid rectangles
    to take into account (this can happen when there was a mode change between the request and the grab).</li>
 </ul>
+<h3 id="ddcci-response">DDC/CI response<a class="headerlink" href="#ddcci-response" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_ddcci_response</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">,</span> <span class="k">const</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">buffer</span><span class="p">,</span>
+    <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">buffer_length</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">result</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>Pass back DDC/CI data following the most recent DDC/CI request to the EVDI kernel driver (see <a href="./#ddcci-data-notification">DDC/CI data notification</a>).</p>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>handle</code> to an opened device.</li>
+<li><code>buffer</code> a pointer to the response buffer. This will be copied into kernel space.</li>
+<li><code>buffer_length</code> the length of the response buffer.</li>
+<li><code>result</code> the boolean result. The caller should set <code>result</code> to true if the most recent DDC/CI request was successful and false if it was unsuccessful.  If false, <code>buffer</code> and <code>buffer_length</code> are ignored.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>buffer_length</code> will be truncated to 64 bytes (<code>DDCCI_BUFFER_SIZE</code>).</p>
+</div>
 <h3 id="events-and-handlers">Events and handlers<a class="headerlink" href="#events-and-handlers" title="Permanent link">&para;</a></h3>
 <h4 id="dpms-mode-change"><abbr title="Display Power Management Signaling">DPMS</abbr> mode change<a class="headerlink" href="#dpms-mode-change" title="Permanent link">&para;</a></h4>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">dpms_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">dpms_mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
@@ -365,6 +465,13 @@ Such situation happens when cursor is moved on and off the screen respectively.<
 </td></tr></table>
 
 <p>Sent when DRM's CRTC changes state. The <code>state</code> is a value that's forwarded from the kernel.</p>
+<h4 id="ddcci-data-notification">DDC/CI data notification<a class="headerlink" href="#ddcci-data-notification" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">ddcci_data_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_ddcci_data</span> <span class="n">ddcci_data</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>This notification is sent when an i2c request has been made to the DDC/CI address (0x37).</p>
+<p>The module will wait for a maximum of DDCCI_TIMEOUT_MS (50ms - The default DDC request timeout) for a response to this request to be passed back via <code>evdi_ddcci_response</code>.</p>
 <h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
 <p>Client can register their own callback to be used for logging instead of default <code>printf</code>.</p>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_set_logging</span><span class="p">(</span><span class="k">struct</span> <span class="n">evdi_logging</span> <span class="n">evdi_logging</span><span class="p">);</span>
@@ -423,17 +530,23 @@ note that those values might be specific to particular hardware/graphic drivers.
 Please consult documentation of your GPU for details.</p>
 <p>Last two structure members, <code>rects</code> and <code>rect_counts</code> are updated during grabbing pixels to inform about the number and coordinates of areas that are changed from the last update.</p>
 <h3 id="evdi_event_context">evdi_event_context<a class="headerlink" href="#evdi_event_context" title="Permanent link">&para;</a></h3>
-<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
-2
-3
-4
-5
-6
-7</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">dpms_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">dpms_mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">mode_changed_handler</span><span class="p">)(</span><span class="n">evdi_mode</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">update_ready_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">buffer_to_be_updated</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">crtc_state_handler</span><span class="p">)(</span><span class="kt">int</span> <span class="n">state</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">cursor_set_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_cursor_set</span> <span class="n">cursor_set</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">cursor_move_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_cursor_move</span> <span class="n">cursor_move</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">ddcci_data_handler</span><span class="p">)(</span><span class="k">struct</span> <span class="n">evdi_ddcci_data</span> <span class="n">ddcci_data</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">user_data</span><span class="p">);</span>
   <span class="kt">void</span><span class="o">*</span> <span class="n">user_data</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">evdi_event_context</span><span class="p">;</span>
 </pre></div>
@@ -505,6 +618,32 @@ Pixel encoding is described by FourCC code in <code>pixel_format</code> field.</
 
 <p>The <code>evdi_cursor_move</code> structure contains current cursor position.
 It is defined as top left corner of the cursor bitmap.</p>
+<h3 id="evdi_ddcci_data">evdi_ddcci_data<a class="headerlink" href="#evdi_ddcci_data" title="Permanent link">&para;</a></h3>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="k">struct</span> <span class="n">evdi_ddcci_data</span> <span class="p">{</span>
+    <span class="kt">uint16_t</span> <span class="n">address</span><span class="p">;</span>
+    <span class="kt">uint16_t</span> <span class="n">flags</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">buffer_length</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="o">*</span><span class="n">buffer</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</td></tr></table>
+
+<p>The <code>evdi_ddcci_data</code> structure contains:</p>
+<ul>
+<li><code>address</code> i2c address, will always be 0x37.</li>
+<li><code>flags</code> read/write flags.  Read = 1, Write = 0.</li>
+<li><code>buffer_length</code> the length of the buffer.</li>
+<li><code>buffer</code> pointer to the ddc/ci buffer.  For both read and write this will be truncated to 64 bytes (<code>DDCCI_BUFFER_SIZE</code>).</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Although the DDC spec advices the maximum buffer length is 32 bytes, we have identified monitors which support bigger buffers.</p>
+</div>
 <h3 id="evdi_logging">evdi_logging<a class="headerlink" href="#evdi_logging" title="Permanent link">&para;</a></h3>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
@@ -516,9 +655,11 @@ It is defined as top left corner of the cursor bitmap.</p>
 </pre></div>
 </td></tr></table>
 
-<p>Structure contains two fields:
-* <code>function</code> which is a pointer to the actual callback. The <code>fmt</code> and <code>...</code> are the same as in case of <code>printf</code>.
-* <code>user_data</code> a pointer provided by the client when registering callback</p>
+<p>Structure contains two fields:</p>
+<ul>
+<li><code>function</code> which is a pointer to the actual callback. The <code>fmt</code> and <code>...</code> are the same as in case of <code>printf</code>.</li>
+<li><code>user_data</code> a pointer provided by the client when registering callback</li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>By setting <code>function</code> to NULL libevdi will switch to default behaviour of using <code>printf</code>.</p>
@@ -543,7 +684,7 @@ It is defined as top left corner of the cursor bitmap.</p>
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -553,7 +694,7 @@ It is defined as top left corner of the cursor bitmap.</p>
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
@@ -565,6 +706,11 @@ It is defined as top left corner of the cursor bitmap.</p>
     <script>var base_url = '..';</script>
     <script src="../js/theme.js" defer></script>
       <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>
