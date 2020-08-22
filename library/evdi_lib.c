@@ -28,7 +28,7 @@
 #define MAX_DIRTS           16
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
-#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 5
+#define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 8
 #define EVDI_MODULE_COMPATIBILITY_VERSION_PATCH 0
 
 #define evdi_log(...) do {						\
@@ -664,6 +664,20 @@ bool evdi_request_update(evdi_handle handle, int bufferId)
 	}
 }
 
+void evdi_ddcci_response(evdi_handle handle, const unsigned char *buffer,
+			const uint32_t buffer_length,
+			const bool result)
+{
+	struct drm_evdi_ddcci_response cmd = {
+		.buffer = buffer,
+		.buffer_length = buffer_length,
+		.result = result,
+	};
+
+	do_ioctl(handle->fd, DRM_IOCTL_EVDI_DDCCI_RESPONSE, &cmd,
+		"ddcci_response");
+}
+
 static struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
 {
 	struct evdi_mode mode;
@@ -731,6 +745,18 @@ static struct evdi_cursor_move to_evdi_cursor_move(
 	return cursor_move;
 }
 
+static struct evdi_ddcci_data to_evdi_ddcci_data(
+		struct drm_evdi_event_ddcci_data *event)
+{
+	struct evdi_ddcci_data ddcci_data;
+
+	ddcci_data.flags = event->flags;
+	ddcci_data.buffer = &event->buffer[0];
+	ddcci_data.buffer_length = event->buffer_length;
+
+	return ddcci_data;
+}
+
 static void evdi_handle_event(evdi_handle handle,
 			      struct evdi_event_context *evtctx,
 			      struct drm_event *e)
@@ -790,6 +816,16 @@ static void evdi_handle_event(evdi_handle handle,
 
 			evtctx->cursor_move_handler(to_evdi_cursor_move(event),
 						    evtctx->user_data);
+		}
+		break;
+
+	case DRM_EVDI_EVENT_DDCCI_DATA:
+		if (evtctx->ddcci_data_handler) {
+			struct drm_evdi_event_ddcci_data *event =
+				(struct drm_evdi_event_ddcci_data *) e;
+
+			evtctx->ddcci_data_handler(to_evdi_ddcci_data(event),
+						   evtctx->user_data);
 		}
 		break;
 

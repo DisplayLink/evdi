@@ -10,7 +10,7 @@ RM ?= rm
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC $(CFLAGS)
 
-LIBVER := 1.7.0
+LIBVER := 1.8.0
 LIBABI := 0
 
 PREFIX ?= /usr/local
