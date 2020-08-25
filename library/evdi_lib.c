@@ -750,6 +750,7 @@ static struct evdi_ddcci_data to_evdi_ddcci_data(
 {
 	struct evdi_ddcci_data ddcci_data;
 
+	ddcci_data.address = event->address;
 	ddcci_data.flags = event->flags;
 	ddcci_data.buffer = &event->buffer[0];
 	ddcci_data.buffer_length = event->buffer_length;
