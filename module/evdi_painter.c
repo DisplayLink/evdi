@@ -27,7 +27,7 @@
 
 #include <linux/dma-buf.h>
 
-#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>
 #endif
 
