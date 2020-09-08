@@ -60,7 +60,7 @@ static int compat_evdi_connect(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))
@@ -88,7 +88,7 @@ static int compat_evdi_grabpix(struct file *file,
 		return -EFAULT;
 
 	request = compat_alloc_user_space(sizeof(*request));
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	if (!access_ok(request, sizeof(*request))
 #else
 	if (!access_ok(VERIFY_WRITE, request, sizeof(*request))

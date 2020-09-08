@@ -4,6 +4,11 @@
 
 FLAGS=-Werror -Wextra -Wall -Wmissing-prototypes -Wstrict-prototypes -Wno-error=missing-field-initializers
 
+EL8 := $(shell cat /etc/redhat-release | grep -c " 8." )
+ifneq (,$(findstring 1, $(EL8)))
+FLAGS:=$(FLAGS) -D EL8
+endif
+
 all:
 	CFLAGS="$(FLAGS)" $(MAKE) -C module $(MFLAGS)
 	CFLAGS="-I../module $(FLAGS) $(CFLAGS)" $(MAKE) -C library $(MFLAGS)

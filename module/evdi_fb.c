@@ -410,7 +410,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	info->fix.smem_len = size;
 	info->fix.smem_start = (unsigned long)efbdev->efb.obj->vmapping;
 
-#if KERNEL_VERSION(4, 20, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(4, 20, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	info->flags = FBINFO_DEFAULT;
 #else
 	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
@@ -419,7 +419,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	efbdev->fb_ops = evdifb_ops;
 	info->fbops = &efbdev->fb_ops;
 
-#if KERNEL_VERSION(5, 2, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 2, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);
 #else
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
