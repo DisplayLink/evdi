@@ -147,6 +147,9 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 int evdi_painter_get_num_dirts(struct evdi_device *evdi);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *rect);
+void evdi_painter_set_vblank(struct evdi_painter *painter,
+			     struct drm_crtc *crtc,
+			     struct drm_pending_vblank_event *vblank);
 void evdi_painter_send_update_ready_if_needed(struct evdi_device *evdi);
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,

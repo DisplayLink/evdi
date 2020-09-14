@@ -61,14 +61,8 @@ static void evdi_crtc_atomic_flush(
 {
 	struct drm_crtc_state *state = crtc->state;
 	struct evdi_device *evdi = crtc->dev->dev_private;
-	unsigned long flags;
 
-	if (state->event) {
-		spin_lock_irqsave(&crtc->dev->event_lock, flags);
-		drm_crtc_send_vblank_event(crtc, state->event);
-		state->event = NULL;
-		spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
-	}
+
 	if (state->mode_changed && state->active)
 		evdi_painter_mode_changed_notify(evdi, &state->adjusted_mode);
 
@@ -76,6 +70,8 @@ static void evdi_crtc_atomic_flush(
 		evdi_painter_dpms_notify(evdi,
 			state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
 
+	evdi_painter_set_vblank(evdi->painter, crtc, state->event);
+	state->event = NULL;
 	evdi_painter_send_update_ready_if_needed(evdi);
 }
 
@@ -425,6 +421,7 @@ void evdi_modeset_init(struct drm_device *dev)
 	struct drm_encoder *encoder;
 
 	EVDI_CHECKPT();
+
 	drm_mode_config_init(dev);
 
 	dev->mode_config.min_width = 64;

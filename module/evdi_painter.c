@@ -87,6 +87,8 @@ struct evdi_painter {
 
 	bool was_update_requested;
 	bool needs_full_modeset;
+	struct drm_crtc *crtc;
+	struct drm_pending_vblank_event *vblank;
 
 	struct list_head pending_events;
 	struct delayed_work send_events_work;
@@ -644,16 +646,66 @@ unlock:
 	painter_unlock(evdi->painter);
 }
 
+static void evdi_send_vblank(struct drm_crtc *crtc,
+			     struct drm_pending_vblank_event *vblank)
+{
+	if (crtc && vblank) {
+		unsigned long flags = 0;
+
+		spin_lock_irqsave(&crtc->dev->event_lock, flags);
+		drm_crtc_send_vblank_event(crtc, vblank);
+		spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
+	}
+}
+
+static void evdi_painter_send_vblank(struct evdi_painter *painter)
+{
+	EVDI_CHECKPT();
+
+	evdi_send_vblank(painter->crtc, painter->vblank);
+
+	painter->crtc = NULL;
+	painter->vblank = NULL;
+}
+
+void evdi_painter_set_vblank(
+	struct evdi_painter *painter,
+	struct drm_crtc *crtc,
+	struct drm_pending_vblank_event *vblank)
+{
+	EVDI_CHECKPT();
+
+	if (painter) {
+		painter_lock(painter);
+
+		evdi_painter_send_vblank(painter);
+
+		if (painter->num_dirts > 0 && painter->is_connected) {
+			painter->crtc = crtc;
+			painter->vblank = vblank;
+		} else {
+			evdi_send_vblank(crtc, vblank);
+		}
+
+		painter_unlock(painter);
+	} else {
+		evdi_send_vblank(crtc, vblank);
+	}
+}
+
 void evdi_painter_send_update_ready_if_needed(struct evdi_device *evdi)
 {
 	struct evdi_painter *painter = evdi->painter;
 
+	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
+
 		if (painter->was_update_requested) {
 			evdi_painter_send_update_ready(painter);
 			painter->was_update_requested = false;
 		}
+
 		painter_unlock(painter);
 	} else {
 		EVDI_WARN("Painter does not exist!");
@@ -886,6 +938,8 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 		   painter->drm_filp);
 	evdi_painter_events_cleanup(painter);
 
+	evdi_painter_send_vblank(painter);
+
 	evdi_cursor_enable(evdi->cursor, false);
 
 	kfree(painter->ddcci_buffer);
@@ -957,6 +1011,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	struct drm_evdi_grabpix *cmd = data;
 	struct evdi_framebuffer *efb = NULL;
 	struct drm_clip_rect dirty_rects[MAX_DIRTS];
+	struct drm_crtc *crtc = NULL;
+	struct drm_pending_vblank_event *vblank = NULL;
 	int err;
 	int ret;
 	struct dma_buf_attachment *import_attach;
@@ -1010,6 +1066,13 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	painter->num_dirts = 0;
 
 	drm_framebuffer_get(&efb->base);
+
+	crtc = painter->crtc;
+	painter->crtc = NULL;
+
+	vblank = painter->vblank;
+	painter->vblank = NULL;
+
 
 	painter_unlock(painter);
 
@@ -1067,6 +1130,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				       DMA_FROM_DEVICE);
 
 err_fb:
+	evdi_send_vblank(crtc, vblank);
+
 	drm_framebuffer_put(&efb->base);
 
 	return err;
@@ -1126,6 +1191,8 @@ int evdi_painter_init(struct evdi_device *dev)
 		dev->painter->edid = NULL;
 		dev->painter->edid_length = 0;
 		dev->painter->needs_full_modeset = true;
+		dev->painter->crtc = NULL;
+		dev->painter->vblank = NULL;
 		dev->painter->drm_device = dev->ddev;
 		INIT_LIST_HEAD(&dev->painter->pending_events);
 		INIT_DELAYED_WORK(&dev->painter->send_events_work,
@@ -1150,6 +1217,8 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	kfree(painter->edid);
 	painter->edid_length = 0;
 	painter->edid = NULL;
+
+	evdi_painter_send_vblank(painter);
 
 	evdi_painter_events_cleanup(painter);
 
