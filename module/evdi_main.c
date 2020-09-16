@@ -103,7 +103,7 @@ void evdi_driver_unload(struct drm_device *dev)
 		evdi_cursor_free(evdi->cursor);
 
 	device_remove_file(dev->dev, &evdi->cursor_attr.attr);
-	evdi_painter_cleanup(evdi);
+	evdi_painter_cleanup(evdi->painter);
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
 #endif /* CONFIG_FB */

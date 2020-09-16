@@ -98,7 +98,7 @@ static int evdi_handle_damage(struct evdi_framebuffer *fb,
 
 	if (!fb->active)
 		return 0;
-	evdi_painter_set_scanout_buffer(evdi, fb);
+	evdi_painter_set_scanout_buffer(evdi->painter, fb);
 	evdi_painter_mark_dirty(evdi, &rect);
 
 	return 0;

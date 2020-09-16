@@ -16,9 +16,10 @@ static int dli2c_access_master(struct i2c_adapter *adapter,
 {
 	int i = 0, result = 0;
 	struct evdi_device *evdi = adapter->algo_data;
+	struct evdi_painter *painter = evdi->painter;
 
 	for (i = 0; i < num; i++) {
-		if (evdi_painter_i2c_data_notify(evdi, &msgs[i]))
+		if (evdi_painter_i2c_data_notify(painter, &msgs[i]))
 			result++;
 	}
 

@@ -219,11 +219,9 @@ static void copy_cursor_pixels(struct evdi_framebuffer *efb,
 		mutex_unlock(&painter->lock);           \
 	} while (0)
 
-bool evdi_painter_is_connected(struct evdi_device *evdi)
+bool evdi_painter_is_connected(struct evdi_painter *painter)
 {
-	if (evdi && evdi->painter)
-		return evdi->painter->is_connected;
-	return false;
+	return painter ? painter->is_connected : false;
 }
 
 u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
@@ -233,7 +231,7 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 	EVDI_CHECKPT();
 
 	painter_lock(evdi->painter);
-	if (evdi_painter_is_connected(evdi) &&
+	if (evdi_painter_is_connected(evdi->painter) &&
 		evdi->painter->edid &&
 		evdi->painter->edid_length) {
 		block = kmalloc(evdi->painter->edid_length, GFP_KERNEL);
@@ -312,7 +310,7 @@ static bool evdi_painter_flush_pending_events(struct evdi_painter *painter)
 }
 
 static void evdi_painter_send_event(struct evdi_painter *painter,
-				      struct drm_pending_event *event)
+				    struct drm_pending_event *event)
 {
 	if (!event) {
 		EVDI_ERROR("Null drm event!");
@@ -561,9 +559,8 @@ static void evdi_painter_send_mode_changed(
 	evdi_painter_send_event(painter, event);
 }
 
-int evdi_painter_get_num_dirts(struct evdi_device *evdi)
+int evdi_painter_get_num_dirts(struct evdi_painter *painter)
 {
-	struct evdi_painter *painter = evdi->painter;
 	int num_dirts;
 
 	if (painter == NULL) {
@@ -618,8 +615,8 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 		return;
 	}
 
-	painter_lock(evdi->painter);
-	efb = evdi->painter->scanout_fb;
+	painter_lock(painter);
+	efb = painter->scanout_fb;
 	if (!efb) {
 		EVDI_DEBUG("(dev=%d) Skip clip rect. Scanout buffer not set.\n",
 			   evdi->dev_index);
@@ -643,7 +640,7 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	painter->num_dirts++;
 
 unlock:
-	painter_unlock(evdi->painter);
+	painter_unlock(painter);
 }
 
 static void evdi_send_vblank(struct drm_crtc *crtc,
@@ -693,10 +690,8 @@ void evdi_painter_set_vblank(
 	}
 }
 
-void evdi_painter_send_update_ready_if_needed(struct evdi_device *evdi)
+void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 {
-	struct evdi_painter *painter = evdi->painter;
-
 	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
@@ -1203,10 +1198,8 @@ int evdi_painter_init(struct evdi_device *dev)
 	return -ENOMEM;
 }
 
-void evdi_painter_cleanup(struct evdi_device *evdi)
+void evdi_painter_cleanup(struct evdi_painter *painter)
 {
-	struct evdi_painter *painter = evdi->painter;
-
 	EVDI_CHECKPT();
 	if (!painter) {
 		EVDI_WARN("Painter does not exist\n");
@@ -1226,10 +1219,9 @@ void evdi_painter_cleanup(struct evdi_device *evdi)
 	painter_unlock(painter);
 }
 
-void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
+void evdi_painter_set_scanout_buffer(struct evdi_painter *painter,
 				     struct evdi_framebuffer *newfb)
 {
-	struct evdi_painter *painter = evdi->painter;
 	struct evdi_framebuffer *oldfb = NULL;
 
 	if (newfb)
@@ -1246,20 +1238,14 @@ void evdi_painter_set_scanout_buffer(struct evdi_device *evdi,
 		drm_framebuffer_put(&oldfb->base);
 }
 
-bool evdi_painter_needs_full_modeset(struct evdi_device *evdi)
+bool evdi_painter_needs_full_modeset(struct evdi_painter *painter)
 {
-	struct evdi_painter *painter = evdi->painter;
-
-	if (painter)
-		return painter->needs_full_modeset;
-	return false;
+	return painter ? painter->needs_full_modeset : false;
 }
 
 
-void evdi_painter_force_full_modeset(struct evdi_device *evdi)
+void evdi_painter_force_full_modeset(struct evdi_painter *painter)
 {
-	struct evdi_painter *painter = evdi->painter;
-
 	if (painter)
 		painter->needs_full_modeset = true;
 }
@@ -1300,14 +1286,16 @@ static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg
 		msecs_to_jiffies(DDCCI_TIMEOUT_MS)) > 0) {
 
 		// Match expected buffer length including any truncation
-		const uint32_t expected_response_length = min_t(__u16, msg->len, DDCCI_BUFFER_SIZE);
+		const uint32_t expected_response_length = min_t(__u16, msg->len,
+								DDCCI_BUFFER_SIZE);
 
 		painter_lock(painter);
 
 		if (expected_response_length != painter->ddcci_buffer_length)
 			EVDI_WARN("DDCCI buffer length mismatch");
 		else if (painter->ddcci_buffer)
-			memcpy(msg->buf, painter->ddcci_buffer, painter->ddcci_buffer_length);
+			memcpy(msg->buf, painter->ddcci_buffer,
+			       painter->ddcci_buffer_length);
 		else
 			EVDI_WARN("Ignoring NULL DDCCI buffer");
 
@@ -1317,11 +1305,9 @@ static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg
 	}
 }
 
-bool evdi_painter_i2c_data_notify(struct evdi_device *evdi, struct i2c_msg *msg)
+bool evdi_painter_i2c_data_notify(struct evdi_painter *painter, struct i2c_msg *msg)
 {
-	struct evdi_painter *painter = evdi->painter;
-
-	if (!evdi_painter_is_connected(evdi)) {
+	if (!evdi_painter_is_connected(painter)) {
 		EVDI_WARN("Painter not connected");
 		return false;
 	}
@@ -1351,7 +1337,8 @@ int evdi_painter_ddcci_response_ioctl(struct drm_device *drm_dev, void *data,
 	painter_lock(painter);
 
 	// Truncate any read to 64 bytes
-	painter->ddcci_buffer_length = min_t(uint32_t, cmd->buffer_length, DDCCI_BUFFER_SIZE);
+	painter->ddcci_buffer_length = min_t(uint32_t, cmd->buffer_length,
+					     DDCCI_BUFFER_SIZE);
 
 	kfree(painter->ddcci_buffer);
 	painter->ddcci_buffer = kzalloc(painter->ddcci_buffer_length, GFP_KERNEL);

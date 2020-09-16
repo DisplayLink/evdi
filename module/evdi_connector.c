@@ -86,7 +86,7 @@ evdi_detect(struct drm_connector *connector, __always_unused bool force)
 	struct evdi_device *evdi = connector->dev->dev_private;
 
 	EVDI_CHECKPT();
-	if (evdi_painter_is_connected(evdi)) {
+	if (evdi_painter_is_connected(evdi->painter)) {
 		EVDI_DEBUG("(dev=%d) poll connector state: connected\n",
 			   evdi->dev_index);
 		return connector_status_connected;
