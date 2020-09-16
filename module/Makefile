@@ -6,7 +6,7 @@
 # more details.
 #
 
-EL8 := $(shell cat /etc/redhat-release | grep -c " 8." )
+EL8 := $(shell cat /etc/redhat-release 2>/dev/null | grep -c " 8." )
 ifneq (,$(findstring 1, $(EL8)))
 EL8FLAG := -DEL8
 endif
