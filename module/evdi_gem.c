@@ -81,8 +81,11 @@ evdi_gem_create(struct drm_file *file,
 		kfree(obj);
 		return ret;
 	}
-
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+	drm_gem_object_put(&obj->base);
+#else
 	drm_gem_object_put_unlocked(&obj->base);
+#endif
 	*handle_p = handle;
 	return 0;
 }

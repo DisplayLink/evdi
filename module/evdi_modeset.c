@@ -129,8 +129,11 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	evdi_cursor_set(evdi->cursor,
 			eobj, width, height, hot_x, hot_y,
 			format, stride);
-
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+	drm_gem_object_put(obj);
+#else
 	drm_gem_object_put_unlocked(obj);
+#endif
 
 	/*
 	 * For now we don't care whether the application wanted the mouse set,
