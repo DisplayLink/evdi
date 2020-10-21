@@ -72,6 +72,7 @@ static void evdi_crtc_atomic_flush(
 
 	evdi_painter_set_vblank(evdi->painter, crtc, state->event);
 	evdi_painter_send_update_ready_if_needed(evdi->painter);
+	state->event = NULL;
 }
 
 static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
