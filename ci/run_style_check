@@ -10,8 +10,10 @@ files=(
   spelling.txt
 )
 
+KVER="v$(grep --only-matching --perl-regexp 'KVER=\K[\d\.]*' .travis.yml | tail -n 1)"
+
 for file in ${files[@]}; do
-  wget -N -q "https://raw.githubusercontent.com/torvalds/linux/master/scripts/${file}"
+  wget -N -q "https://raw.githubusercontent.com/torvalds/linux/${KVER}/scripts/${file}"
 done
 
 chmod +x checkpatch.pl
