@@ -319,8 +319,11 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 
 	EVDI_CHECKPT();
 	if (efb->obj)
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+		drm_gem_object_put(&efb->obj->base);
+#else
 		drm_gem_object_put_unlocked(&efb->obj->base);
-
+#endif
 	drm_framebuffer_cleanup(fb);
 	kfree(efb);
 }
@@ -438,7 +441,11 @@ static int evdifb_create(struct drm_fb_helper *helper,
 
 	return ret;
  out_gfree:
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+	drm_gem_object_put(&efbdev->efb.obj->base);
+#else
 	drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+#endif
  out:
 	return ret;
 }
@@ -464,7 +471,11 @@ static void evdi_fbdev_destroy(__always_unused struct drm_device *dev,
 	if (efbdev->efb.obj) {
 		drm_framebuffer_unregister_private(&efbdev->efb.base);
 		drm_framebuffer_cleanup(&efbdev->efb.base);
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+		drm_gem_object_put(&efbdev->efb.obj->base);
+#else
 		drm_gem_object_put_unlocked(&efbdev->efb.obj->base);
+#endif
 	}
 }
 
