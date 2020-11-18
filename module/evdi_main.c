@@ -12,7 +12,6 @@
  */
 
 #include <linux/version.h>
-#include <linux/platform_device.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 #include <drm/drmP.h>
@@ -26,7 +25,6 @@
 
 int evdi_driver_setup(struct drm_device *dev)
 {
-	struct platform_device *platdev = NULL;
 	struct evdi_device *evdi;
 	int ret;
 
@@ -69,9 +67,6 @@ int evdi_driver_setup(struct drm_device *dev)
 		goto err_fb;
 
 	drm_kms_helper_poll_init(dev);
-
-	platdev = to_platform_device(dev->dev);
-	platform_set_drvdata(platdev, dev);
 
 	return 0;
 

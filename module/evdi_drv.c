@@ -223,17 +223,17 @@ static int evdi_platform_device_probe(struct platform_device *pdev)
 #endif
 
 	dev = evdi_drm_device_create(&pdev->dev);
+	platform_set_drvdata(pdev, dev);
 	return PTR_ERR_OR_ZERO(dev);
 }
 
 static int evdi_platform_device_remove(struct platform_device *pdev)
 {
-	struct drm_device *drm_dev =
-	    (struct drm_device *)platform_get_drvdata(pdev);
+	struct drm_device *drm_dev = (struct drm_device *)platform_get_drvdata(pdev);
+
 	EVDI_CHECKPT();
 
 	evdi_drm_device_remove(drm_dev);
-
 	return 0;
 }
 
