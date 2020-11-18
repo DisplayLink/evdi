@@ -170,10 +170,39 @@ int evdi_platform_add_devices(struct device *device, unsigned int val)
 	return 0;
 }
 
+static struct drm_device *evdi_drm_device_create(struct device *parent)
+{
+	struct drm_device *dev = NULL;
+	int ret;
+
+	dev = drm_dev_alloc(&driver, parent);
+	if (IS_ERR(dev))
+		return dev;
+
+	ret = evdi_driver_setup(dev);
+	if (ret)
+		goto err_free;
+
+	ret = drm_dev_register(dev, 0);
+	if (ret)
+		goto err_free;
+
+	return dev;
+
+err_free:
+	drm_dev_put(dev);
+	return ERR_PTR(ret);
+}
+
+static int evdi_drm_device_remove(struct drm_device *dev)
+{
+	drm_dev_unplug(dev);
+	return 0;
+}
+
 static int evdi_platform_device_probe(struct platform_device *pdev)
 {
 	struct drm_device *dev;
-	int ret;
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
 	struct dev_iommu iommu;
@@ -193,23 +222,8 @@ static int evdi_platform_device_probe(struct platform_device *pdev)
 #endif
 #endif
 
-	dev = drm_dev_alloc(&driver, &pdev->dev);
-	if (IS_ERR(dev))
-		return PTR_ERR(dev);
-
-	ret = evdi_driver_setup(dev);
-	if (ret)
-		goto err_free;
-
-	ret = drm_dev_register(dev, 0);
-	if (ret)
-		goto err_free;
-
-	return 0;
-
-err_free:
-	drm_dev_put(dev);
-	return ret;
+	dev = evdi_drm_device_create(&pdev->dev);
+	return PTR_ERR_OR_ZERO(dev);
 }
 
 static int evdi_platform_device_remove(struct platform_device *pdev)
@@ -218,7 +232,7 @@ static int evdi_platform_device_remove(struct platform_device *pdev)
 	    (struct drm_device *)platform_get_drvdata(pdev);
 	EVDI_CHECKPT();
 
-	drm_dev_unplug(drm_dev);
+	evdi_drm_device_remove(drm_dev);
 
 	return 0;
 }
