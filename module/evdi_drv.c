@@ -31,11 +31,11 @@ MODULE_LICENSE("GPL");
 
 #define EVDI_DEVICE_COUNT_MAX 16
 
-static struct evdi_context {
+static struct evdi_platform_drv_context {
 	struct device *root_dev;
 	unsigned int dev_count;
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
-} evdi_context;
+} g_ctx;
 
 static struct drm_driver driver;
 
@@ -133,7 +133,7 @@ static void evdi_add_device(void)
 	struct platform_device_info pdevinfo = {
 		.parent = NULL,
 		.name = "evdi",
-		.id = evdi_context.dev_count,
+		.id = g_ctx.dev_count,
 		.res = NULL,
 		.num_res = 0,
 		.data = NULL,
@@ -141,14 +141,14 @@ static void evdi_add_device(void)
 		.dma_mask = DMA_BIT_MASK(32),
 	};
 
-	evdi_context.devices[evdi_context.dev_count] =
+	g_ctx.devices[g_ctx.dev_count] =
 	    platform_device_register_full(&pdevinfo);
-	if (dma_set_mask(&evdi_context.devices[evdi_context.dev_count]->dev,
+	if (dma_set_mask(&g_ctx.devices[g_ctx.dev_count]->dev,
 			 DMA_BIT_MASK(64))) {
 		EVDI_DEBUG("Unable to change dma mask to 64 bit. ");
 		EVDI_DEBUG("Sticking with 32 bit\n");
 	}
-	evdi_context.dev_count++;
+	g_ctx.dev_count++;
 }
 
 static int evdi_add_devices(unsigned int val)
@@ -157,13 +157,13 @@ static int evdi_add_devices(unsigned int val)
 		EVDI_WARN("Adding 0 devices has no effect\n");
 		return 0;
 	}
-	if (val > EVDI_DEVICE_COUNT_MAX - evdi_context.dev_count) {
+	if (val > EVDI_DEVICE_COUNT_MAX - g_ctx.dev_count) {
 		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
 		return -EINVAL;
 	}
 
 	EVDI_DEBUG("Increasing device count to %u\n",
-		   evdi_context.dev_count + val);
+		   g_ctx.dev_count + val);
 	while (val--)
 		evdi_add_device();
 	return 0;
@@ -227,15 +227,15 @@ static void evdi_remove_all(void)
 	int i;
 
 	EVDI_DEBUG("removing all evdi devices\n");
-	for (i = 0; i < evdi_context.dev_count; ++i) {
-		if (evdi_context.devices[i]) {
+	for (i = 0; i < g_ctx.dev_count; ++i) {
+		if (g_ctx.devices[i]) {
 			EVDI_DEBUG("removing evdi %d\n", i);
 
-			platform_device_unregister(evdi_context.devices[i]);
-			evdi_context.devices[i] = NULL;
+			platform_device_unregister(g_ctx.devices[i]);
+			g_ctx.devices[i] = NULL;
 		}
 	}
-	evdi_context.dev_count = 0;
+	g_ctx.dev_count = 0;
 }
 
 static struct platform_driver evdi_platform_driver = {
@@ -260,7 +260,7 @@ static ssize_t count_show(__always_unused struct device *dev,
 			  __always_unused struct device_attribute *attr,
 			  char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%u\n", evdi_context.dev_count);
+	return snprintf(buf, PAGE_SIZE, "%u\n", g_ctx.dev_count);
 }
 
 static ssize_t add_store(__always_unused struct device *dev,
@@ -335,11 +335,11 @@ static int __init evdi_init(void)
 	EVDI_INFO("Atomic driver:%s",
 		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
 
-	evdi_context.root_dev = root_device_register("evdi");
+	g_ctx.root_dev = root_device_register("evdi");
 
-	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev))
+	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
-			device_create_file(evdi_context.root_dev,
+			device_create_file(g_ctx.root_dev,
 					   &evdi_device_attributes[i]);
 		}
 
@@ -361,12 +361,12 @@ static void __exit evdi_exit(void)
 	evdi_remove_all();
 	platform_driver_unregister(&evdi_platform_driver);
 
-	if (!PTR_ERR_OR_ZERO(evdi_context.root_dev)) {
+	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev)) {
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
-			device_remove_file(evdi_context.root_dev,
+			device_remove_file(g_ctx.root_dev,
 					   &evdi_device_attributes[i]);
 		}
-		root_device_unregister(evdi_context.root_dev);
+		root_device_unregister(g_ctx.root_dev);
 	}
 }
 
