@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only
- * evdi_platform_drv.h
+ * evdi_platform_dev.h
  *
  * Copyright (c) 2020 DisplayLink (UK) Ltd.
  *
@@ -17,16 +17,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _EVDI_PLATFORM_DRV_H_
-#define _EVDI_PLATFORM_DRV_H_
+#ifndef _EVDI_PLATFORM_DEV_H_
+#define _EVDI_PLATFORM_DEV_H_
 
-struct device;
 struct platform_device_info;
+struct platform_device;
+struct drm_driver;
 
-void evdi_platform_remove_all_devices(struct device *device);
-int evdi_platform_device_count(struct device *device);
-int evdi_platform_add_devices(struct device *device, unsigned int val);
-
+struct platform_device *evdi_platform_dev_create(struct platform_device_info *info);
+void evdi_platform_dev_destroy(struct platform_device *dev);
 
 #endif
-

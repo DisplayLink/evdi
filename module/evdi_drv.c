@@ -25,6 +25,7 @@
 #include "evdi_params.h"
 #include "evdi_debug.h"
 #include "evdi_platform_drv.h"
+#include "evdi_platform_dev.h"
 #include "evdi_sysfs.h"
 
 MODULE_AUTHOR("DisplayLink (UK) Ltd.");
@@ -148,21 +149,6 @@ static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
 	ctx->devices[ctx->dev_count++] = pdev;
 }
 
-struct platform_device *evdi_platform_dev_create(struct platform_device_info *info)
-{
-	struct platform_device *platform_dev = NULL;
-
-	platform_dev = platform_device_register_full(info);
-	if (dma_set_mask(&platform_dev->dev, DMA_BIT_MASK(64))) {
-		EVDI_DEBUG("Unable to change dma mask to 64 bit. ");
-		EVDI_DEBUG("Sticking with 32 bit\n");
-	}
-
-	EVDI_INFO("Evdi platform_device create\n");
-
-	return platform_dev;
-}
-
 int evdi_platform_add_devices(struct device *device, unsigned int val)
 {
 	struct evdi_platform_drv_context *ctx =
@@ -251,12 +237,6 @@ void evdi_platform_remove_all_devices(struct device *device)
 		}
 	}
 	ctx->dev_count = 0;
-}
-
-void evdi_platform_dev_destroy(struct platform_device *dev)
-{
-	platform_device_unregister(dev);
-	EVDI_INFO("Evdi platform_device destroy\n");
 }
 
 int evdi_platform_device_count(struct device *device)
