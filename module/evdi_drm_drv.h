@@ -13,7 +13,6 @@
 #ifndef EVDI_DRV_H
 #define EVDI_DRV_H
 
-#include <linux/dma-mapping.h>
 #include <linux/module.h>
 #include <linux/version.h>
 #include <linux/device.h>
@@ -37,13 +36,6 @@
 #endif
 #include "evdi_debug.h"
 
-#define DRIVER_NAME   "evdi"
-#define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20200707"
-
-#define DRIVER_MAJOR 1
-#define DRIVER_MINOR 8
-#define DRIVER_PATCH 0
 
 struct evdi_fbdev;
 struct evdi_painter;

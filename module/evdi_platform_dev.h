@@ -31,3 +31,4 @@ int evdi_platform_device_probe(struct platform_device *pdev);
 int evdi_platform_device_remove(struct platform_device *pdev);
 
 #endif
+

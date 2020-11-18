@@ -11,9 +11,8 @@
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
 
-#include "evdi_drm_drv.h"
-#include "evdi_drm.h"
 #include "evdi_params.h"
 #include "evdi_debug.h"
 #include "evdi_platform_drv.h"
@@ -37,7 +36,7 @@ static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
 	struct platform_device *pdev = NULL;
 	struct platform_device_info pdevinfo = {
 		.parent = NULL,
-		.name = "evdi",
+		.name = DRIVER_NAME,
 		.id = ctx->dev_count,
 		.res = NULL,
 		.num_res = 0,
@@ -99,7 +98,7 @@ static struct platform_driver evdi_platform_driver = {
 	.probe = evdi_platform_device_probe,
 	.remove = evdi_platform_device_remove,
 	.driver = {
-		   .name = "evdi",
+		   .name = DRIVER_NAME,
 		   .mod_name = KBUILD_MODNAME,
 		   .owner = THIS_MODULE,
 	}
@@ -112,7 +111,7 @@ static int __init evdi_init(void)
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
 	EVDI_INFO("Atomic driver: yes");
 
-	g_ctx.root_dev = root_device_register("evdi");
+	g_ctx.root_dev = root_device_register(DRIVER_NAME);
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
 	evdi_sysfs_init(g_ctx.root_dev);
 	ret = platform_driver_register(&evdi_platform_driver);

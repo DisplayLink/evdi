@@ -20,16 +20,14 @@
 #include <linux/version.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
-#include <drm/drm_drv.h>
 #include <linux/slab.h>
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
 #include <linux/iommu.h>
 #endif
 
-
+#include "evdi_platform_drv.h"
 #include "evdi_debug.h"
 #include "evdi_drm_drv.h"
-#include "evdi_drm.h"
 
 struct platform_device *evdi_platform_dev_create(struct platform_device_info *info)
 {

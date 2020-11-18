@@ -20,7 +20,6 @@
 
 
 #include <linux/device.h>
-#include "evdi_drm_drv.h"
 #include "evdi_sysfs.h"
 #include "evdi_params.h"
 #include "evdi_debug.h"

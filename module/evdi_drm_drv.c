@@ -16,13 +16,13 @@
 #else
 #include <drm/drmP.h>
 #endif
-#include "evdi_drm_drv.h"
-#include "evdi_cursor.h"
-
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>
 #endif
 
+#include "evdi_drm_drv.h"
+#include "evdi_platform_drv.h"
+#include "evdi_cursor.h"
 #include "evdi_debug.h"
 #include "evdi_drm.h"
 
