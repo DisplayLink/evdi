@@ -27,4 +27,7 @@ struct drm_driver;
 struct platform_device *evdi_platform_dev_create(struct platform_device_info *info);
 void evdi_platform_dev_destroy(struct platform_device *dev);
 
+int evdi_platform_device_probe(struct platform_device *pdev);
+int evdi_platform_device_remove(struct platform_device *pdev);
+
 #endif

@@ -178,7 +178,8 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 			const struct evdi_framebuffer *fb,
 			const struct drm_clip_rect *rect);
 
-int evdi_driver_setup(struct drm_device *dev);
+struct drm_device *evdi_drm_device_create(struct device *parent);
+int evdi_drm_device_remove(struct drm_device *dev);
 
 void evdi_painter_send_cursor_set(struct evdi_painter *painter,
 				  struct evdi_cursor *cursor);

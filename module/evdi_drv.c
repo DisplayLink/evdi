@@ -9,16 +9,8 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
-#else
-#include <drm/drmP.h>
-#endif
-#include <drm/drm_crtc_helper.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
-#include <linux/iommu.h>
-#endif
 
 #include "evdi_drm_drv.h"
 #include "evdi_drm.h"
@@ -39,97 +31,6 @@ static struct evdi_platform_drv_context {
 	unsigned int dev_count;
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
 } g_ctx;
-
-static struct drm_driver driver;
-
-struct drm_ioctl_desc evdi_painter_ioctls[] = {
-	DRM_IOCTL_DEF_DRV(EVDI_CONNECT, evdi_painter_connect_ioctl,
-			  DRM_UNLOCKED),
-	DRM_IOCTL_DEF_DRV(EVDI_REQUEST_UPDATE,
-			  evdi_painter_request_update_ioctl, DRM_UNLOCKED),
-	DRM_IOCTL_DEF_DRV(EVDI_GRABPIX, evdi_painter_grabpix_ioctl,
-			  DRM_UNLOCKED),
-	DRM_IOCTL_DEF_DRV(EVDI_DDCCI_RESPONSE, evdi_painter_ddcci_response_ioctl,
-			  DRM_UNLOCKED),
-};
-
-static const struct vm_operations_struct evdi_gem_vm_ops = {
-	.fault = evdi_gem_fault,
-	.open = drm_gem_vm_open,
-	.close = drm_gem_vm_close,
-};
-
-static const struct file_operations evdi_driver_fops = {
-	.owner = THIS_MODULE,
-	.open = drm_open,
-	.mmap = evdi_drm_gem_mmap,
-	.poll = drm_poll,
-	.read = drm_read,
-	.unlocked_ioctl = drm_ioctl,
-	.release = drm_release,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = evdi_compat_ioctl,
-#endif
-	.llseek = noop_llseek,
-};
-
-static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-			      __always_unused unsigned int pipe)
-{
-	return 1;
-}
-
-static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-				__always_unused unsigned int pipe)
-{
-}
-
-static struct drm_driver driver = {
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
-#else
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
-			 | DRIVER_ATOMIC,
-#endif
-	.unload = evdi_driver_unload,
-	.preclose = evdi_driver_preclose,
-
-	.postclose = evdi_driver_postclose,
-
-	/* gem hooks */
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
-	.gem_free_object_unlocked = evdi_gem_free_object,
-#else
-	.gem_free_object = evdi_gem_free_object,
-#endif
-	.gem_vm_ops = &evdi_gem_vm_ops,
-
-	.dumb_create = evdi_dumb_create,
-	.dumb_map_offset = evdi_gem_mmap,
-	.dumb_destroy = drm_gem_dumb_destroy,
-
-	.ioctls = evdi_painter_ioctls,
-	.num_ioctls = ARRAY_SIZE(evdi_painter_ioctls),
-
-	.fops = &evdi_driver_fops,
-
-	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
-	.gem_prime_import = drm_gem_prime_import,
-	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
-	.gem_prime_export = drm_gem_prime_export,
-	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
-	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
-
-	.enable_vblank = evdi_enable_vblank,
-	.disable_vblank = evdi_disable_vblank,
-
-	.name = DRIVER_NAME,
-	.desc = DRIVER_DESC,
-	.date = DRIVER_DATE,
-	.major = DRIVER_MAJOR,
-	.minor = DRIVER_MINOR,
-	.patchlevel = DRIVER_PATCH,
-};
 
 static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
 {
@@ -167,73 +68,6 @@ int evdi_platform_add_devices(struct device *device, unsigned int val)
 		   ctx->dev_count + val);
 	while (val--)
 		evdi_platform_device_add(ctx);
-	return 0;
-}
-
-static struct drm_device *evdi_drm_device_create(struct device *parent)
-{
-	struct drm_device *dev = NULL;
-	int ret;
-
-	dev = drm_dev_alloc(&driver, parent);
-	if (IS_ERR(dev))
-		return dev;
-
-	ret = evdi_driver_setup(dev);
-	if (ret)
-		goto err_free;
-
-	ret = drm_dev_register(dev, 0);
-	if (ret)
-		goto err_free;
-
-	return dev;
-
-err_free:
-	drm_dev_put(dev);
-	return ERR_PTR(ret);
-}
-
-static int evdi_drm_device_remove(struct drm_device *dev)
-{
-	drm_dev_unplug(dev);
-	return 0;
-}
-
-static int evdi_platform_device_probe(struct platform_device *pdev)
-{
-	struct drm_device *dev;
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
-#if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
-	struct dev_iommu iommu;
-#endif
-#endif
-	EVDI_CHECKPT();
-
-/* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
-#if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
-	memset(&iommu, 0, sizeof(iommu));
-	iommu.priv = (void *)-1;
-	pdev->dev.iommu = &iommu;
-#else
-#define INTEL_IOMMU_DUMMY_DOMAIN                ((void *)-1)
-	pdev->dev.archdata.iommu = INTEL_IOMMU_DUMMY_DOMAIN;
-#endif
-#endif
-
-	dev = evdi_drm_device_create(&pdev->dev);
-	platform_set_drvdata(pdev, dev);
-	return PTR_ERR_OR_ZERO(dev);
-}
-
-static int evdi_platform_device_remove(struct platform_device *pdev)
-{
-	struct drm_device *drm_dev = (struct drm_device *)platform_get_drvdata(pdev);
-
-	EVDI_CHECKPT();
-
-	evdi_drm_device_remove(drm_dev);
 	return 0;
 }
 
@@ -276,8 +110,7 @@ static int __init evdi_init(void)
 	int ret;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
-	EVDI_INFO("Atomic driver:%s",
-		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
+	EVDI_INFO("Atomic driver: yes");
 
 	g_ctx.root_dev = root_device_register("evdi");
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
