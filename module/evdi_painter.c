@@ -16,7 +16,7 @@
 #endif
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 #include "evdi_i2c.h"

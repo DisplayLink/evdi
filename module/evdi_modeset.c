@@ -22,7 +22,7 @@
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include "evdi_drm.h"
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 #include <drm/drm_gem_framebuffer_helper.h>

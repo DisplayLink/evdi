@@ -13,7 +13,7 @@
 #else
 #include <drm/drmP.h>
 #endif
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 #include <linux/shmem_fs.h>
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>

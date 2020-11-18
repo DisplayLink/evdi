@@ -22,11 +22,11 @@ sed -i "s/^LIBVER := .*$/LIBVER := ${MAJOR}.${MINOR}.${PATCH}/" library/Makefile
 sed -i "s/^PACKAGE_VERSION=.*$/PACKAGE_VERSION=${MAJOR}.${MINOR}.${PATCH}/" module/dkms.conf
 
 
-sed -i "s/^#define DRIVER_MAJOR .*$/#define DRIVER_MAJOR ${MAJOR}/" module/evdi_drv.h
-sed -i "s/^#define DRIVER_MINOR .*$/#define DRIVER_MINOR ${MINOR}/" module/evdi_drv.h
-sed -i "s/^#define DRIVER_PATCH .*$/#define DRIVER_PATCH ${PATCH}/" module/evdi_drv.h
+sed -i "s/^#define DRIVER_MAJOR .*$/#define DRIVER_MAJOR ${MAJOR}/" module/evdi_drm_drv.h
+sed -i "s/^#define DRIVER_MINOR .*$/#define DRIVER_MINOR ${MINOR}/" module/evdi_drm_drv.h
+sed -i "s/^#define DRIVER_PATCH .*$/#define DRIVER_PATCH ${PATCH}/" module/evdi_drm_drv.h
 
 sed -i "s/^MODVER=.*/MODVER=${MAJOR}.${MINOR}.${PATCH}/" module/Makefile
 
 
-sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"/" module/evdi_drv.h
+sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"/" module/evdi_drm_drv.h

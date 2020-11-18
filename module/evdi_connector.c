@@ -16,7 +16,7 @@
 #include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>

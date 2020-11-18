@@ -9,7 +9,7 @@
 
 #include "evdi_i2c.h"
 #include "evdi_debug.h"
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 static int dli2c_access_master(struct i2c_adapter *adapter,
 	struct i2c_msg *msgs, int num)

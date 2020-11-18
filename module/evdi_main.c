@@ -17,7 +17,7 @@
 #else
 #include <drm/drmP.h>
 #endif
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)

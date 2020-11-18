@@ -28,7 +28,7 @@
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_damage_helper.h>
 #endif
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 
 struct evdi_fbdev {

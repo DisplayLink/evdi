@@ -29,7 +29,7 @@
 #include <drm/drm_edid.h>
 #include "evdi_drm.h"
 
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 struct drm_evdi_connect32 {
 	int32_t connected;

@@ -30,7 +30,7 @@
 #include <drm/drm_crtc_helper.h>
 
 #include "evdi_cursor.h"
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 /*
  * EVDI drm cursor private structure.

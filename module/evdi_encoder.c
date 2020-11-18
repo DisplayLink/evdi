@@ -18,7 +18,7 @@
 #endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 
 /* dummy encoder */
 static void evdi_enc_destroy(struct drm_encoder *encoder)

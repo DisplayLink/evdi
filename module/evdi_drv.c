@@ -20,7 +20,7 @@
 #include <linux/iommu.h>
 #endif
 
-#include "evdi_drv.h"
+#include "evdi_drm_drv.h"
 #include "evdi_drm.h"
 #include "evdi_params.h"
 #include "evdi_debug.h"
