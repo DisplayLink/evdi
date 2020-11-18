@@ -24,6 +24,7 @@
 #include "evdi_drm.h"
 #include "evdi_params.h"
 #include "evdi_debug.h"
+#include "evdi_platform_drv.h"
 
 MODULE_AUTHOR("DisplayLink (UK) Ltd.");
 MODULE_DESCRIPTION("Extensible Virtual Display Interface");
@@ -128,12 +129,13 @@ static struct drm_driver driver = {
 	.patchlevel = DRIVER_PATCH,
 };
 
-static void evdi_add_device(void)
+static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
 {
+	struct platform_device *pdev = NULL;
 	struct platform_device_info pdevinfo = {
 		.parent = NULL,
 		.name = "evdi",
-		.id = g_ctx.dev_count,
+		.id = ctx->dev_count,
 		.res = NULL,
 		.num_res = 0,
 		.data = NULL,
@@ -141,31 +143,43 @@ static void evdi_add_device(void)
 		.dma_mask = DMA_BIT_MASK(32),
 	};
 
-	g_ctx.devices[g_ctx.dev_count] =
-	    platform_device_register_full(&pdevinfo);
-	if (dma_set_mask(&g_ctx.devices[g_ctx.dev_count]->dev,
-			 DMA_BIT_MASK(64))) {
+	pdev = evdi_platform_dev_create(&pdevinfo);
+	ctx->devices[ctx->dev_count++] = pdev;
+}
+
+struct platform_device *evdi_platform_dev_create(struct platform_device_info *info)
+{
+	struct platform_device *platform_dev = NULL;
+
+	platform_dev = platform_device_register_full(info);
+	if (dma_set_mask(&platform_dev->dev, DMA_BIT_MASK(64))) {
 		EVDI_DEBUG("Unable to change dma mask to 64 bit. ");
 		EVDI_DEBUG("Sticking with 32 bit\n");
 	}
-	g_ctx.dev_count++;
+
+	EVDI_INFO("Evdi platform_device create\n");
+
+	return platform_dev;
 }
 
-static int evdi_add_devices(unsigned int val)
+int evdi_platform_add_devices(struct device *device, unsigned int val)
 {
+	struct evdi_platform_drv_context *ctx =
+		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
+
 	if (val == 0) {
 		EVDI_WARN("Adding 0 devices has no effect\n");
 		return 0;
 	}
-	if (val > EVDI_DEVICE_COUNT_MAX - g_ctx.dev_count) {
+	if (val > EVDI_DEVICE_COUNT_MAX - ctx->dev_count) {
 		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
 		return -EINVAL;
 	}
 
 	EVDI_DEBUG("Increasing device count to %u\n",
-		   g_ctx.dev_count + val);
+		   ctx->dev_count + val);
 	while (val--)
-		evdi_add_device();
+		evdi_platform_device_add(ctx);
 	return 0;
 }
 
@@ -222,20 +236,34 @@ static int evdi_platform_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void evdi_remove_all(void)
+void evdi_platform_remove_all_devices(struct device *device)
 {
 	int i;
+	struct evdi_platform_drv_context *ctx =
+		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 
-	EVDI_DEBUG("removing all evdi devices\n");
-	for (i = 0; i < g_ctx.dev_count; ++i) {
-		if (g_ctx.devices[i]) {
-			EVDI_DEBUG("removing evdi %d\n", i);
-
-			platform_device_unregister(g_ctx.devices[i]);
-			g_ctx.devices[i] = NULL;
+	for (i = 0; i < ctx->dev_count; ++i) {
+		if (ctx->devices[i]) {
+			EVDI_INFO("Removing evdi %d\n", i);
+			evdi_platform_dev_destroy(ctx->devices[i]);
+			ctx->devices[i] = NULL;
 		}
 	}
-	g_ctx.dev_count = 0;
+	ctx->dev_count = 0;
+}
+
+void evdi_platform_dev_destroy(struct platform_device *dev)
+{
+	platform_device_unregister(dev);
+	EVDI_INFO("Evdi platform_device destroy\n");
+}
+
+int evdi_platform_device_count(struct device *device)
+{
+	struct evdi_platform_drv_context *ctx =
+		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
+
+	return ctx->dev_count;
 }
 
 static struct platform_driver evdi_platform_driver = {
@@ -263,7 +291,7 @@ static ssize_t count_show(__always_unused struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%u\n", g_ctx.dev_count);
 }
 
-static ssize_t add_store(__always_unused struct device *dev,
+static ssize_t add_store(struct device *dev,
 			 __always_unused struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
@@ -275,19 +303,19 @@ static ssize_t add_store(__always_unused struct device *dev,
 		return -EINVAL;
 	}
 
-	ret = evdi_add_devices(val);
+	ret = evdi_platform_add_devices(dev, val);
 	if (ret)
 		return ret;
 
 	return count;
 }
 
-static ssize_t remove_all_store(__always_unused struct device *dev,
+static ssize_t remove_all_store(struct device *dev,
 				__always_unused struct device_attribute *attr,
 				__always_unused const char *buf,
 				size_t count)
 {
-	evdi_remove_all();
+	evdi_platform_remove_all_devices(dev);
 	return count;
 }
 
@@ -343,12 +371,14 @@ static int __init evdi_init(void)
 					   &evdi_device_attributes[i]);
 		}
 
+	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
 	ret = platform_driver_register(&evdi_platform_driver);
 	if (ret)
 		return ret;
 
 	if (evdi_initial_device_count)
-		return evdi_add_devices(evdi_initial_device_count);
+		return evdi_platform_add_devices(
+			g_ctx.root_dev, evdi_initial_device_count);
 
 	return 0;
 }
@@ -358,7 +388,7 @@ static void __exit evdi_exit(void)
 	int i;
 
 	EVDI_CHECKPT();
-	evdi_remove_all();
+	evdi_platform_remove_all_devices(g_ctx.root_dev);
 	platform_driver_unregister(&evdi_platform_driver);
 
 	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev)) {
@@ -367,6 +397,7 @@ static void __exit evdi_exit(void)
 					   &evdi_device_attributes[i]);
 		}
 		root_device_unregister(g_ctx.root_dev);
+		dev_set_drvdata(g_ctx.root_dev, NULL);
 	}
 }
 
