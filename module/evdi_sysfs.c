@@ -146,7 +146,7 @@ static int find_usb_device_at_path(struct usb_device *usb, void *data)
 	return 0;
 }
 
-int evdi_platform_device_attach(struct device *device,
+static int evdi_platform_device_attach(struct device *device,
 		struct evdi_usb_addr *parent_addr)
 {
 	struct device *parent = NULL;

@@ -12,6 +12,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
+#include <linux/usb.h>
 
 #include "evdi_params.h"
 #include "evdi_debug.h"
@@ -29,7 +30,21 @@ static struct evdi_platform_drv_context {
 	struct device *root_dev;
 	unsigned int dev_count;
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
+	struct notifier_block usb_notifier;
 } g_ctx;
+
+static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
+		unsigned long action,
+		void *data)
+{
+	struct usb_device *usb_dev = (struct usb_device *)(data);
+
+	if (!usb_dev)
+		return 0;
+	if (action != BUS_NOTIFY_DEL_DEVICE)
+		return 0;
+	return 0;
+}
 
 static int evdi_platform_drv_get_free_idx(struct evdi_platform_drv_context *ctx)
 {
@@ -132,7 +147,10 @@ static int __init evdi_init(void)
 
 	memset(&g_ctx, 0, sizeof(g_ctx));
 	g_ctx.root_dev = root_device_register(DRIVER_NAME);
+	g_ctx.usb_notifier.notifier_call = evdi_platform_drv_usb;
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
+
+	usb_register_notify(&g_ctx.usb_notifier);
 	evdi_sysfs_init(g_ctx.root_dev);
 	ret = platform_driver_register(&evdi_platform_driver);
 	if (ret)
@@ -153,6 +171,7 @@ static void __exit evdi_exit(void)
 
 	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev)) {
 		evdi_sysfs_exit(g_ctx.root_dev);
+		usb_unregister_notify(&g_ctx.usb_notifier);
 		dev_set_drvdata(g_ctx.root_dev, NULL);
 		root_device_unregister(g_ctx.root_dev);
 	}
