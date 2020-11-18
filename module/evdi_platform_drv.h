@@ -34,7 +34,7 @@ struct platform_device_info;
 void evdi_platform_remove_all_devices(struct device *device);
 int evdi_platform_device_count(struct device *device);
 int evdi_platform_add_devices(struct device *device, unsigned int val);
-
+int evdi_platform_device_add(struct device *device, struct device *parent);
 
 #endif
 

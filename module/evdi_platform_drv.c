@@ -31,13 +31,26 @@ static struct evdi_platform_drv_context {
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
 } g_ctx;
 
-static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
+static int evdi_platform_drv_get_free_idx(struct evdi_platform_drv_context *ctx)
+{
+	int i;
+
+	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
+		if (ctx->devices[i] == NULL)
+			return i;
+	}
+	return -ENOMEM;
+}
+
+int evdi_platform_device_add(struct device *device, struct device *parent)
 {
 	struct platform_device *pdev = NULL;
+	struct evdi_platform_drv_context *ctx =
+		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 	struct platform_device_info pdevinfo = {
-		.parent = NULL,
+		.parent = parent,
 		.name = DRIVER_NAME,
-		.id = ctx->dev_count,
+		.id = evdi_platform_drv_get_free_idx(ctx),
 		.res = NULL,
 		.num_res = 0,
 		.data = NULL,
@@ -45,8 +58,15 @@ static void evdi_platform_device_add(struct evdi_platform_drv_context *ctx)
 		.dma_mask = DMA_BIT_MASK(32),
 	};
 
+	if (pdevinfo.id < 0 || ctx->dev_count >= EVDI_DEVICE_COUNT_MAX) {
+		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
+		return -EINVAL;
+	}
+
 	pdev = evdi_platform_dev_create(&pdevinfo);
-	ctx->devices[ctx->dev_count++] = pdev;
+	ctx->devices[pdevinfo.id] = pdev;
+	ctx->dev_count++;
+	return 0;
 }
 
 int evdi_platform_add_devices(struct device *device, unsigned int val)
@@ -63,10 +83,9 @@ int evdi_platform_add_devices(struct device *device, unsigned int val)
 		return -EINVAL;
 	}
 
-	EVDI_DEBUG("Increasing device count to %u\n",
-		   ctx->dev_count + val);
-	while (val--)
-		evdi_platform_device_add(ctx);
+	EVDI_DEBUG("Increasing device count to %u\n", ctx->dev_count + val);
+	while (val-- && evdi_platform_device_add(device, NULL) == 0)
+		;
 	return 0;
 }
 
@@ -76,7 +95,7 @@ void evdi_platform_remove_all_devices(struct device *device)
 	struct evdi_platform_drv_context *ctx =
 		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 
-	for (i = 0; i < ctx->dev_count; ++i) {
+	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
 		if (ctx->devices[i]) {
 			EVDI_INFO("Removing evdi %d\n", i);
 			evdi_platform_dev_destroy(ctx->devices[i]);
@@ -111,6 +130,7 @@ static int __init evdi_init(void)
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
 	EVDI_INFO("Atomic driver: yes");
 
+	memset(&g_ctx, 0, sizeof(g_ctx));
 	g_ctx.root_dev = root_device_register(DRIVER_NAME);
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
 	evdi_sysfs_init(g_ctx.root_dev);
