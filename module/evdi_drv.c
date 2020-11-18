@@ -355,23 +355,38 @@ static struct device_attribute evdi_device_attributes[] = {
 	__ATTR_WO(remove_all)
 };
 
+static void evdi_sysfs_init(struct device *root)
+{
+	int i;
+
+	if (!PTR_ERR_OR_ZERO(root))
+		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++)
+			device_create_file(root, &evdi_device_attributes[i]);
+}
+
+static void evdi_sysfs_exit(struct device *root)
+{
+	int i;
+
+	if (PTR_ERR_OR_ZERO(root)) {
+		EVDI_ERROR("root device is null");
+		return;
+	}
+	for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++)
+		device_remove_file(root, &evdi_device_attributes[i]);
+}
+
 static int __init evdi_init(void)
 {
-	int i, ret;
+	int ret;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
 	EVDI_INFO("Atomic driver:%s",
 		(driver.driver_features & DRIVER_ATOMIC) ? "yes" : "no");
 
 	g_ctx.root_dev = root_device_register("evdi");
-
-	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev))
-		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
-			device_create_file(g_ctx.root_dev,
-					   &evdi_device_attributes[i]);
-		}
-
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
+	evdi_sysfs_init(g_ctx.root_dev);
 	ret = platform_driver_register(&evdi_platform_driver);
 	if (ret)
 		return ret;
@@ -385,19 +400,14 @@ static int __init evdi_init(void)
 
 static void __exit evdi_exit(void)
 {
-	int i;
-
 	EVDI_CHECKPT();
 	evdi_platform_remove_all_devices(g_ctx.root_dev);
 	platform_driver_unregister(&evdi_platform_driver);
 
 	if (!PTR_ERR_OR_ZERO(g_ctx.root_dev)) {
-		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++) {
-			device_remove_file(g_ctx.root_dev,
-					   &evdi_device_attributes[i]);
-		}
-		root_device_unregister(g_ctx.root_dev);
+		evdi_sysfs_exit(g_ctx.root_dev);
 		dev_set_drvdata(g_ctx.root_dev, NULL);
+		root_device_unregister(g_ctx.root_dev);
 	}
 }
 
