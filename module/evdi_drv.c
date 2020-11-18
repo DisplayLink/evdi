@@ -184,7 +184,7 @@ int evdi_platform_add_devices(struct device *device, unsigned int val)
 	return 0;
 }
 
-static int evdi_platform_probe(struct platform_device *pdev)
+static int evdi_platform_device_probe(struct platform_device *pdev)
 {
 	struct drm_device *dev;
 	int ret;
@@ -226,7 +226,7 @@ err_free:
 	return ret;
 }
 
-static int evdi_platform_remove(struct platform_device *pdev)
+static int evdi_platform_device_remove(struct platform_device *pdev)
 {
 	struct drm_device *drm_dev =
 	    (struct drm_device *)platform_get_drvdata(pdev);
@@ -268,8 +268,8 @@ int evdi_platform_device_count(struct device *device)
 }
 
 static struct platform_driver evdi_platform_driver = {
-	.probe = evdi_platform_probe,
-	.remove = evdi_platform_remove,
+	.probe = evdi_platform_device_probe,
+	.remove = evdi_platform_device_remove,
 	.driver = {
 		   .name = "evdi",
 		   .mod_name = KBUILD_MODNAME,
