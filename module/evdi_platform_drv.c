@@ -156,6 +156,7 @@ static void __exit evdi_exit(void)
 		dev_set_drvdata(g_ctx.root_dev, NULL);
 		root_device_unregister(g_ctx.root_dev);
 	}
+	EVDI_INFO("Exit %s driver\n", DRIVER_NAME);
 }
 
 module_init(evdi_init);
