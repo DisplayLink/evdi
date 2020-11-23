@@ -458,7 +458,7 @@ static enum evdi_device_status evdi_device_to_platform(int device, char *path)
 	if (!device_exists(device))
 		return NOT_PRESENT;
 
-	fd_dir = opendir("/sys/devices/platform");
+	fd_dir = opendir("/sys/bus/platform/devices");
 	if (fd_dir == NULL) {
 		evdi_log("Failed to list platform devices");
 		return NOT_PRESENT;
@@ -469,7 +469,7 @@ static enum evdi_device_status evdi_device_to_platform(int device, char *path)
 			continue;
 
 		snprintf(path, PATH_MAX,
-			"/sys/devices/platform/%s", fd_entry->d_name);
+			"/sys/bus/platform/devices/%s", fd_entry->d_name);
 		snprintf(card_path, PATH_MAX, "%s/drm/card%d", path, device);
 		if (path_exists(card_path)) {
 			status = AVAILABLE;
