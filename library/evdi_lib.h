@@ -102,6 +102,11 @@ struct evdi_logging {
 enum evdi_device_status evdi_check_device(int device);
 evdi_handle evdi_open(int device);
 int evdi_add_device(void);
+evdi_handle evdi_open_with_usb(int busnum,
+		int* ports,
+		size_t ports_length,
+		int devnum);
+
 void evdi_close(evdi_handle handle);
 void evdi_connect(evdi_handle handle, const unsigned char *edid,
 		  const unsigned int edid_length,

@@ -509,6 +509,61 @@ int evdi_add_device(void)
 	return write_add_device("1", 1);
 }
 
+
+void concat_busnum_with_ports(int busnum, 
+		int* ports,
+		size_t ports_length,
+		char* bus_ident)
+{
+	assert(ports);
+	assert(ports_length>0);
+
+	snprintf(bus_ident, PATH_MAX, "%d-%d", busnum, ports[0]);
+	for (size_t i = 1;i<ports_length; i++) {
+		char port_subpath[PATH_MAX];
+		snprintf(port_subpath, PATH_MAX, ".%d", ports[i]);
+		const size_t available_len = PATH_MAX - strlen(bus_ident);
+		strncat(bus_ident, port_subpath, available_len);
+	}
+}
+
+int find_unused_card_for(const char* parent_path)
+{
+	// iterate over all evdi.X
+		// obtain card index
+		// check if card is already in use
+	return -1;
+}
+
+evdi_handle evdi_open_with_usb(int busnum,
+		int* ports,
+		size_t ports_length,
+		int devnum)
+{
+	int device_index = -1;
+	char bus_ident[PATH_MAX];
+	char evdi_usb_parent_path[PATH_MAX] = "/sys/bus/usb/devices/";
+
+	concat_busnum_with_ports(busnum, ports, ports_length, bus_ident);
+	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX);
+	
+	device_index = find_unused_card_for(evdi_usb_parent_path);
+	if (-1 == device_index) { // TODO: magic
+		char usb_dev_path[PATH_MAX] = "usb:";
+		strncat(usb_dev_path, bus_ident, PATH_MAX);
+		const size_t len = strlen(usb_dev_path);
+		write_add_device(usb_dev_path, len);
+	}
+
+	device_index = find_unused_card_for(evdi_usb_parent_path);
+	// assert device_index != -1
+	evdi_handle handle = evdi_open(device_index);
+	if (EVDI_INVALID_HANDLE != handle) {
+		// TODO: cache it
+	}
+	return handle;
+}
+
 void evdi_close(evdi_handle handle)
 {
 	if (handle != EVDI_INVALID_HANDLE) {
