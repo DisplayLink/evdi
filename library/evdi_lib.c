@@ -527,12 +527,51 @@ void concat_busnum_with_ports(int busnum,
 	}
 }
 
+void find_first_card_in(const char* parent_path, char* card_filename)
+{
+	struct dirent *fd_entry;
+	DIR *fd_dir;
+
+	fd_dir = opendir(parent_path);
+	if (fd_dir == NULL) {
+		evdi_log("Failed to open dir %s", parent_path);
+		return;
+	}
+
+	while ((fd_entry = readdir(fd_dir)) != NULL) {
+		if (strncmp(fd_entry->d_name, "card", 4) == 0) {
+			strncpy(card_filename, fd_entry->d_name, PATH_MAX);
+			break;
+		}
+	}
+	closedir(fd_dir);
+}
+
 int find_unused_card_for(const char* parent_path)
 {
-	// iterate over all evdi.X
-		// obtain card index
-		// check if card is already in use
-	return -1;
+	struct dirent *fd_entry;
+	DIR *fd_dir;
+	int device_index = -1;
+
+	fd_dir = opendir(parent_path);
+	if (fd_dir == NULL) {
+		evdi_log("Failed to open dir %s", parent_path);
+		return device_index;
+	}
+
+	while ((fd_entry = readdir(fd_dir)) != NULL) {
+		if (strncmp(fd_entry->d_name, "evdi", 4) != 0)
+			continue;
+
+		char evdi_drm_path[PATH_MAX];
+		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
+		char card_filename[PATH_MAX];
+		find_first_card_in(evdi_drm_path, card_filename);
+		// if card is not in use then update device_index and break
+	}
+	closedir(fd_dir);
+
+	return device_index;
 }
 
 evdi_handle evdi_open_with_usb(int busnum,
