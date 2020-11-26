@@ -488,23 +488,25 @@ enum evdi_device_status evdi_check_device(int device)
 	return evdi_device_to_platform(device, path);
 }
 
-int evdi_add_device(void)
+int write_add_device(const char* buffer, size_t buffer_length)
 {
 	FILE *add_devices = fopen("/sys/devices/evdi/add", "w");
 	int written = 0;
 
 	if (add_devices != NULL) {
-		static const char devices_to_add[] = "1";
-		const size_t elem_bytes = 1;
-
-		written = fwrite(devices_to_add,
-				 elem_bytes,
-				 sizeof(devices_to_add),
+		written = fwrite(buffer,
+				 1,
+				 buffer_length,
 				 add_devices);
 		fclose(add_devices);
 	}
 
 	return written;
+}
+
+int evdi_add_device(void)
+{
+	return write_add_device("1", 1);
 }
 
 void evdi_close(evdi_handle handle)
