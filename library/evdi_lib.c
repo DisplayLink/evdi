@@ -440,6 +440,7 @@ evdi_handle evdi_open(int device)
 			if (h) {
 				h->fd = fd;
 				h->device_index = device;
+				card_usage[device] = h;
 			}
 		}
 		if (h == EVDI_INVALID_HANDLE)
@@ -547,6 +548,11 @@ void find_first_card_in(const char* parent_path, char* card_filename)
 	closedir(fd_dir);
 }
 
+#define EVDI_USAGE_LEN 64
+// index - card no
+// value - evdi handle, invalid if not in use
+static evdi_handle card_usage[EVDI_USAGE_LEN];
+
 int find_unused_card_for(const char* parent_path)
 {
 	struct dirent *fd_entry;
@@ -567,7 +573,14 @@ int find_unused_card_for(const char* parent_path)
 		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
 		char card_filename[PATH_MAX];
 		find_first_card_in(evdi_drm_path, card_filename);
+		int dev_index = strtol(&card_filename[4], NULL, 10);
+		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
+
 		// if card is not in use then update device_index and break
+		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
+			device_index = dev_index;
+			break;
+		}
 	}
 	closedir(fd_dir);
 
@@ -588,18 +601,18 @@ evdi_handle evdi_open_with_usb(int busnum,
 	
 	device_index = find_unused_card_for(evdi_usb_parent_path);
 	if (-1 == device_index) { // TODO: magic
+		evdi_log("Creating card for %s", bus_ident);
 		char usb_dev_path[PATH_MAX] = "usb:";
 		strncat(usb_dev_path, bus_ident, PATH_MAX);
 		const size_t len = strlen(usb_dev_path);
 		write_add_device(usb_dev_path, len);
+		device_index = find_unused_card_for(evdi_usb_parent_path);
 	}
 
-	device_index = find_unused_card_for(evdi_usb_parent_path);
-	// assert device_index != -1
+	assert(device_index<EVDI_USAGE_LEN && device_index>=0);
+
+	evdi_log("Assinging /dev/dri/card%d to %s", device_index, bus_ident);
 	evdi_handle handle = evdi_open(device_index);
-	if (EVDI_INVALID_HANDLE != handle) {
-		// TODO: cache it
-	}
 	return handle;
 }
 
@@ -608,6 +621,12 @@ void evdi_close(evdi_handle handle)
 	if (handle != EVDI_INVALID_HANDLE) {
 		close(handle->fd);
 		free(handle);
+		for (size_t device_index = 0; device_index < EVDI_USAGE_LEN; device_index++) {
+			if (card_usage[device_index] == handle) {
+				card_usage[device_index] = EVDI_INVALID_HANDLE;
+				evdi_log("Marking /dev/dri/card%ld as unused", device_index);
+			}
+		}
 	}
 }
 
