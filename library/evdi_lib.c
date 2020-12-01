@@ -59,6 +59,9 @@ struct evdi_device_context {
 	int device_index;
 };
 
+#define EVDI_USAGE_LEN 64
+static evdi_handle card_usage[EVDI_USAGE_LEN];
+
 static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
 	int ret;
@@ -427,6 +430,93 @@ static int open_device(int device)
 	return fd;
 }
 
+
+static int write_add_device(const char* buffer, size_t buffer_length)
+{
+	FILE *add_devices = fopen("/sys/devices/evdi/add", "w");
+	int written = 0;
+
+	if (add_devices != NULL) {
+		written = fwrite(buffer,
+				 1,
+				 buffer_length,
+				 add_devices);
+		fclose(add_devices);
+	}
+
+	return written;
+}
+
+static void concat_busnum_with_ports(int busnum, 
+		int* ports,
+		size_t ports_length,
+		char* bus_ident)
+{
+	assert(ports);
+	assert(ports_length>0);
+
+	snprintf(bus_ident, PATH_MAX, "%d-%d", busnum, ports[0]);
+	for (size_t i = 1;i<ports_length; i++) {
+		char port_subpath[PATH_MAX];
+		snprintf(port_subpath, PATH_MAX, ".%d", ports[i]);
+		const size_t available_len = PATH_MAX - strlen(bus_ident);
+		strncat(bus_ident, port_subpath, available_len);
+	}
+}
+
+static void find_first_card_in(const char* parent_path, char* card_filename)
+{
+	struct dirent *fd_entry;
+	DIR *fd_dir;
+
+	fd_dir = opendir(parent_path);
+	if (fd_dir == NULL) {
+		evdi_log("Failed to open dir %s", parent_path);
+		return;
+	}
+
+	while ((fd_entry = readdir(fd_dir)) != NULL) {
+		if (strncmp(fd_entry->d_name, "card", 4) == 0) {
+			strncpy(card_filename, fd_entry->d_name, PATH_MAX);
+			break;
+		}
+	}
+	closedir(fd_dir);
+}
+
+static int find_unused_card_for(const char* parent_path)
+{
+	struct dirent *fd_entry;
+	DIR *fd_dir;
+	int device_index = EVDI_INVALID_DEVICE_INDEX;
+
+	fd_dir = opendir(parent_path);
+	if (fd_dir == NULL) {
+		evdi_log("Failed to open dir %s", parent_path);
+		return device_index;
+	}
+
+	while ((fd_entry = readdir(fd_dir)) != NULL) {
+		if (strncmp(fd_entry->d_name, "evdi", 4) != 0)
+			continue;
+
+		char evdi_drm_path[PATH_MAX];
+		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
+		char card_filename[PATH_MAX];
+		find_first_card_in(evdi_drm_path, card_filename);
+		int dev_index = strtol(&card_filename[4], NULL, 10);
+		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
+
+		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
+			device_index = dev_index;
+			break;
+		}
+	}
+	closedir(fd_dir);
+
+	return device_index;
+}
+
 // ********************* Public part **************************
 
 evdi_handle evdi_open(int device)
@@ -490,101 +580,9 @@ enum evdi_device_status evdi_check_device(int device)
 	return evdi_device_to_platform(device, path);
 }
 
-int write_add_device(const char* buffer, size_t buffer_length)
-{
-	FILE *add_devices = fopen("/sys/devices/evdi/add", "w");
-	int written = 0;
-
-	if (add_devices != NULL) {
-		written = fwrite(buffer,
-				 1,
-				 buffer_length,
-				 add_devices);
-		fclose(add_devices);
-	}
-
-	return written;
-}
-
 int evdi_add_device(void)
 {
 	return write_add_device("1", 1);
-}
-
-
-void concat_busnum_with_ports(int busnum, 
-		int* ports,
-		size_t ports_length,
-		char* bus_ident)
-{
-	assert(ports);
-	assert(ports_length>0);
-
-	snprintf(bus_ident, PATH_MAX, "%d-%d", busnum, ports[0]);
-	for (size_t i = 1;i<ports_length; i++) {
-		char port_subpath[PATH_MAX];
-		snprintf(port_subpath, PATH_MAX, ".%d", ports[i]);
-		const size_t available_len = PATH_MAX - strlen(bus_ident);
-		strncat(bus_ident, port_subpath, available_len);
-	}
-}
-
-void find_first_card_in(const char* parent_path, char* card_filename)
-{
-	struct dirent *fd_entry;
-	DIR *fd_dir;
-
-	fd_dir = opendir(parent_path);
-	if (fd_dir == NULL) {
-		evdi_log("Failed to open dir %s", parent_path);
-		return;
-	}
-
-	while ((fd_entry = readdir(fd_dir)) != NULL) {
-		if (strncmp(fd_entry->d_name, "card", 4) == 0) {
-			strncpy(card_filename, fd_entry->d_name, PATH_MAX);
-			break;
-		}
-	}
-	closedir(fd_dir);
-}
-
-#define EVDI_USAGE_LEN 64
-// index - card no
-// value - evdi handle, invalid if not in use
-static evdi_handle card_usage[EVDI_USAGE_LEN];
-
-int find_unused_card_for(const char* parent_path)
-{
-	struct dirent *fd_entry;
-	DIR *fd_dir;
-	int device_index = EVDI_INVALID_DEVICE_INDEX;
-
-	fd_dir = opendir(parent_path);
-	if (fd_dir == NULL) {
-		evdi_log("Failed to open dir %s", parent_path);
-		return device_index;
-	}
-
-	while ((fd_entry = readdir(fd_dir)) != NULL) {
-		if (strncmp(fd_entry->d_name, "evdi", 4) != 0)
-			continue;
-
-		char evdi_drm_path[PATH_MAX];
-		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
-		char card_filename[PATH_MAX];
-		find_first_card_in(evdi_drm_path, card_filename);
-		int dev_index = strtol(&card_filename[4], NULL, 10);
-		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
-
-		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
-			device_index = dev_index;
-			break;
-		}
-	}
-	closedir(fd_dir);
-
-	return device_index;
 }
 
 evdi_handle evdi_open_with_usb(int busnum,
