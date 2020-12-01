@@ -26,6 +26,7 @@
 // ********************* Private part **************************
 
 #define MAX_DIRTS           16
+#define EVDI_INVALID_DEVICE_INDEX -1
 
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MAJOR 1
 #define EVDI_MODULE_COMPATIBILITY_VERSION_MINOR 8
@@ -557,7 +558,7 @@ int find_unused_card_for(const char* parent_path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
-	int device_index = -1;
+	int device_index = EVDI_INVALID_DEVICE_INDEX;
 
 	fd_dir = opendir(parent_path);
 	if (fd_dir == NULL) {
@@ -576,7 +577,6 @@ int find_unused_card_for(const char* parent_path)
 		int dev_index = strtol(&card_filename[4], NULL, 10);
 		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
 
-		// if card is not in use then update device_index and break
 		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
 			device_index = dev_index;
 			break;
@@ -592,7 +592,7 @@ evdi_handle evdi_open_with_usb(int busnum,
 		size_t ports_length,
 		int devnum)
 {
-	int device_index = -1;
+	int device_index = EVDI_INVALID_DEVICE_INDEX;
 	char bus_ident[PATH_MAX];
 	char evdi_usb_parent_path[PATH_MAX] = "/sys/bus/usb/devices/";
 
@@ -600,7 +600,7 @@ evdi_handle evdi_open_with_usb(int busnum,
 	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX);
 	
 	device_index = find_unused_card_for(evdi_usb_parent_path);
-	if (-1 == device_index) { // TODO: magic
+	if (EVDI_INVALID_DEVICE_INDEX == device_index) { 
 		evdi_log("Creating card for %s", bus_ident);
 		char usb_dev_path[PATH_MAX] = "usb:";
 		strncat(usb_dev_path, bus_ident, PATH_MAX);
