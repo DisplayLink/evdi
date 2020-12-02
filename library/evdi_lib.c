@@ -464,24 +464,26 @@ static void concat_busnum_with_ports(int busnum,
 	}
 }
 
-static void find_first_card_in(const char* parent_path, char* card_filename)
+static int find_first_card_index(const char* parent_path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
+	int dev_index = EVDI_INVALID_DEVICE_INDEX;
 
 	fd_dir = opendir(parent_path);
 	if (fd_dir == NULL) {
 		evdi_log("Failed to open dir %s", parent_path);
-		return;
+		return dev_index;
 	}
 
 	while ((fd_entry = readdir(fd_dir)) != NULL) {
 		if (strncmp(fd_entry->d_name, "card", 4) == 0) {
-			strncpy(card_filename, fd_entry->d_name, PATH_MAX);
-			break;
+			dev_index = strtol(&fd_entry->d_name[4], NULL, 10);
 		}
 	}
 	closedir(fd_dir);
+
+	return dev_index;
 }
 
 static int find_unused_card_for(const char* parent_path)
@@ -502,9 +504,7 @@ static int find_unused_card_for(const char* parent_path)
 
 		char evdi_drm_path[PATH_MAX];
 		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
-		char card_filename[PATH_MAX];
-		find_first_card_in(evdi_drm_path, card_filename);
-		int dev_index = strtol(&card_filename[4], NULL, 10);
+		int dev_index = find_first_card_index(evdi_drm_path);
 		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
 
 		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
