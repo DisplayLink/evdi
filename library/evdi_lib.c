@@ -464,15 +464,15 @@ static void concat_busnum_with_ports(int busnum,
 	}
 }
 
-static int find_first_card_index(const char* parent_path)
+static int get_drm_device_index(const char* evdi_sysfs_drm_dir)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
 	int dev_index = EVDI_INVALID_DEVICE_INDEX;
 
-	fd_dir = opendir(parent_path);
+	fd_dir = opendir(evdi_sysfs_drm_dir);
 	if (fd_dir == NULL) {
-		evdi_log("Failed to open dir %s", parent_path);
+		evdi_log("Failed to open dir %s", evdi_sysfs_drm_dir);
 		return dev_index;
 	}
 
@@ -486,15 +486,15 @@ static int find_first_card_index(const char* parent_path)
 	return dev_index;
 }
 
-static int find_unused_card_for(const char* parent_path)
+static int find_unused_card_for(const char* sysfs_parent_device_path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
 
-	fd_dir = opendir(parent_path);
+	fd_dir = opendir(sysfs_parent_device_path);
 	if (fd_dir == NULL) {
-		evdi_log("Failed to open dir %s", parent_path);
+		evdi_log("Failed to open dir %s", sysfs_parent_device_path);
 		return device_index;
 	}
 
@@ -503,8 +503,8 @@ static int find_unused_card_for(const char* parent_path)
 			continue;
 
 		char evdi_drm_path[PATH_MAX];
-		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", parent_path, fd_entry->d_name);
-		int dev_index = find_first_card_index(evdi_drm_path);
+		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", sysfs_parent_device_path, fd_entry->d_name);
+		int dev_index = get_drm_device_index(evdi_drm_path);
 		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
 
 		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
