@@ -599,7 +599,7 @@ evdi_handle evdi_open_with_usb(int busnum,
 	
 	device_index = find_unused_card_for(evdi_usb_parent_path);
 	if (EVDI_INVALID_DEVICE_INDEX == device_index) { 
-		evdi_log("Creating card for %s", bus_ident);
+		evdi_log("Creating card for %s, device: %d", bus_ident, devnum);
 		char usb_dev_path[PATH_MAX] = "usb:";
 		strncat(usb_dev_path, bus_ident, PATH_MAX);
 		const size_t len = strlen(usb_dev_path);
