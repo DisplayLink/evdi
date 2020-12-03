@@ -431,7 +431,7 @@ static int open_device(int device)
 }
 
 
-static int write_add_device(const char* buffer, size_t buffer_length)
+static int write_add_device(const char *buffer, size_t buffer_length)
 {
 	FILE *add_devices = fopen("/sys/devices/evdi/add", "w");
 	int written = 0;
@@ -447,24 +447,26 @@ static int write_add_device(const char* buffer, size_t buffer_length)
 	return written;
 }
 
-static void concat_busnum_with_ports(int busnum, 
-		int* ports,
+static void concat_busnum_with_ports(int busnum,
+		int *ports,
 		size_t ports_length,
-		char* bus_ident)
+		char *bus_ident)
 {
 	assert(ports);
-	assert(ports_length>0);
+	assert(ports_length > 0);
 
 	snprintf(bus_ident, PATH_MAX, "%d-%d", busnum, ports[0]);
-	for (size_t i = 1;i<ports_length; i++) {
+	for (size_t i = 1; i < ports_length; i++) {
 		char port_subpath[PATH_MAX];
+
 		snprintf(port_subpath, PATH_MAX, ".%d", ports[i]);
 		const size_t available_len = PATH_MAX - strlen(bus_ident);
+
 		strncat(bus_ident, port_subpath, available_len);
 	}
 }
 
-static int get_drm_device_index(const char* evdi_sysfs_drm_dir)
+static int get_drm_device_index(const char *evdi_sysfs_drm_dir)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
@@ -477,16 +479,15 @@ static int get_drm_device_index(const char* evdi_sysfs_drm_dir)
 	}
 
 	while ((fd_entry = readdir(fd_dir)) != NULL) {
-		if (strncmp(fd_entry->d_name, "card", 4) == 0) {
+		if (strncmp(fd_entry->d_name, "card", 4) == 0)
 			dev_index = strtol(&fd_entry->d_name[4], NULL, 10);
-		}
 	}
 	closedir(fd_dir);
 
 	return dev_index;
 }
 
-static int find_unused_card_for(const char* sysfs_parent_device_path)
+static int find_unused_card_for(const char *sysfs_parent_device_path)
 {
 	struct dirent *fd_entry;
 	DIR *fd_dir;
@@ -503,9 +504,11 @@ static int find_unused_card_for(const char* sysfs_parent_device_path)
 			continue;
 
 		char evdi_drm_path[PATH_MAX];
+
 		snprintf(evdi_drm_path, PATH_MAX, "%s/%s/drm", sysfs_parent_device_path, fd_entry->d_name);
 		int dev_index = get_drm_device_index(evdi_drm_path);
-		assert(dev_index<EVDI_USAGE_LEN && dev_index>=0);
+
+		assert(dev_index < EVDI_USAGE_LEN && dev_index >= 0);
 
 		if (card_usage[dev_index] == EVDI_INVALID_HANDLE) {
 			device_index = dev_index;
@@ -586,7 +589,7 @@ int evdi_add_device(void)
 }
 
 evdi_handle evdi_open_with_usb(int busnum,
-		int* ports,
+		int *ports,
 		size_t ports_length,
 		int devnum)
 {
@@ -596,18 +599,20 @@ evdi_handle evdi_open_with_usb(int busnum,
 
 	concat_busnum_with_ports(busnum, ports, ports_length, bus_ident);
 	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX);
-	
+
 	device_index = find_unused_card_for(evdi_usb_parent_path);
-	if (EVDI_INVALID_DEVICE_INDEX == device_index) { 
+	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
 		evdi_log("Creating card for %s, device: %d", bus_ident, devnum);
 		char usb_dev_path[PATH_MAX] = "usb:";
+
 		strncat(usb_dev_path, bus_ident, PATH_MAX);
 		const size_t len = strlen(usb_dev_path);
+
 		write_add_device(usb_dev_path, len);
 		device_index = find_unused_card_for(evdi_usb_parent_path);
 	}
 
-	assert(device_index<EVDI_USAGE_LEN && device_index>=0);
+	assert(device_index < EVDI_USAGE_LEN && device_index >= 0);
 
 	evdi_log("Assinging /dev/dri/card%d to %s", device_index, bus_ident);
 	evdi_handle handle = evdi_open(device_index);

@@ -103,7 +103,7 @@ enum evdi_device_status evdi_check_device(int device);
 evdi_handle evdi_open(int device);
 int evdi_add_device(void);
 evdi_handle evdi_open_with_usb(int busnum,
-		int* ports,
+		int *ports,
 		size_t ports_length,
 		int devnum);
 
