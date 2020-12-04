@@ -305,7 +305,10 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
-
-	return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
+	#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+		return drm_prime_pages_to_sg(obj->dev, bo->pages, bo->base.size >> PAGE_SHIFT);
+	#else
+		return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
+	#endif
 }
 
