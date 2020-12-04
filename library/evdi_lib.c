@@ -590,14 +590,15 @@ int get_device_attached_to_usb(const char *bus_ident)
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
 	char evdi_usb_parent_path[PATH_MAX] = "/sys/bus/usb/devices/";
 
-	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX);
+	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX - strlen(evdi_usb_parent_path));
 
 	device_index = find_unused_card_for(evdi_usb_parent_path);
 	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
 		evdi_log("Creating card for %s", bus_ident);
 		char usb_dev_path[PATH_MAX] = "usb:";
+		const size_t current_len = strlen(usb_dev_path);
 
-		strncat(usb_dev_path, bus_ident, PATH_MAX);
+		strncat(usb_dev_path, bus_ident, PATH_MAX - current_len);
 		const size_t len = strlen(usb_dev_path);
 
 		write_add_device(usb_dev_path, len);
