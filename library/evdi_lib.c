@@ -615,7 +615,7 @@ evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
 	if (sysfs_parent_device == NULL)
 		device_index = get_generic_device();
 
-	if (strncmp(sysfs_parent_device, "usb:", 4) == 0 && strlen(sysfs_parent_device) > 4) {
+	if (sysfs_parent_device != NULL && strncmp(sysfs_parent_device, "usb:", 4) == 0 && strlen(sysfs_parent_device) > 4) {
 		char bus_ident[PATH_MAX];
 		const size_t len = strlen(sysfs_parent_device) - 4;
 
