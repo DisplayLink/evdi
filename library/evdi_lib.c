@@ -612,7 +612,7 @@ evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
 {
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
 
-	if (strncmp(sysfs_parent_device, "generic", strlen(sysfs_parent_device)) == 0)
+	if (sysfs_parent_device == NULL)
 		device_index = get_generic_device();
 
 	if (strncmp(sysfs_parent_device, "usb:", 4) == 0 && strlen(sysfs_parent_device) > 4) {
