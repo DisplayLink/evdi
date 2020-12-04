@@ -638,10 +638,10 @@ void evdi_close(evdi_handle handle)
 	if (handle != EVDI_INVALID_HANDLE) {
 		close(handle->fd);
 		free(handle);
-		for (size_t device_index = 0; device_index < EVDI_USAGE_LEN; device_index++) {
+		for (int device_index = 0; device_index < EVDI_USAGE_LEN; device_index++) {
 			if (card_usage[device_index] == handle) {
 				card_usage[device_index] = EVDI_INVALID_HANDLE;
-				evdi_log("Marking /dev/dri/card%ld as unused", device_index);
+				evdi_log("Marking /dev/dri/card%d as unused", device_index);
 			}
 		}
 	}
