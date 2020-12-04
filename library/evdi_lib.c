@@ -501,6 +501,45 @@ static int find_unused_card_for(const char *sysfs_parent_device_path)
 	return device_index;
 }
 
+static int get_generic_device(void)
+{
+	char evdi_platform_root[] = "/sys/devices/platform";
+	int device_index = EVDI_INVALID_DEVICE_INDEX;
+
+	device_index = find_unused_card_for(evdi_platform_root);
+	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
+		evdi_log("Creating card in %s", evdi_platform_root);
+		write_add_device("1", 1);
+		device_index = find_unused_card_for(evdi_platform_root);
+	}
+
+	return device_index;
+}
+
+static int get_device_attached_to_usb(const char *bus_ident)
+{
+	int device_index = EVDI_INVALID_DEVICE_INDEX;
+	char evdi_usb_parent_path[PATH_MAX] = "/sys/bus/usb/devices/";
+
+	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX - strlen(evdi_usb_parent_path));
+
+	device_index = find_unused_card_for(evdi_usb_parent_path);
+	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
+		evdi_log("Creating card for %s", bus_ident);
+		char usb_dev_path[PATH_MAX] = "usb:";
+		const size_t current_len = strlen(usb_dev_path);
+
+		strncat(usb_dev_path, bus_ident, PATH_MAX - current_len);
+		const size_t len = strlen(usb_dev_path);
+
+		write_add_device(usb_dev_path, len);
+		device_index = find_unused_card_for(evdi_usb_parent_path);
+	}
+
+	return device_index;
+}
+
+
 // ********************* Public part **************************
 
 evdi_handle evdi_open(int device)
@@ -569,45 +608,6 @@ int evdi_add_device(void)
 {
 	return write_add_device("1", 1);
 }
-
-int get_generic_device(void)
-{
-	char evdi_platform_root[] = "/sys/devices/platform";
-	int device_index = EVDI_INVALID_DEVICE_INDEX;
-
-	device_index = find_unused_card_for(evdi_platform_root);
-	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
-		evdi_log("Creating card in %s", evdi_platform_root);
-		write_add_device("1", 1);
-		device_index = find_unused_card_for(evdi_platform_root);
-	}
-
-	return device_index;
-}
-
-int get_device_attached_to_usb(const char *bus_ident)
-{
-	int device_index = EVDI_INVALID_DEVICE_INDEX;
-	char evdi_usb_parent_path[PATH_MAX] = "/sys/bus/usb/devices/";
-
-	strncat(evdi_usb_parent_path, bus_ident, PATH_MAX - strlen(evdi_usb_parent_path));
-
-	device_index = find_unused_card_for(evdi_usb_parent_path);
-	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
-		evdi_log("Creating card for %s", bus_ident);
-		char usb_dev_path[PATH_MAX] = "usb:";
-		const size_t current_len = strlen(usb_dev_path);
-
-		strncat(usb_dev_path, bus_ident, PATH_MAX - current_len);
-		const size_t len = strlen(usb_dev_path);
-
-		write_add_device(usb_dev_path, len);
-		device_index = find_unused_card_for(evdi_usb_parent_path);
-	}
-
-	return device_index;
-}
-
 
 evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
 {
