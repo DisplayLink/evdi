@@ -1,5 +1,5 @@
-sudo: false
-
+dist: xenial
+os: linux
 language: c
 cache: ccache
 
@@ -22,7 +22,7 @@ env:
   - KVER=5.9
   - KVER=master
 
-matrix:
+jobs:
   allow_failures:
     - env: KVER=master
   include:
