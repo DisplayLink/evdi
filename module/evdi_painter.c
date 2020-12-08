@@ -10,7 +10,7 @@
 #include "linux/thread_info.h"
 #include "linux/mm.h"
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 #include <drm/drmP.h>
 #endif

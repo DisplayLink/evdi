@@ -5,13 +5,19 @@
 # License v2. See the file COPYING in the main directory of this archive for
 # more details.
 #
+
+EL8 := $(shell cat /etc/redhat-release | grep -c " 8." )
+ifneq (,$(findstring 1, $(EL8)))
+EL8FLAG := -DEL8
+endif
+
 ifneq ($(DKMS_BUILD),)
 
 # DKMS
 
 KERN_DIR := /lib/modules/$(KERNELRELEASE)/build
 
-ccflags-y := -Iinclude/drm
+ccflags-y := -Iinclude/drm $(EL8FLAG)
 evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_painter.o evdi_params.o evdi_cursor.o evdi_debug.o evdi_i2c.o
 evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-m := evdi.o
@@ -35,7 +41,7 @@ ifneq ($(KERNELRELEASE),)
 # Note: this can be removed once it is in kernel tree and Kconfig is properly used
 CONFIG_DRM_EVDI := m
 LINUXINCLUDE := $(subst -I,-isystem,$(LINUXINCLUDE))
-ccflags-y := -isystem include/drm $(CFLAGS)
+ccflags-y := -isystem include/drm $(CFLAGS) $(EL8FLAG)
 evdi-y := evdi_drv.o evdi_modeset.o evdi_connector.o evdi_encoder.o evdi_main.o evdi_fb.o evdi_gem.o evdi_painter.o evdi_params.o evdi_cursor.o evdi_debug.o evdi_i2c.o
 evdi-$(CONFIG_COMPAT) += evdi_ioc32.o
 obj-$(CONFIG_DRM_EVDI) := evdi.o

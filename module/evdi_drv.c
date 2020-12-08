@@ -9,7 +9,7 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 #include <drm/drmP.h>
 #endif
@@ -82,7 +82,7 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 }
 
 static struct drm_driver driver = {
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
 #else
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
