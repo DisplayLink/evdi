@@ -621,6 +621,7 @@ evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
 		const size_t len = strlen(sysfs_parent_device) - 4;
 
 		strncpy(bus_ident, &sysfs_parent_device[4], len);
+		bus_ident[len] = 0;
 		device_index = get_device_attached_to_usb(bus_ident);
 	}
 
