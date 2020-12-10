@@ -69,13 +69,25 @@ static int evdi_platform_drv_get_free_idx(struct evdi_platform_drv_context *ctx)
 	return -ENOMEM;
 }
 
-int evdi_platform_device_add(struct device *device, struct device *parent)
+static struct platform_device *evdi_platform_drv_get_free_device(struct evdi_platform_drv_context *ctx)
+{
+	int i;
+	struct platform_device *pdev = NULL;
+
+	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
+		pdev = ctx->devices[i];
+		if (pdev && evdi_platform_device_is_free(pdev))
+			return pdev;
+	}
+	return NULL;
+}
+
+
+static struct platform_device *evdi_platform_drv_create_new_device(struct evdi_platform_drv_context *ctx)
 {
 	struct platform_device *pdev = NULL;
-	struct evdi_platform_drv_context *ctx =
-		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 	struct platform_device_info pdevinfo = {
-		.parent = parent,
+		.parent = NULL,
 		.name = DRIVER_NAME,
 		.id = evdi_platform_drv_get_free_idx(ctx),
 		.res = NULL,
@@ -87,12 +99,29 @@ int evdi_platform_device_add(struct device *device, struct device *parent)
 
 	if (pdevinfo.id < 0 || ctx->dev_count >= EVDI_DEVICE_COUNT_MAX) {
 		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
-		return -EINVAL;
+		return ERR_PTR(-EINVAL);
 	}
 
 	pdev = evdi_platform_dev_create(&pdevinfo);
 	ctx->devices[pdevinfo.id] = pdev;
 	ctx->dev_count++;
+
+	return pdev;
+}
+
+int evdi_platform_device_add(struct device *device,
+		__always_unused struct device *parent)
+{
+	struct evdi_platform_drv_context *ctx =
+		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
+	struct platform_device *pdev = evdi_platform_drv_get_free_device(ctx);
+
+	if (IS_ERR_OR_NULL(pdev))
+		pdev = evdi_platform_drv_create_new_device(ctx);
+
+	if (IS_ERR_OR_NULL(pdev))
+		return -EINVAL;
+
 	return 0;
 }
 

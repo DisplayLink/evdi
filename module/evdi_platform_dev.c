@@ -87,3 +87,14 @@ int evdi_platform_device_remove(struct platform_device *pdev)
 	return 0;
 }
 
+bool evdi_platform_device_is_free(struct platform_device *pdev)
+{
+	struct drm_device *drm_dev =
+		(struct drm_device *)platform_get_drvdata(pdev);
+	struct evdi_device *evdi = drm_dev->dev_private;
+
+	if (evdi && !evdi_painter_is_connected(evdi->painter))
+		return true;
+	return false;
+}
+
