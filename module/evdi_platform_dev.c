@@ -121,6 +121,8 @@ void evdi_platform_device_link(struct platform_device *pdev,
 				      struct device *parent)
 {
 	struct evdi_platform_device_data *data = NULL;
+	char evdi_name[10] = { 0 };
+	int ret = 0;
 
 	if (!parent || !pdev)
 		return;
@@ -129,6 +131,15 @@ void evdi_platform_device_link(struct platform_device *pdev,
 	if (!evdi_platform_device_is_free(pdev)) {
 		EVDI_FATAL("Device is already attached can't symlink again\n");
 		return;
+	}
+
+	snprintf(evdi_name, sizeof(evdi_name), "evdi.%d", pdev->id);
+	ret = sysfs_create_link(&parent->kobj, &pdev->dev.kobj, evdi_name);
+	if (ret)
+		EVDI_FATAL("Failed to create sysfs link to parent device\n");
+	else {
+		data->symlinked = true;
+		data->parent = parent;
 	}
 }
 
