@@ -48,7 +48,10 @@ static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
 
 	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
 		pdev = g_ctx.devices[i];
-		if (pdev && pdev->dev.parent == &usb_dev->dev) {
+		if (!pdev)
+			continue;
+		evdi_platform_device_unlink_if_linked_with(pdev, &usb_dev->dev);
+		if (pdev->dev.parent == &usb_dev->dev) {
 			EVDI_INFO("Parent USB removed. Removing evdi.%d\n", i);
 			evdi_platform_dev_destroy(pdev);
 			g_ctx.dev_count--;
@@ -109,8 +112,7 @@ static struct platform_device *evdi_platform_drv_create_new_device(struct evdi_p
 	return pdev;
 }
 
-int evdi_platform_device_add(struct device *device,
-		__always_unused struct device *parent)
+int evdi_platform_device_add(struct device *device, struct device *parent)
 {
 	struct evdi_platform_drv_context *ctx =
 		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
@@ -122,6 +124,7 @@ int evdi_platform_device_add(struct device *device,
 	if (IS_ERR_OR_NULL(pdev))
 		return -EINVAL;
 
+	evdi_platform_device_link(pdev, parent);
 	return 0;
 }
 

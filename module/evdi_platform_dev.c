@@ -29,6 +29,12 @@
 #include "evdi_debug.h"
 #include "evdi_drm_drv.h"
 
+struct evdi_platform_device_data {
+	struct drm_device *drm_dev;
+	struct device *parent;
+	bool symlinked;
+};
+
 struct platform_device *evdi_platform_dev_create(struct platform_device_info *info)
 {
 	struct platform_device *platform_dev = NULL;
@@ -52,7 +58,10 @@ void evdi_platform_dev_destroy(struct platform_device *dev)
 
 int evdi_platform_device_probe(struct platform_device *pdev)
 {
-	struct drm_device *dev;
+	struct drm_device *dev = NULL;
+	struct evdi_platform_device_data *data =
+		kzalloc(sizeof(struct evdi_platform_device_data), GFP_KERNEL);
+
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
 	struct dev_iommu iommu;
@@ -73,28 +82,65 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 #endif
 
 	dev = evdi_drm_device_create(&pdev->dev);
-	platform_set_drvdata(pdev, dev);
+	if (IS_ERR_OR_NULL(dev))
+		kfree(data);
+	else {
+		data->drm_dev = dev;
+		data->symlinked = false;
+		platform_set_drvdata(pdev, data);
+	}
+
 	return PTR_ERR_OR_ZERO(dev);
 }
 
 int evdi_platform_device_remove(struct platform_device *pdev)
 {
-	struct drm_device *drm_dev = (struct drm_device *)platform_get_drvdata(pdev);
+	struct evdi_platform_device_data *data =
+		(struct evdi_platform_device_data *)platform_get_drvdata(pdev);
 
 	EVDI_CHECKPT();
 
-	evdi_drm_device_remove(drm_dev);
+	evdi_drm_device_remove(data->drm_dev);
+	kfree(data);
 	return 0;
 }
 
 bool evdi_platform_device_is_free(struct platform_device *pdev)
 {
-	struct drm_device *drm_dev =
-		(struct drm_device *)platform_get_drvdata(pdev);
-	struct evdi_device *evdi = drm_dev->dev_private;
+	struct evdi_platform_device_data *data =
+		(struct evdi_platform_device_data *)platform_get_drvdata(pdev);
+	struct evdi_device *evdi = data->drm_dev->dev_private;
 
-	if (evdi && !evdi_painter_is_connected(evdi->painter))
+	if (evdi && !evdi_painter_is_connected(evdi->painter) &&
+	    !data->symlinked)
 		return true;
 	return false;
 }
 
+void evdi_platform_device_link(struct platform_device *pdev,
+				      struct device *parent)
+{
+	struct evdi_platform_device_data *data = NULL;
+
+	if (!parent || !pdev)
+		return;
+
+	data = (struct evdi_platform_device_data *)platform_get_drvdata(pdev);
+	if (!evdi_platform_device_is_free(pdev)) {
+		EVDI_FATAL("Device is already attached can't symlink again\n");
+		return;
+	}
+}
+
+void evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
+				struct device *parent)
+{
+	struct evdi_platform_device_data *data =
+		(struct evdi_platform_device_data *)platform_get_drvdata(pdev);
+
+	if (data->parent == parent) {
+		data->symlinked = false;
+		data->parent = NULL;
+		EVDI_INFO("Detached from parent device\n");
+	}
+}
