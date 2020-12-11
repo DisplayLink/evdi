@@ -24,17 +24,33 @@ Attempts to connect to other nodes (e.g. related to a built-in GPU) will fail.
 !!! note
     Using EVDI nodes currently requires administrative rights, so applications must be run with `sudo`, or by root.
 
-### Adding new nodes
+### Adding new nodes (pre v1.9.0)
 
 In order to create a new EVDI `cardX` node, call `evdi_add_device` function.
 A single call adds one additional DRM card node that can later be used to connect to.
 
+
 At the moment, every extra screen that you want to manage needs a separate node.
 
-### Opening and closing EVDI node
+### Opening EVDI node (pre v1.9.0)
 
 Once an available EVDI node is identified, your application should call `evdi_open`, passing a number of `cardX` that you want to open.
 This returns an `evdi_handle` that you will use for following API calls, or `EVDI_INVALID_HANDLE` if opening failed.
+
+### Requesting EVDI node (since v1.9.0)
+
+Adding and opening evdi devices is easier since libevdi v1.9.0. It's sufficient to call `evdi_open_attached_to(NULL)` in order to add a new evdi node and open it.
+
+It is possible to bind evdi devices with usb devices if it is necessary to show such relationship in sysfs.
+It is done via `const char *sysfs_parent_device` parameter of `evdi_open_attached_to` function.
+USB parent device is described by a string with the following format: `usb:[busNum]-[portNum1].[portNum2].[portNum3]...`
+
+e.g.
+A `evdi_open_attached_to("usb:2-2.1")` call will link `/sys/bus/usb/devices/2-2.1/evdi.0` to
+`/sys/bus/platform/devices/evdi.0` which is the first available evdi node.
+
+
+### Closing EVDI node
 
 In order to close the handle, call `evdi_close`.
 

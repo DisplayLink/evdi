@@ -39,7 +39,7 @@ Use this function to check if a particular `/dev/dri/cardX` is EVDI or not.
 * `UNRECOGNIZED` when a node has not been created by EVDI kernel module.
 * `NOT_PRESENT` in other cases, e.g. when the device does not exist or cannot be opened to check.
 
-#### Adding new EVDI node
+#### Adding new EVDI node (pre v1.9.0)
     #!c
 	int evdi_add_device()
 
@@ -48,7 +48,7 @@ Use this to tell the kernel module to create a new `cardX` node for your applica
 **Return value:**
 `1` when successful, `0` otherwise.
 
-#### Opening device nodes
+#### Opening device nodes (pre v1.9.0)
     #!c
 	evdi_handle evdi_open(int device);
 
@@ -58,7 +58,24 @@ library and module does not match then the device will not be opened.
 
 **Arguments**: `device` is a number of card to open, e.g. `1` means `/dev/dri/card1`.
 
-**Return value:** an opened device handle to use in following API calls if opening was successful, `EVDI_INVALID_HANDLE` otherwise.
+**Return value:** On success, a handle to the opened device to be used in following API calls. `EVDI_INVALID_HANDLE` otherwise.
+
+#### Request evdi nodes (since v1.9.0)
+    #!c
+	evdi_handle evdi_open_attached_to(char *sysfs_parent_device);
+
+This function attempts to add (if necessary) and open a DRM device node attached to given parent device.
+Linking with another sysfs device is sometimes useful if it is required to reflect such relationship in sysfs.
+
+The function performs a compatibility check with an underlying drm device. If version of the
+library and module does not match, the device will not be opened.
+
+**Arguments**: `sysfs_parent_device` is a string with the following format: `usb:[busNum]-[portNum1].[portNum2].[portNum3]...`, which describes the
+device that evdi is linked to. Or `NULL` when evdi device node is not linked with any other device.
+
+**Return value:** On success, a handle to the opened device to be used in following API calls. `EVDI_INVALID_HANDLE` otherwise.
+
+
 
 #### Closing devices
 
