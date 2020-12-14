@@ -156,6 +156,7 @@ prepare_kernel() { ( # SRC_DIR CC
   cd "${1}"
   make olddefconfig CC="${2}" --jobs=${JOBS}
   make prepare CC="${2}" --jobs=${JOBS}
+  make modules_prepare CC="${2}" --jobs=${JOBS}
 
   if [[ ${KVER:0:1} < "5" ]]; then
     make scripts CC="${2}" --jobs=${JOBS}
