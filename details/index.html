@@ -68,9 +68,11 @@
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#finding-an-available-evdi-node-to-use">Finding an available EVDI node to use</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#adding-new-evdi-node">Adding new EVDI node</a>
+    <li class="toctree-l4"><a class="reference internal" href="#adding-new-evdi-node-pre-v190">Adding new EVDI node (pre v1.9.0)</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#opening-device-nodes">Opening device nodes</a>
+    <li class="toctree-l4"><a class="reference internal" href="#opening-device-nodes-pre-v190">Opening device nodes (pre v1.9.0)</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#request-evdi-nodes-since-v190">Request evdi nodes (since v1.9.0)</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#closing-devices">Closing devices</a>
     </li>
@@ -195,8 +197,9 @@
 <li><a href="#module-parameters">Module parameters</a></li>
 <li><a href="#evdi-nodes">EVDI nodes</a><ul>
 <li><a href="#finding-an-available-evdi-node-to-use">Finding an available EVDI node to use</a></li>
-<li><a href="#adding-new-evdi-node">Adding new EVDI node</a></li>
-<li><a href="#opening-device-nodes">Opening device nodes</a></li>
+<li><a href="#adding-new-evdi-node-pre-v190">Adding new EVDI node (pre v1.9.0)</a></li>
+<li><a href="#opening-device-nodes-pre-v190">Opening device nodes (pre v1.9.0)</a></li>
+<li><a href="#request-evdi-nodes-since-v190">Request evdi nodes (since v1.9.0)</a></li>
 <li><a href="#closing-devices">Closing devices</a></li>
 </ul>
 </li>
@@ -282,7 +285,7 @@ Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
 <li><code>UNRECOGNIZED</code> when a node has not been created by EVDI kernel module.</li>
 <li><code>NOT_PRESENT</code> in other cases, e.g. when the device does not exist or cannot be opened to check.</li>
 </ul>
-<h4 id="adding-new-evdi-node">Adding new EVDI node<a class="headerlink" href="#adding-new-evdi-node" title="Permanent link">&para;</a></h4>
+<h4 id="adding-new-evdi-node-pre-v190">Adding new EVDI node (pre v1.9.0)<a class="headerlink" href="#adding-new-evdi-node-pre-v190" title="Permanent link">&para;</a></h4>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">int</span> <span class="n">evdi_add_device</span><span class="p">()</span>
 </pre></div>
 </td></tr></table>
@@ -290,7 +293,7 @@ Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
 <p>Use this to tell the kernel module to create a new <code>cardX</code> node for your application to use.</p>
 <p><strong>Return value:</strong>
 <code>1</code> when successful, <code>0</code> otherwise.</p>
-<h4 id="opening-device-nodes">Opening device nodes<a class="headerlink" href="#opening-device-nodes" title="Permanent link">&para;</a></h4>
+<h4 id="opening-device-nodes-pre-v190">Opening device nodes (pre v1.9.0)<a class="headerlink" href="#opening-device-nodes-pre-v190" title="Permanent link">&para;</a></h4>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="n">evdi_handle</span> <span class="nf">evdi_open</span><span class="p">(</span><span class="kt">int</span> <span class="n">device</span><span class="p">);</span>
 </pre></div>
 </td></tr></table>
@@ -299,7 +302,19 @@ Version consists of 3 components formatted as MAJOR.MINOR.PATCH</p>
 Function performs compatibility check with underlying drm device. If version of the
 library and module does not match then the device will not be opened.</p>
 <p><strong>Arguments</strong>: <code>device</code> is a number of card to open, e.g. <code>1</code> means <code>/dev/dri/card1</code>.</p>
-<p><strong>Return value:</strong> an opened device handle to use in following API calls if opening was successful, <code>EVDI_INVALID_HANDLE</code> otherwise.</p>
+<p><strong>Return value:</strong> On success, a handle to the opened device to be used in following API calls. <code>EVDI_INVALID_HANDLE</code> otherwise.</p>
+<h4 id="request-evdi-nodes-since-v190">Request evdi nodes (since v1.9.0)<a class="headerlink" href="#request-evdi-nodes-since-v190" title="Permanent link">&para;</a></h4>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="n">evdi_handle</span> <span class="nf">evdi_open_attached_to</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">sysfs_parent_device</span><span class="p">);</span>
+</pre></div>
+</td></tr></table>
+
+<p>This function attempts to add (if necessary) and open a DRM device node attached to given parent device.
+Linking with another sysfs device is sometimes useful if it is required to reflect such relationship in sysfs.</p>
+<p>The function performs a compatibility check with an underlying drm device. If version of the
+library and module does not match, the device will not be opened.</p>
+<p><strong>Arguments</strong>: <code>sysfs_parent_device</code> is a string with the following format: <code>usb:[busNum]-[portNum1].[portNum2].[portNum3]...</code>, which describes the
+device that evdi is linked to. Or <code>NULL</code> when evdi device node is not linked with any other device.</p>
+<p><strong>Return value:</strong> On success, a handle to the opened device to be used in following API calls. <code>EVDI_INVALID_HANDLE</code> otherwise.</p>
 <h4 id="closing-devices">Closing devices<a class="headerlink" href="#closing-devices" title="Permanent link">&para;</a></h4>
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="kt">void</span> <span class="nf">evdi_close</span><span class="p">(</span><span class="n">evdi_handle</span> <span class="n">handle</span><span class="p">);</span>
 </pre></div>

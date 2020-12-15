@@ -98,8 +98,10 @@
 <li><a href="#quick-start">Quick Start</a></li>
 <li><a href="#typical-application">Typical application</a><ul>
 <li><a href="#evdi-nodes">EVDI nodes</a><ul>
-<li><a href="#adding-new-nodes">Adding new nodes</a></li>
-<li><a href="#opening-and-closing-evdi-node">Opening and closing EVDI node</a></li>
+<li><a href="#adding-new-nodes-pre-v190">Adding new nodes (pre v1.9.0)</a></li>
+<li><a href="#opening-evdi-node-pre-v190">Opening EVDI node (pre v1.9.0)</a></li>
+<li><a href="#requesting-evdi-node-since-v190">Requesting EVDI node (since v1.9.0)</a></li>
+<li><a href="#closing-evdi-node">Closing EVDI node</a></li>
 </ul>
 </li>
 <li><a href="#connecting-and-disconnecting">Connecting and disconnecting</a></li>
@@ -135,13 +137,22 @@ Attempts to connect to other nodes (e.g. related to a built-in GPU) will fail.</
 <p class="admonition-title">Note</p>
 <p>Using EVDI nodes currently requires administrative rights, so applications must be run with <code>sudo</code>, or by root.</p>
 </div>
-<h3 id="adding-new-nodes">Adding new nodes<a class="headerlink" href="#adding-new-nodes" title="Permanent link">&para;</a></h3>
+<h3 id="adding-new-nodes-pre-v190">Adding new nodes (pre v1.9.0)<a class="headerlink" href="#adding-new-nodes-pre-v190" title="Permanent link">&para;</a></h3>
 <p>In order to create a new EVDI <code>cardX</code> node, call <code>evdi_add_device</code> function.
 A single call adds one additional DRM card node that can later be used to connect to.</p>
 <p>At the moment, every extra screen that you want to manage needs a separate node.</p>
-<h3 id="opening-and-closing-evdi-node">Opening and closing EVDI node<a class="headerlink" href="#opening-and-closing-evdi-node" title="Permanent link">&para;</a></h3>
+<h3 id="opening-evdi-node-pre-v190">Opening EVDI node (pre v1.9.0)<a class="headerlink" href="#opening-evdi-node-pre-v190" title="Permanent link">&para;</a></h3>
 <p>Once an available EVDI node is identified, your application should call <code>evdi_open</code>, passing a number of <code>cardX</code> that you want to open.
 This returns an <code>evdi_handle</code> that you will use for following API calls, or <code>EVDI_INVALID_HANDLE</code> if opening failed.</p>
+<h3 id="requesting-evdi-node-since-v190">Requesting EVDI node (since v1.9.0)<a class="headerlink" href="#requesting-evdi-node-since-v190" title="Permanent link">&para;</a></h3>
+<p>Adding and opening evdi devices is easier since libevdi v1.9.0. It's sufficient to call <code>evdi_open_attached_to(NULL)</code> in order to add a new evdi node and open it.</p>
+<p>It is possible to bind evdi devices with usb devices if it is necessary to show such relationship in sysfs.
+It is done via <code>const char *sysfs_parent_device</code> parameter of <code>evdi_open_attached_to</code> function.
+USB parent device is described by a string with the following format: <code>usb:[busNum]-[portNum1].[portNum2].[portNum3]...</code></p>
+<p>e.g.
+A <code>evdi_open_attached_to("usb:2-2.1")</code> call will link <code>/sys/bus/usb/devices/2-2.1/evdi.0</code> to
+<code>/sys/bus/platform/devices/evdi.0</code> which is the first available evdi node.</p>
+<h3 id="closing-evdi-node">Closing EVDI node<a class="headerlink" href="#closing-evdi-node" title="Permanent link">&para;</a></h3>
 <p>In order to close the handle, call <code>evdi_close</code>.</p>
 <h2 id="connecting-and-disconnecting">Connecting and disconnecting<a class="headerlink" href="#connecting-and-disconnecting" title="Permanent link">&para;</a></h2>
 <p>Connecting to EVDI tells DRM subsystem that there is a monitor connected, and from this moment the system is aware of an extra display.
