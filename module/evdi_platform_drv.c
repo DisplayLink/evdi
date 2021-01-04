@@ -116,7 +116,10 @@ int evdi_platform_device_add(struct device *device, struct device *parent)
 {
 	struct evdi_platform_drv_context *ctx =
 		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
-	struct platform_device *pdev = evdi_platform_drv_get_free_device(ctx);
+	struct platform_device *pdev = NULL;
+
+	if (parent)
+		pdev = evdi_platform_drv_get_free_device(ctx);
 
 	if (IS_ERR_OR_NULL(pdev))
 		pdev = evdi_platform_drv_create_new_device(ctx);
