@@ -135,9 +135,15 @@ void evdi_platform_device_link(struct platform_device *pdev,
 
 	snprintf(evdi_name, sizeof(evdi_name), "evdi.%d", pdev->id);
 	ret = sysfs_create_link(&parent->kobj, &pdev->dev.kobj, evdi_name);
-	if (ret)
-		EVDI_FATAL("Failed to create sysfs link to parent device\n");
-	else {
+	if (ret) {
+		EVDI_FATAL("Failed to create sysfs link from parent to evdi device\n");
+		return;
+	}
+	ret = sysfs_create_link(&pdev->dev.kobj, &parent->kobj, "device");
+	if (ret) {
+		EVDI_FATAL("Failed to create sysfs link from evdi to parent device\n");
+		sysfs_remove_link(&parent->kobj, evdi_name);
+	} else {
 		data->symlinked = true;
 		data->parent = parent;
 	}
@@ -148,8 +154,12 @@ void evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
 {
 	struct evdi_platform_device_data *data =
 		(struct evdi_platform_device_data *)platform_get_drvdata(pdev);
+	char evdi_name[10] = { 0 };
 
-	if (data->parent == parent) {
+	if (parent && data->parent == parent) {
+		snprintf(evdi_name, sizeof(evdi_name), "evdi.%d", pdev->id);
+		sysfs_remove_link(&parent->kobj, evdi_name);
+		sysfs_remove_link(&pdev->dev.kobj, "device");
 		data->symlinked = false;
 		data->parent = NULL;
 		EVDI_INFO("Detached from parent device\n");
