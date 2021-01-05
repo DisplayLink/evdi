@@ -39,11 +39,13 @@ struct drm_ioctl_desc evdi_painter_ioctls[] = {
 			  DRM_UNLOCKED),
 };
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
 static const struct vm_operations_struct evdi_gem_vm_ops = {
 	.fault = evdi_gem_fault,
 	.open = drm_gem_vm_open,
 	.close = drm_gem_vm_close,
 };
+#endif
 
 static const struct file_operations evdi_driver_fops = {
 	.owner = THIS_MODULE,
@@ -78,17 +80,25 @@ static struct drm_driver driver = {
 			 | DRIVER_ATOMIC,
 #endif
 	.unload = evdi_driver_unload,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
 	.preclose = evdi_driver_preclose,
+#endif
 
 	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
-	.gem_free_object_unlocked = evdi_gem_free_object,
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
+	// In 5.9 and below we have gem_free_object
 	.gem_free_object = evdi_gem_free_object,
+#elsif LINUX_VERSION_CODE <= KERNEL_VERSION(5, 11, 0)
+	// In 5.9 and 5.10 this is called gem_free_object_unlocked
+	.gem_free_object_unlocked = evdi_gem_free_object,
+	// Note that gem_free_object_unlocked no longer exists in 5.11 - it needs to be added to the gem object instead
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
+    // In 5.11+, this is set in the object instance
 	.gem_vm_ops = &evdi_gem_vm_ops,
+#endif
 
 	.dumb_create = evdi_dumb_create,
 	.dumb_map_offset = evdi_gem_mmap,
@@ -102,8 +112,11 @@ static struct drm_driver driver = {
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.gem_prime_import = drm_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
+	// In kernel 5.11, these have been moved to the object instance
 	.gem_prime_export = drm_gem_prime_export,
 	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
+#endif
 	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
 	.enable_vblank = evdi_enable_vblank,
