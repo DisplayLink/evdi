@@ -18,6 +18,17 @@
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>
 
+void evdi_gem_free_object(struct drm_gem_object *gem_obj);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+static const struct vm_operations_struct evdi_gem_vm_ops = {
+	.fault = evdi_gem_fault,
+	.open = drm_gem_vm_open,
+	.close = drm_gem_vm_close,
+};
+#endif
+
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -41,6 +52,9 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size)
 {
 	struct evdi_gem_object *obj;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+	struct drm_gem_object_funcs *funcs;
+#endif
 
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (obj == NULL)
@@ -50,6 +64,21 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		kfree(obj);
 		return NULL;
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+	funcs = kzalloc(sizeof(struct drm_gem_object_funcs), GFP_KERNEL);
+	if (funcs == NULL) {
+		kfree(obj);
+		return NULL;
+	}
+	funcs->free = evdi_gem_free_object;
+	funcs->vm_ops = &evdi_gem_vm_ops;
+	// This is just setting the default drm_gem_prime_export kernel function, so wouldn't NULL also work?
+	funcs->export = drm_gem_prime_export;
+	funcs->get_sg_table = evdi_prime_get_sg_table;
+
+	obj->base.funcs = funcs;
+#endif
 
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	dma_resv_init(&obj->_resv);
@@ -186,7 +215,11 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int ret;
 
 	if (obj->base.import_attach) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
+#else
+		dma_buf_vmap(obj->base.import_attach->dmabuf, obj->vmapping);
+#endif
 		if (!obj->vmapping)
 			return -ENOMEM;
 		return 0;
@@ -239,6 +272,12 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 	reservation_object_fini(&obj->_resv);
 #endif
 	obj->resv = NULL;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+	// We allocated this in evdi_gem_alloc_object
+	kfree(obj->base.funcs);
+#endif
+
 }
 
 /*
