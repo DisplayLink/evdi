@@ -37,6 +37,8 @@ struct drm_ioctl_desc evdi_painter_ioctls[] = {
 			  DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(EVDI_DDCCI_RESPONSE, evdi_painter_ddcci_response_ioctl,
 			  DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(EVDI_ENABLE_CURSOR_EVENTS, evdi_painter_enable_cursor_events_ioctl,
+			  DRM_UNLOCKED),
 };
 
 static const struct vm_operations_struct evdi_gem_vm_ops = {
@@ -130,18 +132,10 @@ static int evdi_driver_setup(struct drm_device *dev)
 	evdi->ddev = dev;
 	dev->dev_private = evdi;
 
+	evdi->cursor_events_enabled = false;
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err;
-
-	evdi->cursor_attr = (struct dev_ext_attribute) {
-	    __ATTR(cursor_events, 0644, device_show_bool, device_store_bool),
-	    &evdi->cursor_events_enabled
-	};
-	ret = device_create_file(dev->dev, &evdi->cursor_attr.attr);
-	if (ret)
-		goto err_fb;
-
 
 	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
@@ -190,7 +184,6 @@ void evdi_driver_unload(struct drm_device *dev)
 	if (evdi->cursor)
 		evdi_cursor_free(evdi->cursor);
 
-	device_remove_file(dev->dev, &evdi->cursor_attr.attr);
 	evdi_painter_cleanup(evdi->painter);
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);

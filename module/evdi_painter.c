@@ -1363,3 +1363,14 @@ unlock:
 	painter_unlock(painter);
 	return result;
 }
+
+int evdi_painter_enable_cursor_events_ioctl(struct drm_device *drm_dev, void *data,
+					__always_unused struct drm_file *file)
+{
+	struct evdi_device *evdi = drm_dev->dev_private;
+	struct drm_evdi_enable_cursor_events *cmd = data;
+
+	evdi->cursor_events_enabled = cmd->enable;
+
+	return 0;
+}

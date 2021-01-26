@@ -695,39 +695,17 @@ void evdi_disconnect(evdi_handle handle)
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
 }
 
-void evdi_enable_cursor_events(evdi_handle handle)
+void evdi_enable_cursor_events(evdi_handle handle, bool enable)
 {
-	char path[PATH_MAX] = {0};
-	static const char enable[] = "Y";
-	int path_len = 0;
-	FILE *cursor_evs = NULL;
-	size_t written = 0;
-	const size_t elem_bytes = 1;
-	int errcode = 0;
+	struct drm_evdi_enable_cursor_events cmd = {
+		.enable = enable,
+	};
 
-	if (evdi_device_to_platform(handle->device_index, path) !=
-	    AVAILABLE) {
-		evdi_log("Failed to enable cursor events");
-		evdi_log("Device /dev/dri/card%d, device is not available.",
-			handle->device_index);
-		return;
-	}
+	evdi_log("%s cursor events on /dev/dri/card%d",
+		(enable ? "Enabling" : "Disabling"),
+		handle->device_index);
 
-	path_len = strlen(path);
-	snprintf(path+path_len, PATH_MAX-path_len, "/cursor_events");
-	cursor_evs = fopen(path, "w");
-	if (cursor_evs == NULL) {
-		evdi_log("Failed to open %s, err: %s", path, strerror(errno));
-		return;
-	}
-
-	written = fwrite(enable, elem_bytes, sizeof(enable), cursor_evs);
-	errcode = errno;
-	fclose(cursor_evs);
-	evdi_log("Enabling cursor events on /dev/dri/card%d %s %s",
-		handle->device_index,
-		written < sizeof(enable) ? "failed: " : "succeeded",
-		written < sizeof(enable) ? strerror(errcode) : "");
+	do_ioctl(handle->fd, DRM_IOCTL_EVDI_ENABLE_CURSOR_EVENTS, &cmd, "enable cursor events");
 }
 
 void evdi_grab_pixels(evdi_handle handle,

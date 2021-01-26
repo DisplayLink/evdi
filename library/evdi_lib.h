@@ -109,7 +109,7 @@ void evdi_connect(evdi_handle handle, const unsigned char *edid,
 		  const unsigned int edid_length,
 		  const uint32_t sku_area_limit);
 void evdi_disconnect(evdi_handle handle);
-void evdi_enable_cursor_events(evdi_handle handle);
+void evdi_enable_cursor_events(evdi_handle handle, bool enable);
 
 void evdi_grab_pixels(evdi_handle handle,
 		      struct evdi_rect *rects,

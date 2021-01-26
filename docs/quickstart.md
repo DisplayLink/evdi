@@ -82,7 +82,7 @@ There are two ways to handle cursor:
 
  * Automatic cursor compositing on framebuffer(default). Every cursor change causes `update_ready` event to be raised. In the following grab pixels operation evdi will compose cursor
 on the user supplied framebuffer.
- * Cursor change notifications. Enabled with `evdi_enable_cursor_events` function call.
+ * Cursor change notifications. Controlled with `evdi_enable_cursor_events` function call.
 In that mode the responsibility for cursor blending is passed to the library client. Instead of `update_ready` event the `cursor_set` and `cursor_move` notifications are sent.
 
 ## DDC/CI
