@@ -211,6 +211,9 @@ static void evdi_gem_put_pages(struct evdi_gem_object *obj)
 
 int evdi_gem_vmap(struct evdi_gem_object *obj)
 {
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	struct dma_buf_map map;
+#endif
 	int page_count = obj->base.size / PAGE_SIZE;
 	int ret;
 
@@ -218,7 +221,8 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 #else
-		dma_buf_vmap(obj->base.import_attach->dmabuf, obj->vmapping);
+		dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
+		obj->vmapping = map.vaddr;
 #endif
 		if (!obj->vmapping)
 			return -ENOMEM;
