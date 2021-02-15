@@ -99,7 +99,7 @@ static struct drm_driver driver = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
 	// In 5.9 and below we have gem_free_object
 	.gem_free_object = evdi_gem_free_object,
-#elsif LINUX_VERSION_CODE <= KERNEL_VERSION(5, 11, 0)
+#elif LINUX_VERSION_CODE <= KERNEL_VERSION(5, 11, 0)
 	// In 5.9 and 5.10 this is called gem_free_object_unlocked
 	.gem_free_object_unlocked = evdi_gem_free_object,
 	// Note that gem_free_object_unlocked no longer exists in 5.11 - it needs to be added to the gem object instead
