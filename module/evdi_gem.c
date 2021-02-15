@@ -20,7 +20,7 @@
 
 void evdi_gem_free_object(struct drm_gem_object *gem_obj);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 static const struct vm_operations_struct evdi_gem_vm_ops = {
 	.fault = evdi_gem_fault,
 	.open = drm_gem_vm_open,
@@ -52,7 +52,7 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size)
 {
 	struct evdi_gem_object *obj;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 	struct drm_gem_object_funcs *funcs;
 #endif
 
@@ -65,7 +65,7 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		return NULL;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 	funcs = kzalloc(sizeof(struct drm_gem_object_funcs), GFP_KERNEL);
 	if (funcs == NULL) {
 		kfree(obj);
@@ -218,7 +218,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int ret;
 
 	if (obj->base.import_attach) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
+#if KERNEL_VERSION(5, 11, 0) > LINUX_VERSION_CODE
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 #else
 		dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
@@ -277,7 +277,7 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 #endif
 	obj->resv = NULL;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 	// We allocated this in evdi_gem_alloc_object
 	kfree(obj->base.funcs);
 #endif
