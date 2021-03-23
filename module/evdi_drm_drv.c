@@ -80,7 +80,6 @@ static struct drm_driver driver = {
 			 | DRIVER_ATOMIC,
 #endif
 	.unload = evdi_driver_unload,
-	.preclose = evdi_driver_preclose,
 
 	.postclose = evdi_driver_postclose,
 
@@ -200,11 +199,6 @@ static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
 	EVDI_CHECKPT();
 	if (evdi)
 		evdi_painter_close(evdi, file);
-}
-
-void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
-{
-	evdi_driver_close(drm_dev, file);
 }
 
 void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
