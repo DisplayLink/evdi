@@ -224,10 +224,20 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int ret;
 
 	if (obj->base.import_attach) {
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+		struct dma_buf_map map;
+
+		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
+		if (ret)
+			return -ENOMEM;
+		obj->vmapping = map.vaddr;
+		return 0;
+#else
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 		if (!obj->vmapping)
 			return -ENOMEM;
 		return 0;
+#endif
 	}
 
 	ret = evdi_gem_get_pages(obj, GFP_KERNEL);
