@@ -61,17 +61,6 @@ static const struct file_operations evdi_driver_fops = {
 	.llseek = noop_llseek,
 };
 
-static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-			      __always_unused unsigned int pipe)
-{
-	return 1;
-}
-
-static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-				__always_unused unsigned int pipe)
-{
-}
-
 static struct drm_driver driver = {
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
@@ -106,9 +95,6 @@ static struct drm_driver driver = {
 	.gem_prime_export = drm_gem_prime_export,
 	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
 	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
-
-	.enable_vblank = evdi_enable_vblank,
-	.disable_vblank = evdi_disable_vblank,
 
 	.name = DRIVER_NAME,
 	.desc = DRIVER_DESC,
