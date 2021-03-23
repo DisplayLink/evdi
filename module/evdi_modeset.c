@@ -56,7 +56,7 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
-	, __always_unused struct drm_crtc_state *old_state
+	, __always_unused struct drm_atomic_state *unused_state
 	)
 {
 	struct drm_crtc_state *state = crtc->state;
