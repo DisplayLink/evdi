@@ -73,12 +73,16 @@ static struct drm_driver driver = {
 	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
+#if KERNEL_VERSION(5, 11, 0) > LINUX_VERSION_CODE
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
 	.gem_free_object_unlocked = evdi_gem_free_object,
 #else
 	.gem_free_object = evdi_gem_free_object,
 #endif
+	.gem_prime_export = drm_gem_prime_export,
+	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
 	.gem_vm_ops = &evdi_gem_vm_ops,
+#endif
 
 	.dumb_create = evdi_dumb_create,
 	.dumb_map_offset = evdi_gem_mmap,
@@ -92,8 +96,6 @@ static struct drm_driver driver = {
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.gem_prime_import = drm_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
-	.gem_prime_export = drm_gem_prime_export,
-	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
 	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
 	.name = DRIVER_NAME,

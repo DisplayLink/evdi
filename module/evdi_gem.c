@@ -37,6 +37,19 @@ uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 	return it_handle;
 }
 
+static const struct vm_operations_struct evdi_gem_vm_ops = {
+	.fault = evdi_gem_fault,
+	.open = drm_gem_vm_open,
+	.close = drm_gem_vm_close,
+};
+
+static const struct drm_gem_object_funcs evdi_drm_gem_object_funcs = {
+	.export = drm_gem_prime_export,
+	.free = evdi_gem_free_object,
+	.get_sg_table = evdi_prime_get_sg_table,
+	.vm_ops = &evdi_gem_vm_ops
+};
+
 struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 					      size_t size)
 {
@@ -46,6 +59,7 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 	if (obj == NULL)
 		return NULL;
 
+	obj->base.funcs = &evdi_drm_gem_object_funcs;
 	if (drm_gem_object_init(dev, &obj->base, size) != 0) {
 		kfree(obj);
 		return NULL;
