@@ -56,23 +56,31 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	, struct drm_atomic_state *state
+#else
 	, __always_unused struct drm_crtc_state *old_state
+#endif
 	)
 {
-	struct drm_crtc_state *state = crtc->state;
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
+#else
+	struct drm_crtc_state *crtc_state = crtc->state;
+#endif
 	struct evdi_device *evdi = crtc->dev->dev_private;
 
 
-	if (state->mode_changed && state->active)
-		evdi_painter_mode_changed_notify(evdi, &state->adjusted_mode);
+	if (crtc_state->mode_changed && crtc_state->active)
+		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
 
-	if (state->active_changed)
+	if (crtc_state->active_changed)
 		evdi_painter_dpms_notify(evdi,
-			state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
+			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
 
-	evdi_painter_set_vblank(evdi->painter, crtc, state->event);
+	evdi_painter_set_vblank(evdi->painter, crtc, crtc_state->event);
 	evdi_painter_send_update_ready_if_needed(evdi->painter);
-	state->event = NULL;
+	crtc_state->event = NULL;
 }
 
 static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
@@ -167,6 +175,17 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
+{
+	return 1;
+}
+
+static void evdi_disable_vblank(__always_unused struct drm_crtc *crtc)
+{
+}
+#endif
+
 static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.reset                  = drm_atomic_helper_crtc_reset,
 	.destroy                = evdi_crtc_destroy,
@@ -176,7 +195,11 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
 
 	.cursor_set2            = evdi_crtc_cursor_set,
-	.cursor_move            = evdi_crtc_cursor_move
+	.cursor_move            = evdi_crtc_cursor_move,
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	.enable_vblank          = evdi_enable_vblank,
+	.disable_vblank         = evdi_disable_vblank,
+#endif
 };
 
 static void evdi_plane_atomic_update(struct drm_plane *plane,

@@ -863,6 +863,8 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 			cursor_set.buffer = malloc(size);
 			memcpy(cursor_set.buffer, ptr, size);
 			munmap(ptr, size);
+		} else {
+			evdi_log("Error: mmap failed with error: %s", strerror(errno));
 		}
 	}
 
@@ -938,10 +940,13 @@ static void evdi_handle_event(evdi_handle handle,
 		if (evtctx->cursor_set_handler) {
 			struct drm_evdi_event_cursor_set *event =
 				(struct drm_evdi_event_cursor_set *) e;
+			struct evdi_cursor_set cursor_set = to_evdi_cursor_set(handle, event);
 
-			evtctx->cursor_set_handler(to_evdi_cursor_set(handle,
-								      event),
-						   evtctx->user_data);
+			if (cursor_set.enabled && cursor_set.buffer == NULL)
+				evdi_log("Error: Cursor buffer is null!");
+			else
+				evtctx->cursor_set_handler(cursor_set,
+							   evtctx->user_data);
 		}
 		break;
 

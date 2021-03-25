@@ -31,7 +31,14 @@ static struct evdi_platform_drv_context {
 	unsigned int dev_count;
 	struct platform_device *devices[EVDI_DEVICE_COUNT_MAX];
 	struct notifier_block usb_notifier;
+	struct mutex lock;
 } g_ctx;
+
+#define evdi_platform_drv_context_lock(ctx) \
+		mutex_lock(&ctx->lock)
+
+#define evdi_platform_drv_context_unlock(ctx) \
+		mutex_unlock(&ctx->lock)
 
 static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
 		unsigned long action,
@@ -54,8 +61,10 @@ static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
 		if (pdev->dev.parent == &usb_dev->dev) {
 			EVDI_INFO("Parent USB removed. Removing evdi.%d\n", i);
 			evdi_platform_dev_destroy(pdev);
+			evdi_platform_drv_context_lock((&g_ctx));
 			g_ctx.dev_count--;
 			g_ctx.devices[i] = NULL;
+			evdi_platform_drv_context_unlock((&g_ctx));
 		}
 	}
 	return 0;
@@ -118,11 +127,13 @@ int evdi_platform_device_add(struct device *device, struct device *parent)
 		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 	struct platform_device *pdev = NULL;
 
+	evdi_platform_drv_context_lock(ctx);
 	if (parent)
 		pdev = evdi_platform_drv_get_free_device(ctx);
 
 	if (IS_ERR_OR_NULL(pdev))
 		pdev = evdi_platform_drv_create_new_device(ctx);
+	evdi_platform_drv_context_unlock(ctx);
 
 	if (IS_ERR_OR_NULL(pdev))
 		return -EINVAL;
@@ -133,19 +144,18 @@ int evdi_platform_device_add(struct device *device, struct device *parent)
 
 int evdi_platform_add_devices(struct device *device, unsigned int val)
 {
-	struct evdi_platform_drv_context *ctx =
-		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
+	int dev_count = evdi_platform_device_count(device);
 
 	if (val == 0) {
 		EVDI_WARN("Adding 0 devices has no effect\n");
 		return 0;
 	}
-	if (val > EVDI_DEVICE_COUNT_MAX - ctx->dev_count) {
+	if (val > EVDI_DEVICE_COUNT_MAX - dev_count) {
 		EVDI_ERROR("Evdi device add failed. Too many devices.\n");
 		return -EINVAL;
 	}
 
-	EVDI_DEBUG("Increasing device count to %u\n", ctx->dev_count + val);
+	EVDI_DEBUG("Increasing device count to %u\n", dev_count + val);
 	while (val-- && evdi_platform_device_add(device, NULL) == 0)
 		;
 	return 0;
@@ -157,6 +167,7 @@ void evdi_platform_remove_all_devices(struct device *device)
 	struct evdi_platform_drv_context *ctx =
 		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
 
+	evdi_platform_drv_context_lock(ctx);
 	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
 		if (ctx->devices[i]) {
 			EVDI_INFO("Removing evdi %d\n", i);
@@ -166,14 +177,21 @@ void evdi_platform_remove_all_devices(struct device *device)
 		}
 	}
 	ctx->dev_count = 0;
+	evdi_platform_drv_context_unlock(ctx);
 }
 
 int evdi_platform_device_count(struct device *device)
 {
-	struct evdi_platform_drv_context *ctx =
-		(struct evdi_platform_drv_context *)dev_get_drvdata(device);
+	int count = 0;
+	struct evdi_platform_drv_context *ctx = NULL;
 
-	return ctx->dev_count;
+	ctx = (struct evdi_platform_drv_context *)dev_get_drvdata(device);
+	evdi_platform_drv_context_lock(ctx);
+	count = ctx->dev_count;
+	evdi_platform_drv_context_unlock(ctx);
+
+	return count;
+
 }
 
 static struct platform_driver evdi_platform_driver = {
@@ -196,6 +214,7 @@ static int __init evdi_init(void)
 	memset(&g_ctx, 0, sizeof(g_ctx));
 	g_ctx.root_dev = root_device_register(DRIVER_NAME);
 	g_ctx.usb_notifier.notifier_call = evdi_platform_drv_usb;
+	mutex_init(&g_ctx.lock);
 	dev_set_drvdata(g_ctx.root_dev, &g_ctx);
 
 	usb_register_notify(&g_ctx.usb_notifier);

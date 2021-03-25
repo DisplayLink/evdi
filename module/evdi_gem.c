@@ -18,6 +18,22 @@
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>
 
+
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+static const struct vm_operations_struct evdi_gem_vm_ops = {
+	.fault = evdi_gem_fault,
+	.open = drm_gem_vm_open,
+	.close = drm_gem_vm_close,
+};
+
+static struct drm_gem_object_funcs gem_obj_funcs = {
+	.free = evdi_gem_free_object,
+	.vm_ops = &evdi_gem_vm_ops,
+	.export = drm_gem_prime_export,
+	.get_sg_table = evdi_prime_get_sg_table,
+};
+#endif
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -57,6 +73,10 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 	reservation_object_init(&obj->_resv);
 #endif
 	obj->resv = &obj->_resv;
+
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	obj->base.funcs = &gem_obj_funcs;
+#endif
 
 	return obj;
 }
@@ -210,9 +230,18 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int ret;
 
 	if (obj->base.import_attach) {
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+		struct dma_buf_map map;
+
+		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
+		if (ret)
+			return -ENOMEM;
+		obj->vmapping = map.vaddr;
+#else
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 		if (!obj->vmapping)
 			return -ENOMEM;
+#endif
 		return 0;
 	}
 
@@ -229,7 +258,13 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(obj->vmapping);
+
+		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
+#else
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, obj->vmapping);
+#endif
 		obj->vmapping = NULL;
 		return;
 	}
@@ -321,7 +356,11 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 		return ERR_PTR(-ENOMEM);
 	}
 
+#if KERNEL_VERSION(5, 12, 0) <= LINUX_VERSION_CODE
+	drm_prime_sg_to_page_array(sg, obj->pages, npages);
+#else
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
+#endif
 	obj->sg = sg;
 	return &obj->base;
 }

@@ -28,6 +28,8 @@
 #include "evdi_debug.h"
 #include "evdi_platform_drv.h"
 
+#define MAX_EVDI_USB_ADDR 10
+
 static ssize_t version_show(__always_unused struct device *dev,
 			    __always_unused struct device_attribute *attr,
 			    char *buf)
@@ -44,7 +46,6 @@ static ssize_t count_show(__always_unused struct device *dev,
 }
 
 struct evdi_usb_addr {
-	#define MAX_EVDI_USB_ADDR 10
 	int addr[MAX_EVDI_USB_ADDR];
 	int len;
 	struct usb_device *usb;
@@ -58,14 +59,16 @@ static ssize_t add_device_with_usb_path(struct device *dev,
 {
 	char *usb_path = kstrdup(buf, GFP_KERNEL);
 	char *temp_path = usb_path;
-	char *bus_token = NULL;
-	char *usb_token = NULL;
+	char *bus_token;
+	char *usb_token;
 	char *usb_token_copy = NULL;
-	char *itf_token = NULL;
-	char *token = NULL;
-	char *bus = NULL;
-	char *port = NULL;
+	char *token;
+	char *bus;
+	char *port;
 	struct evdi_usb_addr usb_addr;
+
+	if (!usb_path)
+		return -ENOMEM;
 
 	memset(&usb_addr, 0, sizeof(usb_addr));
 	temp_path = strnstr(temp_path, "usb:", count);
@@ -83,7 +86,8 @@ static ssize_t add_device_with_usb_path(struct device *dev,
 	if (!usb_token)
 		goto err_parse_usb_path;
 
-	itf_token = strsep(&temp_path, ":");
+	/* Separate trailing ':*' from usb_token */
+	strsep(&temp_path, ":");
 
 	token = usb_token_copy = kstrdup(usb_token, GFP_KERNEL);
 	bus = strsep(&token, "-");

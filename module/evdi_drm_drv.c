@@ -41,11 +41,14 @@ struct drm_ioctl_desc evdi_painter_ioctls[] = {
 			  DRM_UNLOCKED),
 };
 
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#else
 static const struct vm_operations_struct evdi_gem_vm_ops = {
 	.fault = evdi_gem_fault,
 	.open = drm_gem_vm_open,
 	.close = drm_gem_vm_close,
 };
+#endif
 
 static const struct file_operations evdi_driver_fops = {
 	.owner = THIS_MODULE,
@@ -61,6 +64,8 @@ static const struct file_operations evdi_driver_fops = {
 	.llseek = noop_llseek,
 };
 
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#else
 static int evdi_enable_vblank(__always_unused struct drm_device *dev,
 			      __always_unused unsigned int pipe)
 {
@@ -71,6 +76,7 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 				__always_unused unsigned int pipe)
 {
 }
+#endif
 
 static struct drm_driver driver = {
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
@@ -80,21 +86,28 @@ static struct drm_driver driver = {
 			 | DRIVER_ATOMIC,
 #endif
 	.unload = evdi_driver_unload,
-	.preclose = evdi_driver_preclose,
 
 	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
 	.gem_free_object_unlocked = evdi_gem_free_object,
 #else
 	.gem_free_object = evdi_gem_free_object,
 #endif
+
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#else
 	.gem_vm_ops = &evdi_gem_vm_ops,
+#endif
 
 	.dumb_create = evdi_dumb_create,
 	.dumb_map_offset = evdi_gem_mmap,
+#if KERNEL_VERSION(5, 12, 0) <= LINUX_VERSION_CODE
+#else
 	.dumb_destroy = drm_gem_dumb_destroy,
+#endif
 
 	.ioctls = evdi_painter_ioctls,
 	.num_ioctls = ARRAY_SIZE(evdi_painter_ioctls),
@@ -104,12 +117,15 @@ static struct drm_driver driver = {
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.gem_prime_import = drm_gem_prime_import,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#else
+	.preclose = evdi_driver_preclose,
 	.gem_prime_export = drm_gem_prime_export,
 	.gem_prime_get_sg_table = evdi_prime_get_sg_table,
-	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
-
 	.enable_vblank = evdi_enable_vblank,
 	.disable_vblank = evdi_disable_vblank,
+#endif
+	.gem_prime_import_sg_table = evdi_prime_import_sg_table,
 
 	.name = DRIVER_NAME,
 	.desc = DRIVER_DESC,
@@ -135,7 +151,7 @@ static int evdi_driver_setup(struct drm_device *dev)
 	evdi->cursor_events_enabled = false;
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
-		goto err;
+		goto err_free;
 
 	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
@@ -143,7 +159,7 @@ static int evdi_driver_setup(struct drm_device *dev)
 #ifdef CONFIG_FB
 	ret = evdi_fbdev_init(dev);
 	if (ret)
-		goto err;
+		goto err_cursor;
 #endif /* CONFIG_FB */
 
 	ret = drm_vblank_init(dev, 1);
@@ -161,11 +177,11 @@ static int evdi_driver_setup(struct drm_device *dev)
 err_fb:
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
+err_cursor:
 #endif /* CONFIG_FB */
-err:
-	EVDI_ERROR("%d\n", ret);
-	if (evdi->cursor)
-		evdi_cursor_free(evdi->cursor);
+	evdi_cursor_free(evdi->cursor);
+err_free:
+	EVDI_ERROR("Failed to setup drm device %d\n", ret);
 	kfree(evdi);
 	return ret;
 }
