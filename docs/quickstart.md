@@ -11,7 +11,7 @@ Applications using EVDI will typically:
 * find a free EVDI node, or add a new node if none was found; then open it
 * connect to the EVDI node, letting the DRM subsystem know what is the monitor that the application drives
 * allocate memory for, and register buffer(s) that will be used to receive screen updates
-* request and consume updates and other notifications in a loop
+* request and consume updates and other notifications in a loop whenever the kernel [signals updates are ready](details.md#evdi_selectable)
 
 ## EVDI nodes
 
@@ -21,14 +21,14 @@ In order to distinguish non-EVDI nodes from a node that's created by EVDI kernel
 The library only allows to connect to DRM nodes that are created by EVDI.
 Attempts to connect to other nodes (e.g. related to a built-in GPU) will fail.
 
-!!! note
-    Using EVDI nodes currently requires administrative rights, so applications must be run with `sudo`, or by root.
-
 ### Adding new nodes (pre v1.9.0)
+
+!!! note
+    Requires administrative rights. To call this your application needs to
+    have been run with `sudo`, or by root.
 
 In order to create a new EVDI `cardX` node, call `evdi_add_device` function.
 A single call adds one additional DRM card node that can later be used to connect to.
-
 
 At the moment, every extra screen that you want to manage needs a separate node.
 
@@ -38,6 +38,10 @@ Once an available EVDI node is identified, your application should call `evdi_op
 This returns an `evdi_handle` that you will use for following API calls, or `EVDI_INVALID_HANDLE` if opening failed.
 
 ### Requesting EVDI node (since v1.9.0)
+
+!!! note
+    Requires administrative rights. To call this your application needs to
+    have been run with `sudo`, or by root.
 
 Adding and opening evdi devices is easier since libevdi v1.9.0. It's sufficient to call `evdi_open_attached_to(NULL)` in order to add a new evdi node and open it.
 
@@ -49,10 +53,27 @@ e.g.
 A `evdi_open_attached_to("usb:2-2.1")` call will link `/sys/bus/usb/devices/2-2.1/evdi.0` to
 `/sys/bus/platform/devices/evdi.0` which is the first available evdi node.
 
+If an available device exists calling this does not require administrative
+rights. Otherwise, administrative rights are needed to create a new device.
+You can ensure a device is available by
+[configuring the kernel module](details.md#module-parameters) to create devices
+when it is loaded.
 
 ### Closing EVDI node
 
 In order to close the handle, call `evdi_close`.
+
+### Removing EVDI nodes
+
+!!! note
+    Requires administrative rights. To write to this file your application
+    needs to have been run with `sudo`, or by root.
+
+Write to `/sys/devices/evdi/remove_all`. For example:
+
+```bash
+echo 1 | sudo tee /sys/devices/evdi/remove_all
+```
 
 ## Connecting and disconnecting
 
@@ -92,16 +113,15 @@ Data requests to this adapter for DDC/CI (on address 0x37) are passed to userspa
 
 ## Running loop
 
-After registering buffers, the application should start requesting updates for them. This is done using `evdi_request_update`.
-You should call it when you intend to consume pixels for the screen.
-
-Once the request to update buffer is handled by the kernel module, you can use `evdi_grab_pixels` to get the data in your app.
-This also includes finding out which areas of the buffer are in fact modified, compared to a previous update.
+You are expected to promptly handle events and to
+[request updates](details.md#requesting-an-update) and
+[grab pixels](details.md#grabbing-pixels) regularly for any virtual monitor you
+have connected. If you fail to do so the device may become unresponsive.
 
 ## Events and notifications
 
 Due to its design and split of responsibilities between the kernel and userspace code, EVDI's working model is an asynchronous one.
-Therefore, your application should monitor a file descriptor exposed by `evdi_get_event_ready` function, and once it becomes ready to read,
+Therefore, your application should monitor a file descriptor exposed by `evdi_get_event_ready` function, and whenever it becomes ready to read,
 call `evdi_handle_events` to dispatch events that are being signalled to the right handlers.
 
 The handlers are defined in your application and are shared with the library through a `evdi_event_context` structure that `evdi_handle_events` uses for dispatching the call.

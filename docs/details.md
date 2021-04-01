@@ -285,7 +285,7 @@ and use in all following API calls to indicate which EVDI device you communicate
 ### evdi_selectable
 
 A typedef denoting a file descriptor you can watch to know when there are events being signalled from the kernel module.
-Each opened EVDI device handle has its own descriptor to watch.
+Each opened EVDI device handle has its own descriptor to watch, which you can get with `evdi_get_event_ready`.
 When the descriptor becomes ready to read from, the application should call `evdi_handle_events` to dispatch notifications to its handlers.
 
 ### evdi_device_status
