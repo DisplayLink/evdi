@@ -1,5 +1,33 @@
 # Extensible Virtual Display Interface
 
+## (Use at own risk) Hack-fixes for slow screen update rate on AMD/DisplayLink
+
+Out of pure curiosity I have been investigating the slow screen update rate on AMD laptops when driving DisplayLink screens. 
+More details about my findings I shared in this PR: https://github.com/DisplayLink/evdi/pull/282.
+
+Work around #1 (Gnome/Wayland only): https://github.com/DisplayLink/evdi/pull/282
+
+Work-around #2 
+This branch. This has been working fairly OK on Debian 11 on both Gnome/Wayland and Gnome/X11 for two evenings now. I do not have other DE's to try. I am using Thinkpad T14s with AMD 4750U with a 4K DisplayLink dock. I think this could only work on AMD APU's. I thought I could share it in case anyone is willing to try it.
+
+About this hack-fix:
+Slow screen update rate is related to the slow texture copy in EVDI. The imported dma-buf from AMDGPU is mapped into virtual address space by the AMDGPU driver and it hits quite slow copy path from GPU to CPU buffer (~500MB/s). Since we have backing physical pages we request additional virtual mapping from the kernel directly ignoring AMDGPU driver's mapping. The mapping is only done for the duration of the copy and then it is released immediately. The new mapping gives (10GB/s rate) and it makes the screen usable. This additional mapping is probably not very legal to do, and there could be problems down the line, but it was nice to see it working:)
+  
+
+
+How to use it.
+(make sure you know how to revert it in case it does not work)
+1. Install latest DisplayLink driver, get your DisplayLink screen to work (although with slow update rate)
+2. Clone this repo and checkout this branch: amd_vmap_texture
+3. Build the kernel module (cd evdi/module, then make)
+4. sudo modinfo evdi (to get the location of the running kernel module)
+5. sudo cp ./evdi.ko (location from #4)
+6. append "vmap_texture=1" to /etc/modprove/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
+7. reboot.
+
+
+
+
 [![Build Status](https://travis-ci.org/DisplayLink/evdi.svg?branch=devel)](https://travis-ci.org/DisplayLink/evdi)
 
 The Extensible Virtual Display Interface (EVDI) is a Linux&reg; kernel module that enables management of multiple screens, allowing user-space programs to take control over what happens with the image. It is essentially a virtual display you can add, remove and receive screen updates for, in an application that uses the `libevdi` library.
