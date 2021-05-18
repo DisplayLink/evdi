@@ -158,15 +158,25 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 {
 	struct drm_framebuffer *fb = &efb->base;
 	struct drm_clip_rect *r;
+  int page_count;
+  void *mapping = NULL;
 
 	EVDI_CHECKPT();
 
+  if (evdi_vmap_texture) {
+    page_count = efb->obj->base.size / PAGE_SIZE;
+    mapping = vmap(efb->obj->pages, page_count, 0, PAGE_KERNEL);
+    if (!mapping) {
+       EVDI_WARN("AMD work-around failed, switching it off");
+       evdi_vmap_texture = 0;
+    }
+  }
 	for (r = rects; r != rects + num_rects; ++r) {
 		const int byte_offset = r->x1 * 4;
 		const int byte_span = (r->x2 - r->x1) * 4;
 		const int src_offset = fb->offsets[0] +
 				       fb->pitches[0] * r->y1 + byte_offset;
-		const char *src = (char *)efb->obj->vmapping + src_offset;
+		const char *src = (char *)(mapping ? mapping : efb->obj->vmapping) + src_offset;
 		const int dst_offset = buf_byte_stride * r->y1 + byte_offset;
 		char __user *dst = buffer + dst_offset;
 		int y = r->y2 - r->y1;
@@ -188,7 +198,9 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			dst += buf_byte_stride;
 		}
 	}
-
+  if (mapping) {
+    vunmap(mapping);
+  }
 	return 0;
 }
 
@@ -1125,6 +1137,10 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				       DMA_FROM_DEVICE);
 
 err_fb:
+	if (efb->obj->vmapping) {
+    evdi_gem_vunmap(efb->obj);
+  }
+	
 	evdi_send_vblank(crtc, vblank);
 
 	drm_framebuffer_put(&efb->base);
