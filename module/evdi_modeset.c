@@ -36,6 +36,7 @@ static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
 static void evdi_crtc_disable(__always_unused struct drm_crtc *crtc)
 {
 	EVDI_CHECKPT();
+	drm_crtc_vblank_off(crtc);
 }
 
 static void evdi_crtc_destroy(struct drm_crtc *crtc)
