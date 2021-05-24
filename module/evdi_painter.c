@@ -591,7 +591,8 @@ struct drm_clip_rect evdi_painter_framebuffer_size(
 	painter_lock(painter);
 	efb = painter->scanout_fb;
 	if (!efb) {
-		EVDI_DEBUG("Scanout buffer not set.");
+		if (painter->is_connected)
+			EVDI_DEBUG("Scanout buffer not set.");
 		goto unlock;
 	}
 	rect.x1 = 0;
@@ -618,7 +619,8 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	painter_lock(painter);
 	efb = painter->scanout_fb;
 	if (!efb) {
-		EVDI_DEBUG("(dev=%d) Skip clip rect. Scanout buffer not set.\n",
+		if (painter->is_connected)
+			EVDI_DEBUG("(dev=%d) Skip clip rect. Scanout buffer not set.\n",
 			   evdi->dev_index);
 		goto unlock;
 	}
