@@ -707,17 +707,34 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 	}
 }
 
+const char *dpms_str[] = { "on", "standby", "suspend", "off" };
+
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 {
 	struct evdi_painter *painter = evdi->painter;
+	const char *mode_str;
 
-	if (painter) {
-		EVDI_DEBUG("(dev=%d) Notifying dpms mode: %d\n",
-			   evdi->dev_index, mode);
-		evdi_painter_send_dpms(painter, mode);
-	} else {
-		EVDI_WARN("Painter does not exist!");
+	if (!painter) {
+		EVDI_WARN("(dev=%d) Painter does not exist!", evdi->dev_index);
+		return;
 	}
+
+	if (!painter->is_connected)
+		return;
+
+	switch (mode) {
+	case DRM_MODE_DPMS_ON:
+	case DRM_MODE_DPMS_STANDBY:
+	case DRM_MODE_DPMS_SUSPEND:
+	case DRM_MODE_DPMS_OFF:
+		mode_str = dpms_str[mode];
+		break;
+	default:
+		mode_str = "unknown";
+	};
+	EVDI_DEBUG("(dev=%d) Notifying display power state: %s",
+		   evdi->dev_index, mode_str);
+	evdi_painter_send_dpms(painter, mode);
 }
 
 void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state)
