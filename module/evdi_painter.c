@@ -239,7 +239,6 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi)
 			memcpy(block,
 			       evdi->painter->edid,
 			       evdi->painter->edid_length);
-			EVDI_DEBUG("(dev=%d) EDID valid\n", evdi->dev_index);
 		}
 	}
 	painter_unlock(evdi->painter);

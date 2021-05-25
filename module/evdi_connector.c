@@ -50,11 +50,14 @@ static int evdi_get_modes(struct drm_connector *connector)
 	ret = drm_mode_connector_update_edid_property(connector, edid);
 #endif
 
-	if (!ret)
-		ret = drm_add_edid_modes(connector, edid);
-	else
-		EVDI_ERROR("Failed to set edid modes! error: %d", ret);
+	if (ret) {
+		EVDI_ERROR("Failed to set edid property! error: %d", ret);
+		goto err;
+	}
 
+	ret = drm_add_edid_modes(connector, edid);
+	EVDI_INFO("(dev=%d) Edid property set", evdi->dev_index);
+err:
 	kfree(edid);
 	return ret;
 }
