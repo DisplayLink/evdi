@@ -87,6 +87,7 @@ static struct drm_driver driver = {
 #endif
 	.unload = evdi_driver_unload,
 
+	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
@@ -208,6 +209,16 @@ void evdi_driver_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
+}
+
+int evdi_driver_open(struct drm_device *drm_dev, __always_unused struct drm_file *file)
+{
+	struct evdi_device *evdi = drm_dev->dev_private;
+	char buf[100];
+
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_DEBUG("(dev=%d) Opened by %s\n", evdi->dev_index, buf);
+	return 0;
 }
 
 static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)

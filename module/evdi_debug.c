@@ -27,7 +27,7 @@ void evdi_log_process(char *buf, size_t size)
 			  (int)task_pid_nr(current->group_leader),
 			  process_comm);
 	} else {
-		snprintf("Task %d (%s)",
+		snprintf(buf, size, "Task %d (%s)",
 			  task_pid,
 			  task_comm);
 	}
