@@ -842,7 +842,7 @@ static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
 		     uint32_t sku_area_limit,
-		     struct drm_file *file, int dev_index)
+		     struct drm_file *file, __always_unused int dev_index)
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct edid *new_edid = NULL;
@@ -867,7 +867,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 		return -ENOMEM;
 
 	if (copy_from_user(new_edid, edid_data, edid_length)) {
-		EVDI_ERROR("(dev=%d) Failed to read edid\n", dev_index);
+		EVDI_ERROR("(dev=%d) Failed to read edid\n", evdi->dev_index);
 		kfree(new_edid);
 		return -EFAULT;
 	}
@@ -883,11 +883,10 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	if (painter->drm_filp)
 		EVDI_WARN("(dev=%d) Double connect - replacing %p with %p\n",
-			  dev_index, painter->drm_filp, file);
+			  evdi->dev_index, painter->drm_filp, file);
 
 	painter_lock(painter);
 
-	evdi->dev_index = dev_index;
 	evdi->sku_area_limit = sku_area_limit;
 	painter->drm_filp = file;
 	kfree(painter->edid);
@@ -944,7 +943,6 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	evdi_remove_i2c_adapter(evdi);
 
 	painter->drm_filp = NULL;
-	evdi->dev_index = -1;
 
 	painter->was_update_requested = false;
 	evdi->cursor_events_enabled = false;

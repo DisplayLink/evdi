@@ -147,6 +147,7 @@ static int evdi_driver_setup(struct drm_device *dev)
 
 	evdi->ddev = dev;
 	dev->dev_private = evdi;
+	evdi->dev_index = dev->primary->index;
 
 	evdi->cursor_events_enabled = false;
 	ret =  evdi_cursor_init(&evdi->cursor);
@@ -228,7 +229,7 @@ void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 	struct evdi_device *evdi = drm_dev->dev_private;
 
 	EVDI_DEBUG("(dev=%d) Process tries to close us, postclose\n",
-		   evdi ? evdi->dev_index : -1);
+		   evdi->dev_index);
 	evdi_log_process();
 
 	evdi_driver_close(drm_dev, file);
