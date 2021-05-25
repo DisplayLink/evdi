@@ -868,7 +868,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_DEBUG("(dev=%d) Connected with %s\n", evdi->dev_index, buf);
 
 	if (edid_length < sizeof(struct edid)) {
 		EVDI_ERROR("Edid length too small\n");
@@ -917,8 +916,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	painter_unlock(painter);
 
-	EVDI_DEBUG("(dev=%d) Connected with %p\n", evdi->dev_index,
-		   painter->drm_filp);
+	EVDI_INFO("(dev=%d) Connected with %s\n", evdi->dev_index, buf);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
 
@@ -929,6 +927,7 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	struct drm_file *file)
 {
 	struct evdi_painter *painter = evdi->painter;
+	char buf[100];
 
 	EVDI_CHECKPT();
 
@@ -946,8 +945,8 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 
 	painter->is_connected = false;
 
-	EVDI_DEBUG("(dev=%d) Disconnected from %p\n", evdi->dev_index,
-		   painter->drm_filp);
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_DEBUG("(dev=%d) Disconnected from %s\n", evdi->dev_index, buf);
 	evdi_painter_events_cleanup(painter);
 
 	evdi_painter_send_vblank(painter);
@@ -978,10 +977,8 @@ void evdi_painter_close(struct evdi_device *evdi, struct drm_file *file)
 {
 	EVDI_CHECKPT();
 
-	if (evdi->painter)
+	if (evdi->painter && file == evdi->painter->drm_filp)
 		evdi_painter_disconnect(evdi, file);
-	else
-		EVDI_WARN("Painter does not exist!");
 }
 
 int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
@@ -1010,7 +1007,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 		}
 		return ret;
 	}
-	EVDI_WARN("Painter does not exist!");
+	EVDI_WARN("(dev=%d) Painter does not exist!", evdi->dev_index);
 	return -ENODEV;
 }
 
