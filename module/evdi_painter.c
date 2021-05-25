@@ -866,10 +866,10 @@ evdi_painter_connect(struct evdi_device *evdi,
 	struct evdi_painter *painter = evdi->painter;
 	struct edid *new_edid = NULL;
 	int expected_edid_size = 0;
+	char buf[100];
 
-	EVDI_DEBUG("(dev=%d) Process is trying to connect\n",
-		   evdi->dev_index);
-	evdi_log_process();
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_DEBUG("(dev=%d) Connected with %s\n", evdi->dev_index, buf);
 
 	if (edid_length < sizeof(struct edid)) {
 		EVDI_ERROR("Edid length too small\n");

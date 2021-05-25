@@ -227,10 +227,11 @@ void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
 void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
+	char buf[100];
 
-	EVDI_DEBUG("(dev=%d) Process tries to close us, postclose\n",
-		   evdi->dev_index);
-	evdi_log_process();
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_DEBUG("(dev=%d) Closed by %s\n",
+		   evdi->dev_index, buf);
 
 	evdi_driver_close(drm_dev, file);
 }
