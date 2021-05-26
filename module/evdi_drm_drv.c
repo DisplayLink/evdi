@@ -217,7 +217,7 @@ int evdi_driver_open(struct drm_device *drm_dev, __always_unused struct drm_file
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_DEBUG("(dev=%d) Opened by %s\n", evdi->dev_index, buf);
+	EVDI_INFO("(dev=%d) Opened by %s\n", evdi->dev_index, buf);
 	return 0;
 }
 
@@ -241,7 +241,7 @@ void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_DEBUG("(dev=%d) Closed by %s\n",
+	EVDI_INFO("(dev=%d) Closed by %s\n",
 		   evdi->dev_index, buf);
 
 	evdi_driver_close(drm_dev, file);

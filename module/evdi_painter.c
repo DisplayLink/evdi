@@ -733,7 +733,7 @@ void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 	default:
 		mode_str = "unknown";
 	};
-	EVDI_DEBUG("(dev=%d) Notifying display power state: %s",
+	EVDI_INFO("(dev=%d) Notifying display power state: %s",
 		   evdi->dev_index, mode_str);
 	evdi_painter_send_dpms(painter, mode);
 }
@@ -743,7 +743,7 @@ void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state)
 	struct evdi_painter *painter = evdi->painter;
 
 	if (painter) {
-		EVDI_DEBUG("(dev=%d) Notifying crtc state: %d\n",
+		EVDI_INFO("(dev=%d) Notifying crtc state: %d\n",
 			   evdi->dev_index, state);
 		evdi_painter_send_crtc_state(painter, state);
 	} else {
@@ -756,7 +756,7 @@ static void evdi_log_pixel_format(uint32_t pixel_format)
 	struct drm_format_name_buf format_name;
 
 	drm_get_format_name(pixel_format, &format_name);
-	EVDI_DEBUG("pixel format %s\n", format_name.str);
+	EVDI_INFO("pixel format %s\n", format_name.str);
 }
 
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
@@ -777,7 +777,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 	bits_per_pixel = fb->format->cpp[0] * 8;
 	pixel_format = fb->format->format;
 
-	EVDI_DEBUG("(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",
+	EVDI_INFO("(dev=%d) Notifying mode changed: %dx%d@%d; bpp %d; ",
 		   evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
 		   drm_mode_vrefresh(new_mode), bits_per_pixel);
 	evdi_log_pixel_format(pixel_format);
@@ -828,7 +828,7 @@ static void evdi_add_i2c_adapter(struct evdi_device *evdi)
 		return;
 	}
 
-	EVDI_DEBUG("(dev=%d) Added i2c adapter bus number %d",
+	EVDI_INFO("(dev=%d) Added i2c adapter bus number %d",
 		evdi->dev_index, evdi->i2c_adapter->nr);
 
 	result = sysfs_create_link(&evdi->conn->kdev->kobj,
@@ -844,7 +844,7 @@ static void evdi_add_i2c_adapter(struct evdi_device *evdi)
 static void evdi_remove_i2c_adapter(struct evdi_device *evdi)
 {
 	if (evdi->i2c_adapter) {
-		EVDI_DEBUG("(dev=%d) Removing i2c adapter bus number %d",
+		EVDI_INFO("(dev=%d) Removing i2c adapter bus number %d",
 			evdi->dev_index, evdi->i2c_adapter->nr);
 
 		sysfs_remove_link(&evdi->conn->kdev->kobj, "ddc");
@@ -946,7 +946,7 @@ static int evdi_painter_disconnect(struct evdi_device *evdi,
 	painter->is_connected = false;
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_DEBUG("(dev=%d) Disconnected from %s\n", evdi->dev_index, buf);
+	EVDI_INFO("(dev=%d) Disconnected from %s\n", evdi->dev_index, buf);
 	evdi_painter_events_cleanup(painter);
 
 	evdi_painter_send_vblank(painter);
