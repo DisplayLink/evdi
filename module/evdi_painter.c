@@ -495,31 +495,6 @@ static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
 	evdi_painter_send_event(painter, event);
 }
 
-static struct drm_pending_event *create_crtc_state_event(int state)
-{
-	struct evdi_event_crtc_state_pending *event;
-
-	event = kzalloc(sizeof(*event), GFP_KERNEL);
-	if (!event) {
-		EVDI_ERROR("Failed to create crtc state event");
-		return NULL;
-	}
-
-	event->crtc_state.base.type = DRM_EVDI_EVENT_CRTC_STATE;
-	event->crtc_state.base.length = sizeof(event->crtc_state);
-	event->crtc_state.state = state;
-	event->base.event = &event->crtc_state.base;
-	return &event->base;
-}
-
-static void evdi_painter_send_crtc_state(struct evdi_painter *painter,
-					 int state)
-{
-	struct drm_pending_event *event = create_crtc_state_event(state);
-
-	evdi_painter_send_event(painter, event);
-}
-
 static struct drm_pending_event *create_mode_changed_event(
 	struct drm_display_mode *current_mode,
 	int32_t bits_per_pixel,
@@ -736,19 +711,6 @@ void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 	EVDI_INFO("(dev=%d) Notifying display power state: %s",
 		   evdi->dev_index, mode_str);
 	evdi_painter_send_dpms(painter, mode);
-}
-
-void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state)
-{
-	struct evdi_painter *painter = evdi->painter;
-
-	if (painter) {
-		EVDI_INFO("(dev=%d) Notifying crtc state: %d\n",
-			   evdi->dev_index, state);
-		evdi_painter_send_crtc_state(painter, state);
-	} else {
-		EVDI_WARN("Painter does not exist!");
-	}
 }
 
 static void evdi_log_pixel_format(uint32_t pixel_format)
