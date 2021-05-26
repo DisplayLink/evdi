@@ -317,7 +317,7 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 	}
 
 	if (!painter->drm_filp) {
-		EVDI_WARN("Painter is not connected!");
+		EVDI_VERBOSE("Painter is not connected!");
 		drm_event_cancel_free(painter->drm_device, event);
 		return;
 	}

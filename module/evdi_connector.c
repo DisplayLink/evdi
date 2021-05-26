@@ -94,7 +94,7 @@ evdi_detect(struct drm_connector *connector, __always_unused bool force)
 			   evdi->dev_index);
 		return connector_status_connected;
 	}
-	EVDI_INFO("(dev=%d) Connector state: disconnected\n",
+	EVDI_VERBOSE("(dev=%d) Connector state: disconnected\n",
 		   evdi->dev_index);
 	return connector_status_disconnected;
 }
