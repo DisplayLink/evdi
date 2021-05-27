@@ -56,7 +56,7 @@ static int evdi_get_modes(struct drm_connector *connector)
 	}
 
 	ret = drm_add_edid_modes(connector, edid);
-	EVDI_INFO("(dev=%d) Edid property set", evdi->dev_index);
+	EVDI_INFO("(card%d) Edid property set", evdi->dev_index);
 err:
 	kfree(edid);
 	return ret;
@@ -72,7 +72,7 @@ static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
 		return MODE_OK;
 
 	if (mode_area > evdi->sku_area_limit) {
-		EVDI_WARN("(dev=%d) Mode %dx%d@%d rejected\n",
+		EVDI_WARN("(card%d) Mode %dx%d@%d rejected\n",
 			evdi->dev_index,
 			mode->hdisplay,
 			mode->vdisplay,
@@ -90,11 +90,11 @@ evdi_detect(struct drm_connector *connector, __always_unused bool force)
 
 	EVDI_CHECKPT();
 	if (evdi_painter_is_connected(evdi->painter)) {
-		EVDI_INFO("(dev=%d) Connector state: connected\n",
+		EVDI_INFO("(card%d) Connector state: connected\n",
 			   evdi->dev_index);
 		return connector_status_connected;
 	}
-	EVDI_VERBOSE("(dev=%d) Connector state: disconnected\n",
+	EVDI_VERBOSE("(card%d) Connector state: disconnected\n",
 		   evdi->dev_index);
 	return connector_status_disconnected;
 }
