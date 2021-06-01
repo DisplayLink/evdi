@@ -425,7 +425,7 @@ static int evdi_atomic_check(struct drm_device *dev,
 	int i;
 	struct evdi_device *evdi = dev->dev_private;
 
-	if (evdi_painter_needs_full_modeset(evdi->painter)) {
+	if (state->allow_modeset && evdi_painter_needs_full_modeset(evdi->painter)) {
 		for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
 			crtc_state->active_changed = true;
 			crtc_state->mode_changed = true;
