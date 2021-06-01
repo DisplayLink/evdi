@@ -205,8 +205,16 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 };
 
 static void evdi_plane_atomic_update(struct drm_plane *plane,
-				     struct drm_plane_state *old_state)
+#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
+				     struct drm_plane_state *old_state
+#else
+				     struct drm_atomic_state *atom_state
+#endif
+		)
 {
+#if KERNEL_VERSION(5, 13, 0) >= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#endif
 	struct drm_plane_state *state;
 	struct evdi_device *evdi;
 	struct evdi_painter *painter;
@@ -294,8 +302,16 @@ static void evdi_cursor_atomic_get_rect(struct drm_clip_rect *rect,
 }
 
 static void evdi_cursor_atomic_update(struct drm_plane *plane,
-				      struct drm_plane_state *old_state)
+#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
+				     struct drm_plane_state *old_state
+#else
+				     struct drm_atomic_state *atom_state
+#endif
+		)
 {
+#if KERNEL_VERSION(5, 13, 0) >= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#endif
 	if (plane && plane->state && plane->dev && plane->dev->dev_private) {
 		struct drm_plane_state *state = plane->state;
 		struct evdi_device *evdi = plane->dev->dev_private;
