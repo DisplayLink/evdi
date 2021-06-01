@@ -26,7 +26,11 @@
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
+#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
 #include <drm/drm_gem_framebuffer_helper.h>
+#else
+#include <drm/drm_gem_atomic_helper.h>
+#endif
 
 static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
 			   __always_unused int mode)
@@ -371,12 +375,20 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
 	.atomic_update = evdi_plane_atomic_update,
+#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_fb_prepare_fb
+#else
+	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#endif
 };
 
 static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
 	.atomic_update = evdi_cursor_atomic_update,
+#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_fb_prepare_fb
+#else
+	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#endif
 };
 
 static const struct drm_plane_funcs evdi_plane_funcs = {
