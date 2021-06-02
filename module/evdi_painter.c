@@ -1137,10 +1137,6 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				       DMA_FROM_DEVICE);
 
 err_fb:
-	if (efb->obj->vmapping) {
-    evdi_gem_vunmap(efb->obj);
-  }
-	
 	evdi_send_vblank(crtc, vblank);
 
 	drm_framebuffer_put(&efb->base);
