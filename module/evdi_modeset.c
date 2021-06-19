@@ -13,6 +13,7 @@
 
 #include <linux/version.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#include <drm/drm_damage_helper.h>
 #else
 #include <drm/drmP.h>
 #endif
@@ -210,6 +211,12 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 	struct evdi_painter *painter;
 	struct drm_crtc *crtc;
 
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+	struct drm_atomic_helper_damage_iter iter;
+	struct drm_rect rect;
+	struct drm_clip_rect clip_rect;
+#endif
+
 	if (!plane || !plane->state) {
 		EVDI_WARN("Plane state is null\n");
 		return;
@@ -251,10 +258,28 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 		    evdi_painter_needs_full_modeset(painter)) {
 
 			evdi_painter_set_scanout_buffer(painter, efb);
+
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+			state->visible = true;
+			state->src.x1 = 0;
+			state->src.y1 = 0;
+			state->src.x2 = fb->width << 16;
+			state->src.y2 = fb->height << 16;
+
+			drm_atomic_helper_damage_iter_init(&iter, old_state, state);
+			while (drm_atomic_helper_damage_iter_next(&iter, &rect)) {
+				clip_rect.x1 = rect.x1;
+				clip_rect.y1 = rect.y1;
+				clip_rect.x2 = rect.x2;
+				clip_rect.y2 = rect.y2;
+				evdi_painter_mark_dirty(evdi, &clip_rect);
+			}
+#endif
+
+		};
+
+		if (evdi_painter_get_num_dirts(painter) == 0)
 			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
-		} else if (evdi_painter_get_num_dirts(painter) == 0) {
-			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
-		}
 	}
 }
 
@@ -404,6 +429,11 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
+
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined (EL8)
+	drm_plane_enable_fb_damage_clips(primary_plane);
+#endif
+
 	status = drm_crtc_init_with_planes(dev, crtc,
 					   primary_plane, cursor_plane,
 					   &evdi_crtc_funcs,
