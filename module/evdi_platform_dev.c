@@ -73,7 +73,7 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 		return -ENOMEM;
 /* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined (EL8)
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	memset(&iommu, 0, sizeof(iommu));
 	iommu.priv = (void *)-1;
 	pdev->dev.iommu = &iommu;
