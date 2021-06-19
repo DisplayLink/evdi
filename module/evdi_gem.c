@@ -102,7 +102,7 @@ evdi_gem_create(struct drm_file *file,
 		kfree(obj);
 		return ret;
 	}
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_gem_object_put(&obj->base);
 #else
 	drm_gem_object_put_unlocked(&obj->base);
@@ -372,7 +372,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
-	#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+	#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		return drm_prime_pages_to_sg(obj->dev, bo->pages, bo->base.size >> PAGE_SHIFT);
 	#else
 		return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
