@@ -15,7 +15,7 @@
 
 unsigned int evdi_loglevel __read_mostly = EVDI_LOGLEVEL_DEBUG;
 unsigned short int evdi_initial_device_count __read_mostly;
-unsigned short int evdi_disable_texture_import;
+unsigned short int evdi_disable_texture_import __read_mostly;
 
 module_param_named(initial_loglevel, evdi_loglevel, int, 0400);
 MODULE_PARM_DESC(initial_loglevel, "Initial log level");
