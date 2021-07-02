@@ -255,6 +255,7 @@ This notification is sent for a cursor position change. It is raised only when c
 	#!c
 	void (*crtc_state_handler)(int state, void* user_data);
 
+This event is deprecated. Please use DPMS mode change event instead.
 Sent when DRM's CRTC changes state. The `state` is a value that's forwarded from the kernel.
 
 #### DDC/CI data notification
