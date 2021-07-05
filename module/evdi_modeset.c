@@ -12,7 +12,7 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_damage_helper.h>
 #else
 #include <drm/drmP.h>
@@ -26,10 +26,10 @@
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
-#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
-#include <drm/drm_gem_framebuffer_helper.h>
-#else
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_gem_atomic_helper.h>
+#else
+#include <drm/drm_gem_framebuffer_helper.h>
 #endif
 
 static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
@@ -209,15 +209,16 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 };
 
 static void evdi_plane_atomic_update(struct drm_plane *plane,
-#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
-				     struct drm_plane_state *old_state
-#else
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 				     struct drm_atomic_state *atom_state
+#else
+				     struct drm_plane_state *old_state
 #endif
 		)
 {
-#if KERNEL_VERSION(5, 13, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#else
 #endif
 	struct drm_plane_state *state;
 	struct evdi_device *evdi;
@@ -306,15 +307,16 @@ static void evdi_cursor_atomic_get_rect(struct drm_clip_rect *rect,
 }
 
 static void evdi_cursor_atomic_update(struct drm_plane *plane,
-#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
-				     struct drm_plane_state *old_state
-#else
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 				     struct drm_atomic_state *atom_state
+#else
+				     struct drm_plane_state *old_state
 #endif
 		)
 {
-#if KERNEL_VERSION(5, 13, 0) >= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#else
 #endif
 	if (plane && plane->state && plane->dev && plane->dev->dev_private) {
 		struct drm_plane_state *state = plane->state;
@@ -375,19 +377,19 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
 	.atomic_update = evdi_plane_atomic_update,
-#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
-	.prepare_fb = drm_gem_fb_prepare_fb
-#else
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#else
+	.prepare_fb = drm_gem_fb_prepare_fb
 #endif
 };
 
 static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
 	.atomic_update = evdi_cursor_atomic_update,
-#if KERNEL_VERSION(5, 13, 0) < LINUX_VERSION_CODE
-	.prepare_fb = drm_gem_fb_prepare_fb
-#else
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
 	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#else
+	.prepare_fb = drm_gem_fb_prepare_fb
 #endif
 };
 
