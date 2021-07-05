@@ -431,7 +431,7 @@ static int evdi_crtc_init(struct drm_device *dev)
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
 
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined (EL8)
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_plane_enable_fb_damage_clips(primary_plane);
 #endif
 
