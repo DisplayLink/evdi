@@ -79,7 +79,7 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 #endif
 
 static struct drm_driver driver = {
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
 #else
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
@@ -92,7 +92,7 @@ static struct drm_driver driver = {
 
 	/* gem hooks */
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
-#elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.gem_free_object_unlocked = evdi_gem_free_object,
 #else
 	.gem_free_object = evdi_gem_free_object,
