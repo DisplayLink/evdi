@@ -716,10 +716,14 @@ void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 static void evdi_log_pixel_format(uint32_t pixel_format,
 		char *buf, size_t size)
 {
+#if KERNEL_VERSION(5, 14, 0) <= LINUX_VERSION_CODE
+	snprintf(buf, size, "pixel format %p4cc", &pixel_format);
+#else
 	struct drm_format_name_buf format_name;
 
 	drm_get_format_name(pixel_format, &format_name);
 	snprintf(buf, size, "pixel format %s", format_name.str);
+#endif
 }
 
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
