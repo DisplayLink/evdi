@@ -833,7 +833,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct edid *new_edid = NULL;
-	int expected_edid_size = 0;
+	unsigned int expected_edid_size = 0;
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
@@ -1066,8 +1066,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		}
 	}
 
-	if (cmd->buf_width != efb->base.width ||
-		cmd->buf_height != efb->base.height) {
+	if ((unsigned int)cmd->buf_width != efb->base.width ||
+		(unsigned int)cmd->buf_height != efb->base.height) {
 		EVDI_ERROR("Invalid buffer dimension\n");
 		err = -EINVAL;
 		goto err_fb;
