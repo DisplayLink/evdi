@@ -8,6 +8,7 @@
  * more details.
  */
 
+#include <linux/sched.h>
 #include <linux/version.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
@@ -347,6 +348,15 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 
 	if (evdi_disable_texture_import)
 		return ERR_PTR(-ENOMEM);
+
+		else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
+			char task_comm[TASK_COMM_LEN] = { 0 };
+
+			get_task_comm(task_comm, current);
+
+			if (strcmp(task_comm, "gnome-shell") == 0)
+				return ERR_PTR(-ENOMEM);
+		}
 
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
