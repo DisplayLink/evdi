@@ -243,7 +243,7 @@ static int evdi_user_framebuffer_dirty(
 	struct drm_atomic_state *state;
 	struct drm_plane *plane;
 	int ret = 0;
-	int i;
+	unsigned int i;
 
 	EVDI_CHECKPT();
 
