@@ -513,8 +513,8 @@ void evdi_modeset_init(struct drm_device *dev)
 	dev->mode_config.min_width = 64;
 	dev->mode_config.min_height = 64;
 
-	dev->mode_config.max_width = 3840;
-	dev->mode_config.max_height = 2160;
+	dev->mode_config.max_width = 7680;
+	dev->mode_config.max_height = 4320;
 
 	dev->mode_config.prefer_shadow = 0;
 	dev->mode_config.preferred_depth = 24;
