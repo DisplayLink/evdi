@@ -12,7 +12,8 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#include <drm/drm_damage_helper.h>
 #else
 #include <drm/drmP.h>
 #endif
@@ -25,7 +26,11 @@
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_gem_atomic_helper.h>
+#else
 #include <drm/drm_gem_framebuffer_helper.h>
+#endif
 
 static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
 			   __always_unused int mode)
@@ -36,6 +41,7 @@ static void evdi_crtc_dpms(__always_unused struct drm_crtc *crtc,
 static void evdi_crtc_disable(__always_unused struct drm_crtc *crtc)
 {
 	EVDI_CHECKPT();
+	drm_crtc_vblank_off(crtc);
 }
 
 static void evdi_crtc_destroy(struct drm_crtc *crtc)
@@ -133,7 +139,7 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 	evdi_cursor_set(evdi->cursor,
 			eobj, width, height, hot_x, hot_y,
 			format, stride);
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_gem_object_put(obj);
 #else
 	drm_gem_object_put_unlocked(obj);
@@ -203,12 +209,27 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 };
 
 static void evdi_plane_atomic_update(struct drm_plane *plane,
-				     struct drm_plane_state *old_state)
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+				     struct drm_atomic_state *atom_state
+#else
+				     struct drm_plane_state *old_state
+#endif
+		)
 {
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#else
+#endif
 	struct drm_plane_state *state;
 	struct evdi_device *evdi;
 	struct evdi_painter *painter;
 	struct drm_crtc *crtc;
+
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+	struct drm_atomic_helper_damage_iter iter;
+	struct drm_rect rect;
+	struct drm_clip_rect clip_rect;
+#endif
 
 	if (!plane || !plane->state) {
 		EVDI_WARN("Plane state is null\n");
@@ -251,10 +272,28 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 		    evdi_painter_needs_full_modeset(painter)) {
 
 			evdi_painter_set_scanout_buffer(painter, efb);
+
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+			state->visible = true;
+			state->src.x1 = 0;
+			state->src.y1 = 0;
+			state->src.x2 = fb->width << 16;
+			state->src.y2 = fb->height << 16;
+
+			drm_atomic_helper_damage_iter_init(&iter, old_state, state);
+			while (drm_atomic_helper_damage_iter_next(&iter, &rect)) {
+				clip_rect.x1 = rect.x1;
+				clip_rect.y1 = rect.y1;
+				clip_rect.x2 = rect.x2;
+				clip_rect.y2 = rect.y2;
+				evdi_painter_mark_dirty(evdi, &clip_rect);
+			}
+#endif
+
+		};
+
+		if (evdi_painter_get_num_dirts(painter) == 0)
 			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
-		} else if (evdi_painter_get_num_dirts(painter) == 0) {
-			evdi_painter_mark_dirty(evdi, &fullscreen_rect);
-		}
 	}
 }
 
@@ -268,8 +307,17 @@ static void evdi_cursor_atomic_get_rect(struct drm_clip_rect *rect,
 }
 
 static void evdi_cursor_atomic_update(struct drm_plane *plane,
-				      struct drm_plane_state *old_state)
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+				     struct drm_atomic_state *atom_state
+#else
+				     struct drm_plane_state *old_state
+#endif
+		)
 {
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#else
+#endif
 	if (plane && plane->state && plane->dev && plane->dev->dev_private) {
 		struct drm_plane_state *state = plane->state;
 		struct evdi_device *evdi = plane->dev->dev_private;
@@ -329,12 +377,20 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 
 static const struct drm_plane_helper_funcs evdi_plane_helper_funcs = {
 	.atomic_update = evdi_plane_atomic_update,
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#else
 	.prepare_fb = drm_gem_fb_prepare_fb
+#endif
 };
 
 static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
 	.atomic_update = evdi_cursor_atomic_update,
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	.prepare_fb = drm_gem_plane_helper_prepare_fb
+#else
 	.prepare_fb = drm_gem_fb_prepare_fb
+#endif
 };
 
 static const struct drm_plane_funcs evdi_plane_funcs = {
@@ -404,6 +460,11 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
+
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+	drm_plane_enable_fb_damage_clips(primary_plane);
+#endif
+
 	status = drm_crtc_init_with_planes(dev, crtc,
 					   primary_plane, cursor_plane,
 					   &evdi_crtc_funcs,
@@ -424,7 +485,7 @@ static int evdi_atomic_check(struct drm_device *dev,
 	int i;
 	struct evdi_device *evdi = dev->dev_private;
 
-	if (evdi_painter_needs_full_modeset(evdi->painter)) {
+	if (state->allow_modeset && evdi_painter_needs_full_modeset(evdi->painter)) {
 		for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
 			crtc_state->active_changed = true;
 			crtc_state->mode_changed = true;

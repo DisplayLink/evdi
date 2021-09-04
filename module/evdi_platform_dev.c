@@ -21,7 +21,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <linux/iommu.h>
 #endif
 
@@ -61,7 +61,7 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 	struct drm_device *dev;
 	struct evdi_platform_device_data *data;
 
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
 	struct dev_iommu iommu;
 #endif
@@ -73,7 +73,7 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 		return -ENOMEM;
 /* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	memset(&iommu, 0, sizeof(iommu));
 	iommu.priv = (void *)-1;
 	pdev->dev.iommu = &iommu;

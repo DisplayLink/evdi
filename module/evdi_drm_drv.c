@@ -79,7 +79,7 @@ static void evdi_disable_vblank(__always_unused struct drm_device *dev,
 #endif
 
 static struct drm_driver driver = {
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
 #else
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
@@ -87,11 +87,12 @@ static struct drm_driver driver = {
 #endif
 	.unload = evdi_driver_unload,
 
+	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
 
 	/* gem hooks */
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
-#elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.gem_free_object_unlocked = evdi_gem_free_object,
 #else
 	.gem_free_object = evdi_gem_free_object,
@@ -147,6 +148,7 @@ static int evdi_driver_setup(struct drm_device *dev)
 
 	evdi->ddev = dev;
 	dev->dev_private = evdi;
+	evdi->dev_index = dev->primary->index;
 
 	evdi->cursor_events_enabled = false;
 	ret =  evdi_cursor_init(&evdi->cursor);
@@ -209,6 +211,16 @@ void evdi_driver_unload(struct drm_device *dev)
 	kfree(evdi);
 }
 
+int evdi_driver_open(struct drm_device *drm_dev, __always_unused struct drm_file *file)
+{
+	struct evdi_device *evdi = drm_dev->dev_private;
+	char buf[100];
+
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_INFO("(card%d) Opened by %s\n", evdi->dev_index, buf);
+	return 0;
+}
+
 static void evdi_driver_close(struct drm_device *drm_dev, struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
@@ -226,10 +238,11 @@ void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
 void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 {
 	struct evdi_device *evdi = drm_dev->dev_private;
+	char buf[100];
 
-	EVDI_DEBUG("(dev=%d) Process tries to close us, postclose\n",
-		   evdi ? evdi->dev_index : -1);
-	evdi_log_process();
+	evdi_log_process(buf, sizeof(buf));
+	EVDI_INFO("(card%d) Closed by %s\n",
+		   evdi->dev_index, buf);
 
 	evdi_driver_close(drm_dev, file);
 }

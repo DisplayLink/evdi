@@ -88,6 +88,7 @@ struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
 
 int evdi_driver_load(struct drm_device *dev, unsigned long flags);
 void evdi_driver_unload(struct drm_device *dev);
+int evdi_driver_open(struct drm_device *drm_dev, struct drm_file *file);
 void evdi_driver_preclose(struct drm_device *dev, struct drm_file *file_priv);
 void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 
@@ -145,7 +146,6 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter);
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_display_mode *mode);
-void evdi_painter_crtc_state_notify(struct evdi_device *evdi, int state);
 unsigned int evdi_painter_poll(struct file *filp,
 			       struct poll_table_struct *wait);
 

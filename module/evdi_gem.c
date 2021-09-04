@@ -14,6 +14,7 @@
 #include <drm/drmP.h>
 #endif
 #include "evdi_drm_drv.h"
+#include "evdi_params.h"
 #include <linux/shmem_fs.h>
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>
@@ -101,7 +102,7 @@ evdi_gem_create(struct drm_file *file,
 		kfree(obj);
 		return ret;
 	}
-#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_gem_object_put(&obj->base);
 #else
 	drm_gem_object_put_unlocked(&obj->base);
@@ -344,6 +345,9 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	struct evdi_gem_object *obj;
 	int npages;
 
+	if (evdi_disable_texture_import)
+		return ERR_PTR(-ENOMEM);
+
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
 		return ERR_CAST(obj);
@@ -368,7 +372,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 struct sg_table *evdi_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
-	#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+	#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		return drm_prime_pages_to_sg(obj->dev, bo->pages, bo->base.size >> PAGE_SHIFT);
 	#else
 		return drm_prime_pages_to_sg(bo->pages, bo->base.size >> PAGE_SHIFT);
