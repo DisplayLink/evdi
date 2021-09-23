@@ -19,7 +19,7 @@ How to use it.
 (make sure you know how to revert it in case it does not work)
 1. Install latest DisplayLink driver, get your DisplayLink screen to work (although with slow update rate)
 2. Clone this repo and checkout this branch: amd_vmap_texture
-3. copy module dir into /usr/src/evdi* (highest version) dir
+3. copy files from module dir into /usr/src/evdi* (highest version) dir
 4. Run:
    sudo dkms uninstall evdi/version
    sudo dkms unbuild evdi/version
