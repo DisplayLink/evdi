@@ -19,12 +19,15 @@ How to use it.
 (make sure you know how to revert it in case it does not work)
 1. Install latest DisplayLink driver, get your DisplayLink screen to work (although with slow update rate)
 2. Clone this repo and checkout this branch: amd_vmap_texture
-3. Build the kernel module (cd evdi/module, then make)
-4. sudo modinfo evdi (to get the location of the running kernel module)
-5. sudo cp ./evdi.ko (location from #4)
-6. append "vmap_texture=1" to /etc/modprove/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
-7. reboot.
+3. copy files from module dir into /usr/src/evdi* (highest version) dir
+4. Run:
+   sudo dkms uninstall evdi/version
+   sudo dkms unbuild evdi/version
+   sudo dkms build evdi/version
+   sudo dkms install evdi/version
 
+5. append "vmap_texture=1" to /etc/modprobe/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
+6. reboot.
 
 
 
