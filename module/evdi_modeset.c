@@ -89,6 +89,8 @@ static void evdi_crtc_atomic_flush(
 	crtc_state->event = NULL;
 }
 
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#else
 static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
 {
 	const struct drm_clip_rect rect =
@@ -171,6 +173,7 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 
 	return 0;
 }
+#endif
 
 static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.mode_set_nofb  = evdi_crtc_set_nofb,
@@ -200,8 +203,11 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
 	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
 
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#else
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
+#endif
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
@@ -416,10 +422,11 @@ static struct drm_plane *evdi_create_plane(
 {
 	struct drm_plane *plane;
 	int ret;
+	char *plane_type = (type == DRM_PLANE_TYPE_CURSOR) ? "cursor" : "primary";
 
 	plane = kzalloc(sizeof(*plane), GFP_KERNEL);
 	if (plane == NULL) {
-		EVDI_ERROR("Failed to allocate primary plane\n");
+		EVDI_ERROR("Failed to allocate %s plane\n", plane_type);
 		return NULL;
 	}
 	plane->format_default = true;
@@ -436,7 +443,7 @@ static struct drm_plane *evdi_create_plane(
 				       );
 
 	if (ret) {
-		EVDI_ERROR("Failed to initialize primary plane\n");
+		EVDI_ERROR("Failed to initialize %s plane\n", plane_type);
 		kfree(plane);
 		return NULL;
 	}
@@ -460,6 +467,11 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
+
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+	cursor_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_CURSOR,
+						&evdi_cursor_helper_funcs);
+#endif
 
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_plane_enable_fb_damage_clips(primary_plane);
