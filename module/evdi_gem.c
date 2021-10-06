@@ -239,6 +239,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 		if (ret)
 			return -ENOMEM;
 		obj->vmapping = map.vaddr;
+		obj->vmap_is_iomem = map.is_iomem;
 #else
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 		if (!obj->vmapping)
@@ -261,7 +262,9 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
-		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(obj->vmapping);
+		struct dma_buf_map map;
+		if (obj->vmap_is_iomem) { dma_buf_map_set_vaddr_iomem(&map, obj->vmapping); }
+		else { dma_buf_map_set_vaddr(&map, obj->vmapping); }
 
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
 #else

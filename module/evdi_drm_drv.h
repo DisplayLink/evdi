@@ -59,6 +59,9 @@ struct evdi_gem_object {
 	struct drm_gem_object base;
 	struct page **pages;
 	void *vmapping;
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	bool vmap_is_iomem;
+#endif
 	struct sg_table *sg;
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	struct dma_resv *resv;
