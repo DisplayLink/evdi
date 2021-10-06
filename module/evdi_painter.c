@@ -671,8 +671,11 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
-
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+		if (painter->was_update_requested && painter->num_dirts) {
+#else
 		if (painter->was_update_requested) {
+#endif
 			evdi_painter_send_update_ready(painter);
 			painter->was_update_requested = false;
 		}
