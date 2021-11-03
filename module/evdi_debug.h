@@ -20,7 +20,7 @@
 #define EVDI_LOGLEVEL_VERBOSE 6
 
 #define EVDI_PRINTK(KERN_LEVEL, LEVEL, FORMAT_STR, ...)	do { \
-	if (evdi_loglevel >= LEVEL) {\
+	if (evdi_loglevel == LEVEL) {\
 		printk(KERN_LEVEL "evdi: " FORMAT_STR, ##__VA_ARGS__); \
 	} \
 } while (0)
