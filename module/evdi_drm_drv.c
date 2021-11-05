@@ -30,15 +30,15 @@ static struct drm_driver driver;
 
 struct drm_ioctl_desc evdi_painter_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(EVDI_CONNECT, evdi_painter_connect_ioctl,
-			  DRM_UNLOCKED),
+					  DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(EVDI_REQUEST_UPDATE,
-			  evdi_painter_request_update_ioctl, DRM_UNLOCKED),
+					  evdi_painter_request_update_ioctl, DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(EVDI_GRABPIX, evdi_painter_grabpix_ioctl,
-			  DRM_UNLOCKED),
+					  DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(EVDI_DDCCI_RESPONSE, evdi_painter_ddcci_response_ioctl,
-			  DRM_UNLOCKED),
+					  DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(EVDI_ENABLE_CURSOR_EVENTS, evdi_painter_enable_cursor_events_ioctl,
-			  DRM_UNLOCKED),
+					  DRM_UNLOCKED),
 };
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
@@ -58,22 +58,19 @@ static const struct file_operations evdi_driver_fops = {
 	.read = drm_read,
 	.unlocked_ioctl = drm_ioctl,
 	.release = drm_release,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = evdi_compat_ioctl,
-#endif
 	.llseek = noop_llseek,
 };
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 #else
 static int evdi_enable_vblank(__always_unused struct drm_device *dev,
-			      __always_unused unsigned int pipe)
+							  __always_unused unsigned int pipe)
 {
 	return 1;
 }
 
 static void evdi_disable_vblank(__always_unused struct drm_device *dev,
-				__always_unused unsigned int pipe)
+								__always_unused unsigned int pipe)
 {
 }
 #endif
@@ -82,15 +79,14 @@ static struct drm_driver driver = {
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_ATOMIC,
 #else
-	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
-			 | DRIVER_ATOMIC,
+	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME | DRIVER_ATOMIC,
 #endif
 	.unload = evdi_driver_unload,
 
 	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
 
-	/* gem hooks */
+/* gem hooks */
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 #elif KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.gem_free_object_unlocked = evdi_gem_free_object,
@@ -151,7 +147,7 @@ static int evdi_driver_setup(struct drm_device *dev)
 	evdi->dev_index = dev->primary->index;
 
 	evdi->cursor_events_enabled = false;
-	ret =  evdi_cursor_init(&evdi->cursor);
+	ret = evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err_free;
 
@@ -242,7 +238,7 @@ void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
 
 	evdi_log_process(buf, sizeof(buf));
 	EVDI_INFO("(card%d) Closed by %s\n",
-		   evdi->dev_index, buf);
+			  evdi->dev_index, buf);
 
 	evdi_driver_close(drm_dev, file);
 }
@@ -276,4 +272,3 @@ int evdi_drm_device_remove(struct drm_device *dev)
 	drm_dev_unplug(dev);
 	return 0;
 }
-
