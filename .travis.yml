@@ -22,6 +22,8 @@ env:
   - KVER=5.9
   - KVER=5.11
   - KVER=5.12
+  - KVER=5.13
+  - KVER=5.14
   - KVER=master
 
 jobs:

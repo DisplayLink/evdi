@@ -686,7 +686,7 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 	}
 }
 
-static const char *dpms_str[] = { "on", "standby", "suspend", "off" };
+static const char * const dpms_str[] = { "on", "standby", "suspend", "off" };
 
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 {
