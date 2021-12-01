@@ -11,7 +11,6 @@
 
 #include "evdi_params.h"
 
-#define EVDI_LOGLEVEL_ALWAYS  0
 #define EVDI_LOGLEVEL_FATAL   1
 #define EVDI_LOGLEVEL_ERROR   2
 #define EVDI_LOGLEVEL_WARN    3
