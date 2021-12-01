@@ -94,7 +94,7 @@ static int compat_evdi_grabpix(struct file *file,
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE && KERNEL_VERSION(5, 14, 0) >= LINUX_VERSION_CODE
 	request = compat_alloc_user_space(sizeof(*request));
 #else 
-	request = kmalloc(sizeof(*request), GFP_DMA);
+	request = kmalloc(sizeof(*request), GFP_USER);
 #endif
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	if (!access_ok(request, sizeof(*request))
