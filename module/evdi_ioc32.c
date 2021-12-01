@@ -59,7 +59,11 @@ static int compat_evdi_connect(struct file *file,
 	if (copy_from_user(&req32, (void __user *)arg, sizeof(req32)))
 		return -EFAULT;
 
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE && KERNEL_VERSION(5, 14, 0) >= LINUX_VERSION_CODE
 	request = compat_alloc_user_space(sizeof(*request));
+#else 
+	request = kmalloc(sizeof(*request), GFP_DMA);
+#endif
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	if (!access_ok(request, sizeof(*request))
 #else
@@ -87,7 +91,11 @@ static int compat_evdi_grabpix(struct file *file,
 	if (copy_from_user(&req32, (void __user *)arg, sizeof(req32)))
 		return -EFAULT;
 
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE && KERNEL_VERSION(5, 14, 0) >= LINUX_VERSION_CODE
 	request = compat_alloc_user_space(sizeof(*request));
+#else 
+	request = kmalloc(sizeof(*request), GFP_DMA);
+#endif
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	if (!access_ok(request, sizeof(*request))
 #else
