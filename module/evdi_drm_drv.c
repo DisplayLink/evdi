@@ -58,8 +58,10 @@ static const struct file_operations evdi_driver_fops = {
 	.read = drm_read,
 	.unlocked_ioctl = drm_ioctl,
 	.release = drm_release,
+#if KERNEL_VERSION(5, 14, 0) >= LINUX_VERSION_CODE || defined(EL8)
 #ifdef CONFIG_COMPAT
-	//.compat_ioctl = evdi_compat_ioctl,
+	.compat_ioctl = evdi_compat_ioctl,
+#endif
 #endif
 	.llseek = noop_llseek,
 };
