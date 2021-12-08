@@ -17,9 +17,7 @@
 #include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/device.h>
-#if KERNEL_VERSION(5, 15, 0) < LINUX_VERSION_CODE
-#include <drm/drm_irq.h>
-#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_drv.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_ioctl.h>
