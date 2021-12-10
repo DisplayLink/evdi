@@ -65,14 +65,14 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
 	, struct drm_atomic_state *state
 #else
 	, __always_unused struct drm_crtc_state *old_state
 #endif
 	)
 {
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
 	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
 #else
 	struct drm_crtc_state *crtc_state = crtc->state;
@@ -187,7 +187,7 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
 static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
 {
 	return 1;
@@ -211,7 +211,7 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
 #endif
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
 #endif
