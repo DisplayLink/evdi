@@ -1,17 +1,16 @@
 # Extensible Virtual Display Interface
 
-## (Use at own risk) Hack-fix for slow screen update rate on AMD/DisplayLink
-
 For Gnome/Wayland please use upstream EVDI: https://github.com/DisplayLink/evdi
 
-About this hack-fix:
-The amdgpu driver implements uncached CPU mapping over DMA-BUF interface to rendered framebuffer (this is normal for discreet GPU's but quite unfortunate for shared memory systems like Ryzen 7 4750U). DMA-BUF is a preferred way to import buffer into the EVDI driver and it works quite well on Intel integrated graphics. On AMD the uncached CPU access caters for very poor framebuffer copy performance in EVDI. In this hack-fix a cached CPU mapping on backing pages is done in EVDI bypassing/ignoring amdgpu driver completely. This improves framebuffer copy times by factor x20. 
+## Slow screen update rate on AMD/DisplayLink
 
-This is NOT a correct way to implement it, and users mileage can vary using this implementation (crashes have been reported). When working however, it will likely make the system more performant than using upstream EVDI as it avoids framebuffer copy by the GPU in the compositor.
+The amdgpu driver uses uncached CPU mapping over DMA-BUF interface to rendered framebuffer. Although it is normal for discreet GPU's, it is quite unfortunate for shared memory systems like Ryzen 7 4750U. Uncached CPU access caters for very poor framebuffer copy performance in EVDI, which is especially visible on high resolutions screens. DMA-BUF interface is a preferred method to share buffer with EVDI and it works quite well on Intel integrated graphics systems. Currently upstream EVDI driver avoids this pixel path for AMD systems when running on Gnome/Wayland. 
+
+## Hack-fix on this branch
+
+In this hack-fix a cached CPU mapping on backing pages is done in EVDI bypassing/ignoring amdgpu driver completely. This is NOT a correct way to implement it as amdgpu driver should be responsible for managing its memory. Although it seems to work (on APUs), users mileage can vary using this implementation (crashes have been reported). This hack fix improves framebuffer copy times significantly. When working, it will likely make the system more performant than using upstream EVDI as it avoids additional framebuffer copy by the GPU in the compositor.
   
-
-
-How to use it.
+## How to use it.
 (make sure you know how to revert it in case it does not work)
 
 ### With DKMS version >= 2.8.2  
