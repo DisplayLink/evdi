@@ -1,17 +1,13 @@
 # Extensible Virtual Display Interface
 
-## (Use at own risk) Hack-fixes for slow screen update rate on AMD/DisplayLink
+## (Use at own risk) Hack-fix for slow screen update rate on AMD/DisplayLink
 
-Out of pure curiosity I have been investigating the slow screen update rate on AMD laptops when driving DisplayLink screens. 
-More details about my findings I shared in this PR: https://github.com/DisplayLink/evdi/pull/282.
-
-Work around #1 (Gnome/Wayland only): https://github.com/DisplayLink/evdi/pull/282
-
-Work-around #2 
-This branch. This has been working fairly OK on Debian 11 on both Gnome/Wayland and Gnome/X11 for two evenings now. I do not have other DE's to try. I am using Thinkpad T14s with AMD 4750U with a 4K DisplayLink dock. I think this could only work on AMD APU's. I thought I could share it in case anyone is willing to try it.
+For Gnome/Wayland please use upstream EVDI: https://github.com/DisplayLink/evdi
 
 About this hack-fix:
-Slow screen update rate is related to the slow texture copy in EVDI. The imported dma-buf from AMDGPU is mapped into virtual address space by the AMDGPU driver and it hits quite slow copy path from GPU to CPU buffer (~500MB/s). Since we have backing physical pages we request additional virtual mapping from the kernel directly ignoring AMDGPU driver's mapping. The mapping is only done for the duration of the copy and then it is released immediately. The new mapping gives (10GB/s rate) and it makes the screen usable. This additional mapping is probably not very legal to do, and there could be problems down the line, but it was nice to see it working:)
+The amdgpu driver implements uncached CPU mapping over DMA-BUF interface to rendered framebuffer (this is normal for discreet GPU's but quite unfortunate for shared memory systems like Ryzen 7 4750U). DMA-BUF is a preferred way to import buffer into the EVDI driver and it works quite well on Intel integrated graphics. On AMD the uncached CPU access caters for very poor framebuffer copy performance in EVDI. In this hack-fix a cached CPU mapping on backing pages is done in EVDI bypassing/ignoring amdgpu driver completely. This improves framebuffer copy times by factor x20. 
+
+This is NOT a correct way to implement it, and users mileage can vary using this implementation (crashes have been reported). When working however, it will likely make the system more performant than using upstream EVDI as it avoids framebuffer copy by the GPU in the compositor.
   
 
 

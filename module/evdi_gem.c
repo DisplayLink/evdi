@@ -231,7 +231,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int page_count = obj->base.size / PAGE_SIZE;
 	int ret;
 
-	if (obj->base.import_attach) {
+	if (obj->base.import_attach && !evdi_vmap_texture) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 		struct dma_buf_map map;
 
@@ -260,7 +260,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 
 void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
-	if (obj->base.import_attach) {
+	if (obj->base.import_attach && !evdi_vmap_texture) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 		struct dma_buf_map map;
 
@@ -351,19 +351,19 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 {
 	struct evdi_gem_object *obj;
 	int npages;
+        if (!evdi_vmap_texture) {
+		if (evdi_disable_texture_import)
+			return ERR_PTR(-ENOMEM);
 
-	if (evdi_disable_texture_import)
-		return ERR_PTR(-ENOMEM);
+			else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
+				char task_comm[TASK_COMM_LEN] = { 0 };
 
-		else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
-			char task_comm[TASK_COMM_LEN] = { 0 };
+				get_task_comm(task_comm, current);
 
-			get_task_comm(task_comm, current);
-
-			if (strcmp(task_comm, "gnome-shell") == 0)
-				return ERR_PTR(-ENOMEM);
-		}
-
+				if (strcmp(task_comm, "gnome-shell") == 0)
+					return ERR_PTR(-ENOMEM);
+			}
+	}
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
 		return ERR_CAST(obj);
