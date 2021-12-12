@@ -58,9 +58,11 @@ static const struct file_operations evdi_driver_fops = {
 	.read = drm_read,
 	.unlocked_ioctl = drm_ioctl,
 	.release = drm_release,
+
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = evdi_compat_ioctl,
 #endif
+
 	.llseek = noop_llseek,
 };
 

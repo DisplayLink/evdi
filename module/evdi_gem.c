@@ -8,6 +8,7 @@
  * more details.
  */
 
+#include <linux/sched.h>
 #include <linux/version.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
@@ -238,6 +239,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 		if (ret)
 			return -ENOMEM;
 		obj->vmapping = map.vaddr;
+		obj->vmap_is_iomem = map.is_iomem;
 #else
 		obj->vmapping = dma_buf_vmap(obj->base.import_attach->dmabuf);
 		if (!obj->vmapping)
@@ -260,7 +262,12 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
-		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(obj->vmapping);
+		struct dma_buf_map map;
+
+		if (obj->vmap_is_iomem)
+			dma_buf_map_set_vaddr_iomem(&map, obj->vmapping);
+		else
+			dma_buf_map_set_vaddr(&map, obj->vmapping);
 
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
 #else
@@ -347,6 +354,15 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 
 	if (evdi_disable_texture_import)
 		return ERR_PTR(-ENOMEM);
+
+		else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
+			char task_comm[TASK_COMM_LEN] = { 0 };
+
+			get_task_comm(task_comm, current);
+
+			if (strcmp(task_comm, "gnome-shell") == 0)
+				return ERR_PTR(-ENOMEM);
+		}
 
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))

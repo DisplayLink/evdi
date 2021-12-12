@@ -85,6 +85,7 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 	return rect;
 }
 
+#ifdef CONFIG_FB
 static int evdi_handle_damage(struct evdi_framebuffer *fb,
 		       int x, int y, int width, int height)
 {
@@ -104,7 +105,6 @@ static int evdi_handle_damage(struct evdi_framebuffer *fb,
 	return 0;
 }
 
-#ifdef CONFIG_FB
 static int evdi_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 	unsigned long start = vma->vm_start;
@@ -243,7 +243,7 @@ static int evdi_user_framebuffer_dirty(
 	struct drm_atomic_state *state;
 	struct drm_plane *plane;
 	int ret = 0;
-	int i;
+	unsigned int i;
 
 	EVDI_CHECKPT();
 

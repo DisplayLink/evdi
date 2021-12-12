@@ -20,10 +20,14 @@
 #include <drm/drm_drv.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_ioctl.h>
-#include <drm/drm_irq.h>
 #include <drm/drm_vblank.h>
 #else
 #include <drm/drmP.h>
+#endif
+#if KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_legacy.h>
+#else
+#include <drm/drm_irq.h>
 #endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
@@ -59,6 +63,9 @@ struct evdi_gem_object {
 	struct drm_gem_object base;
 	struct page **pages;
 	void *vmapping;
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	bool vmap_is_iomem;
+#endif
 	struct sg_table *sg;
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	struct dma_resv *resv;
@@ -95,6 +102,7 @@ void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file_priv);
 #ifdef CONFIG_COMPAT
 long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 #endif
+
 
 #ifdef CONFIG_FB
 int evdi_fbdev_init(struct drm_device *dev);

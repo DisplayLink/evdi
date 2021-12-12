@@ -235,7 +235,7 @@ static struct device_attribute evdi_device_attributes[] = {
 
 void evdi_sysfs_init(struct device *root)
 {
-	int i;
+	unsigned int i;
 
 	if (!PTR_ERR_OR_ZERO(root))
 		for (i = 0; i < ARRAY_SIZE(evdi_device_attributes); i++)
@@ -244,7 +244,7 @@ void evdi_sysfs_init(struct device *root)
 
 void evdi_sysfs_exit(struct device *root)
 {
-	int i;
+	unsigned int i;
 
 	if (PTR_ERR_OR_ZERO(root)) {
 		EVDI_ERROR("root device is null");

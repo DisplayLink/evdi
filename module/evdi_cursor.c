@@ -232,8 +232,8 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 			bool const is_pix_sane =
 				mouse_pix_x >= 0 &&
 				mouse_pix_y >= 0 &&
-				mouse_pix_x < fb->width &&
-				mouse_pix_y < fb->height;
+				mouse_pix_x < (int)fb->width &&
+				mouse_pix_y < (int)fb->height;
 
 			if (!is_pix_sane)
 				continue;
