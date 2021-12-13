@@ -23,6 +23,9 @@
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>
 
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+MODULE_IMPORT_NS(DMA_BUF);
+#endif
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 static int evdi_prime_pin(struct drm_gem_object *obj);
