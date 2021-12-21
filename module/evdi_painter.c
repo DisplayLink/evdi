@@ -892,7 +892,8 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter->is_connected = true;
 	painter->needs_full_modeset = true;
 
-	evdi_add_i2c_adapter(evdi);
+	if (!evdi->i2c_adapter)
+		evdi_add_i2c_adapter(evdi);
 
 	painter_unlock(painter);
 
