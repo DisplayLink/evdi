@@ -66,7 +66,7 @@ struct evdi_gem_object {
 	unsigned int pages_pin_count;
 	struct mutex pages_lock;
 	void *vmapping;
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	bool vmap_is_iomem;
 #endif
 	struct sg_table *sg;

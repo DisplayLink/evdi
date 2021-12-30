@@ -65,14 +65,14 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	, struct drm_atomic_state *state
 #else
 	, __always_unused struct drm_crtc_state *old_state
 #endif
 	)
 {
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
 #else
 	struct drm_crtc_state *crtc_state = crtc->state;
@@ -94,7 +94,7 @@ static void evdi_crtc_atomic_flush(
 	crtc_state->event = NULL;
 }
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
 {
@@ -189,7 +189,7 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
 {
 	return 1;
@@ -208,12 +208,12 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
 	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
 #endif
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI)
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
 #endif
@@ -473,7 +473,7 @@ static int evdi_crtc_init(struct drm_device *dev)
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	cursor_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_CURSOR,
 						&evdi_cursor_helper_funcs);
 #endif
