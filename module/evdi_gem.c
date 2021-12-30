@@ -27,7 +27,7 @@
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 static int evdi_prime_pin(struct drm_gem_object *obj);
 static void evdi_prime_unpin(struct drm_gem_object *obj);
 
@@ -87,7 +87,7 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 #endif
 	obj->resv = &obj->_resv;
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	obj->base.funcs = &gem_obj_funcs;
 #endif
 
@@ -267,7 +267,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int ret;
 
 	if (obj->base.import_attach) {
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		struct dma_buf_map map;
 
 		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
@@ -297,7 +297,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
 	if (obj->base.import_attach) {
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		struct dma_buf_map map;
 
 		if (obj->vmap_is_iomem)
@@ -415,7 +415,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 		return ERR_PTR(-ENOMEM);
 	}
 
-#if KERNEL_VERSION(5, 12, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 12, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_prime_sg_to_page_array(sg, obj->pages, npages);
 #else
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
@@ -424,7 +424,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	return &obj->base;
 }
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 static int evdi_prime_pin(struct drm_gem_object *obj)
 {
 	struct evdi_gem_object *bo = to_evdi_bo(obj);
