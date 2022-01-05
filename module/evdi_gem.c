@@ -284,7 +284,6 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	}
 
 	ret = evdi_pin_pages(obj);
-	ret = evdi_gem_get_pages(obj, GFP_KERNEL);
 	if (ret)
 		return ret;
 
@@ -318,7 +317,6 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 		obj->vmapping = NULL;
 	}
 
-	evdi_gem_put_pages(obj);
 	evdi_unpin_pages(obj);
 }
 
@@ -365,7 +363,6 @@ int evdi_gem_mmap(struct drm_file *file,
 	}
 	gobj = to_evdi_bo(obj);
 
-	ret = evdi_gem_get_pages(gobj, GFP_KERNEL);
 	ret = evdi_pin_pages(gobj);
 	if (ret)
 		goto out;
