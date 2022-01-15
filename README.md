@@ -25,7 +25,7 @@ This will allow the EVDI module to be automatically built, signed (if using Secu
    sudo dkms unbuild evdi/version  
    sudo dkms build evdi/version  
    sudo dkms install evdi/version  
-5. append "vmap_texture=1" to /etc/modprobe/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
+5. append "vmap_texture=1" to /etc/modprobe.d/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
 6. reboot.
 
 A shell script to automate this process was contributed by dkebler and can be found as evdi-install.sh.  
