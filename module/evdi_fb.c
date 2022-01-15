@@ -25,7 +25,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_atomic.h>
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_damage_helper.h>
 #endif
 #include "evdi_drm_drv.h"
@@ -221,7 +221,7 @@ static struct fb_ops evdifb_ops = {
 };
 #endif /* CONFIG_FB */
 
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 /*
  * Function taken from
@@ -331,7 +331,7 @@ static void evdi_user_framebuffer_destroy(struct drm_framebuffer *fb)
 static const struct drm_framebuffer_funcs evdifb_funcs = {
 	.create_handle = evdi_user_framebuffer_create_handle,
 	.destroy = evdi_user_framebuffer_destroy,
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	.dirty = drm_atomic_helper_dirtyfb,
 #else
 	.dirty = evdi_user_framebuffer_dirty,
@@ -541,7 +541,7 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 		struct fb_info *info;
 
 		info = efbdev->helper.fbdev;
-#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 6, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		unregister_framebuffer(info);
 #else
 		unlink_framebuffer(info);

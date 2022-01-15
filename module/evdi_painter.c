@@ -10,7 +10,11 @@
 #include "linux/thread_info.h"
 #include "linux/mm.h"
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_file.h>
+#include <drm/drm_vblank.h>
+#include <drm/drm_ioctl.h>
+#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 #include <drm/drmP.h>
 #endif
@@ -26,6 +30,10 @@
 #include <linux/completion.h>
 
 #include <linux/dma-buf.h>
+
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+MODULE_IMPORT_NS(DMA_BUF);
+#endif
 
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>
@@ -671,7 +679,7 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		if (painter->was_update_requested && painter->num_dirts) {
 #else
 		if (painter->was_update_requested) {
@@ -686,7 +694,7 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 	}
 }
 
-const char *dpms_str[] = { "on", "standby", "suspend", "off" };
+static const char * const dpms_str[] = { "on", "standby", "suspend", "off" };
 
 void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 {
@@ -884,7 +892,8 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter->is_connected = true;
 	painter->needs_full_modeset = true;
 
-	evdi_add_i2c_adapter(evdi);
+	if (!evdi->i2c_adapter)
+		evdi_add_i2c_adapter(evdi);
 
 	painter_unlock(painter);
 

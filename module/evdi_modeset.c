@@ -12,7 +12,10 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_vblank.h>
+#include <drm/drm_damage_helper.h>
+#elif KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_damage_helper.h>
 #else
 #include <drm/drmP.h>
@@ -62,25 +65,27 @@ static void evdi_crtc_set_nofb(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_atomic_flush(
 	struct drm_crtc *crtc
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	, struct drm_atomic_state *state
 #else
 	, __always_unused struct drm_crtc_state *old_state
 #endif
 	)
 {
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
 #else
 	struct drm_crtc_state *crtc_state = crtc->state;
 #endif
 	struct evdi_device *evdi = crtc->dev->dev_private;
+	bool notify_mode_changed = crtc_state->active &&
+				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
+	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
-
-	if (crtc_state->mode_changed && crtc_state->active)
+	if (notify_mode_changed)
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
 
-	if (crtc_state->active_changed)
+	if (notify_dpms)
 		evdi_painter_dpms_notify(evdi,
 			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
 
@@ -89,7 +94,7 @@ static void evdi_crtc_atomic_flush(
 	crtc_state->event = NULL;
 }
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 static void evdi_mark_full_screen_dirty(struct evdi_device *evdi)
 {
@@ -184,7 +189,7 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
 {
 	return 1;
@@ -203,12 +208,12 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
 	.atomic_destroy_state   = drm_atomic_helper_crtc_destroy_state,
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
 #endif
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
 #endif
@@ -468,7 +473,7 @@ static int evdi_crtc_init(struct drm_device *dev)
 	primary_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_PRIMARY,
 					  &evdi_plane_helper_funcs);
 
-#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	cursor_plane = evdi_create_plane(dev, DRM_PLANE_TYPE_CURSOR,
 						&evdi_cursor_helper_funcs);
 #endif
@@ -489,29 +494,11 @@ static int evdi_crtc_init(struct drm_device *dev)
 	return 0;
 }
 
-static int evdi_atomic_check(struct drm_device *dev,
-			     struct drm_atomic_state *state)
-{
-	struct drm_crtc *crtc;
-	struct drm_crtc_state *crtc_state;
-	int i;
-	struct evdi_device *evdi = dev->dev_private;
-
-	if (evdi_painter_needs_full_modeset(evdi->painter)) {
-		for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
-			crtc_state->active_changed = true;
-			crtc_state->mode_changed = true;
-		}
-	}
-
-	return drm_atomic_helper_check(dev, state);
-}
-
 static const struct drm_mode_config_funcs evdi_mode_funcs = {
 	.fb_create = evdi_fb_user_fb_create,
 	.output_poll_changed = NULL,
 	.atomic_commit = drm_atomic_helper_commit,
-	.atomic_check = evdi_atomic_check
+	.atomic_check = drm_atomic_helper_check
 };
 
 void evdi_modeset_init(struct drm_device *dev)
