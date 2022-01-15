@@ -2,14 +2,13 @@
 
 For Gnome/Wayland please use upstream EVDI: https://github.com/DisplayLink/evdi
 
-## Slow screen update rate on AMD/DisplayLink
+## The hack-fix for slow screen update on AMD/DisplayLink screens
 
-The amdgpu driver uses uncached CPU mapping over DMA-BUF interface to rendered framebuffer. Although it is normal for discreet GPU's, it is quite unfortunate for shared memory systems like Ryzen 7 4750U. Uncached CPU access caters for very poor framebuffer copy performance in EVDI, which is especially visible on high resolutions screens. DMA-BUF interface is a preferred method to share buffer with EVDI and it works quite well on Intel integrated graphics systems. Currently upstream EVDI driver avoids this pixel path for AMD systems when running on Gnome/Wayland. 
+The EVDI driver uses CPU to copy framebuffer. In order to make that copy fast the CPU requires cached access to the buffer. This is the case for integrated Intel GPU's. In case of AMD APU's (e.g. Ryzen 4750U) and most discrete GPU's the access to the framebuffer is uncached. Hence the copy is very slow. This branch is a hack-fix. It ignores AMDGPU driver and provides direct cached CPU access to the framebuffer. This is NOT A CORRECT way to implement it as the AMDGPU driver should be responsible for managing its memory. Although it seems to work with the latest kernels, users mileage may vary (crashes have been reported). It should only be tried on AMD APU's (not discrete GPU's).
 
-## Hack-fix on this branch
-
-In this hack-fix a cached CPU mapping on backing pages is done in EVDI bypassing/ignoring amdgpu driver completely. This is NOT a correct way to implement it as amdgpu driver should be responsible for managing its memory. Although it seems to work (on APUs), users mileage can vary using this implementation (crashes have been reported). This hack fix improves framebuffer copy times significantly. When working, it will likely make the system more performant than using upstream EVDI as it avoids additional framebuffer copy by the GPU in the compositor.
+Gnome/Wayland circumvents the problem described above by commanding the GPU to perform additional copy of the framebuffer which is then fed into EVDI. That buffer is cached and can be copied without hassle by EVDI. There are however two framebuffer copies instead of one which can affect performance. X11 does not implement such a work-around. 
   
+
 ## How to use it.
 (make sure you know how to revert it in case it does not work)
 
