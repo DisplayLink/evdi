@@ -77,6 +77,7 @@ struct evdi_gem_object {
 	struct reservation_object *resv;
 	struct reservation_object _resv;
 #endif
+        bool on_wayland;
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
