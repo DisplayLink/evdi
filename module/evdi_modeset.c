@@ -370,18 +370,17 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 
 		mutex_unlock(&plane->dev->struct_mutex);
 		if (!evdi->cursor_events_enabled) {
-                        if (fb != NULL) {
-                            if (efb->obj->allow_sw_cursor_rect_updates) {
-                                evdi_cursor_atomic_get_rect(&old_rect, old_state);
-                                evdi_cursor_atomic_get_rect(&rect, state);
+			if (fb != NULL) {
+				if (efb->obj->allow_sw_cursor_rect_updates) {
+					evdi_cursor_atomic_get_rect(&old_rect, old_state);
+					evdi_cursor_atomic_get_rect(&rect, state);
 
-                                evdi_painter_mark_dirty(evdi, &old_rect);
-                            }
-                            else {
-                                rect = evdi_painter_framebuffer_size(evdi->painter);
-                            }
-                            evdi_painter_mark_dirty(evdi, &rect);
-                        }
+					evdi_painter_mark_dirty(evdi, &old_rect);
+				} else {
+					rect = evdi_painter_framebuffer_size(evdi->painter);
+				}
+				evdi_painter_mark_dirty(evdi, &rect);
+			}
 			return;
 		}
 
