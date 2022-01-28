@@ -47,6 +47,15 @@ static struct drm_gem_object_funcs gem_obj_funcs = {
 };
 #endif
 
+bool evdi_was_called_by_mutter(void)
+{
+	char task_comm[TASK_COMM_LEN] = { 0 };
+
+	get_task_comm(task_comm, current);
+
+	return strcmp(task_comm, "gnome-shell") == 0;
+}
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -91,6 +100,8 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 	obj->base.funcs = &gem_obj_funcs;
 #endif
 
+	obj->allow_sw_cursor_rect_updates = false;
+
 	mutex_init(&obj->pages_lock);
 
 	return obj;
@@ -121,6 +132,7 @@ evdi_gem_create(struct drm_file *file,
 #else
 	drm_gem_object_put_unlocked(&obj->base);
 #endif
+	obj->allow_sw_cursor_rect_updates = evdi_was_called_by_mutter();
 	*handle_p = handle;
 	return 0;
 }
@@ -387,18 +399,14 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 {
 	struct evdi_gem_object *obj;
 	int npages;
+	bool called_by_mutter;
 
-	if (evdi_disable_texture_import)
+	called_by_mutter = evdi_was_called_by_mutter();
+
+	if (evdi_disable_texture_import ||
+	    (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0)) {
 		return ERR_PTR(-ENOMEM);
-
-		else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
-			char task_comm[TASK_COMM_LEN] = { 0 };
-
-			get_task_comm(task_comm, current);
-
-			if (strcmp(task_comm, "gnome-shell") == 0)
-				return ERR_PTR(-ENOMEM);
-		}
+	}
 
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
@@ -418,6 +426,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
 #endif
 	obj->sg = sg;
+	obj->allow_sw_cursor_rect_updates = called_by_mutter;
 	return &obj->base;
 }
 

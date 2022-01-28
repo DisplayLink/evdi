@@ -77,6 +77,7 @@ struct evdi_gem_object {
 	struct reservation_object *resv;
 	struct reservation_object _resv;
 #endif
+	bool allow_sw_cursor_rect_updates;
 };
 
 #define to_evdi_bo(x) container_of(x, struct evdi_gem_object, base)
