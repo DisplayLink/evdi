@@ -47,7 +47,7 @@ static struct drm_gem_object_funcs gem_obj_funcs = {
 };
 #endif
 
-bool evdi_was_called_by_mutter(void)
+static bool evdi_was_called_by_mutter(void)
 {
 	char task_comm[TASK_COMM_LEN] = { 0 };
 
