@@ -100,7 +100,7 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 	obj->base.funcs = &gem_obj_funcs;
 #endif
 
-        obj->on_wayland = false;
+        obj->allow_sw_cursor_rect_updates = false;
 
 	mutex_init(&obj->pages_lock);
 
@@ -132,7 +132,7 @@ evdi_gem_create(struct drm_file *file,
 #else
 	drm_gem_object_put_unlocked(&obj->base);
 #endif
-        obj->on_wayland = evdi_was_called_by_mutter();
+        obj->allow_sw_cursor_rect_updates = evdi_was_called_by_mutter();
 	*handle_p = handle;
 	return 0;
 }
@@ -399,12 +399,12 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 {
 	struct evdi_gem_object *obj;
 	int npages;
-        bool on_wayland;
+        bool called_by_mutter;
 
-        on_wayland = evdi_was_called_by_mutter();
+        called_by_mutter = evdi_was_called_by_mutter();
 
 	if (evdi_disable_texture_import ||
-            (on_wayland && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0)) {
+            (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0)) {
                 return ERR_PTR(-ENOMEM);
         }
 
@@ -426,7 +426,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
 #endif
 	obj->sg = sg;
-        obj->on_wayland = on_wayland;
+        obj->allow_sw_cursor_rect_updates = called_by_mutter;
 	return &obj->base;
 }
 
