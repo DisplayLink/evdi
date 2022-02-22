@@ -675,14 +675,14 @@ void evdi_close(evdi_handle handle)
 void evdi_connect(evdi_handle handle,
 		  const unsigned char *edid,
 		  const unsigned int edid_length,
-		  const uint32_t sku_area_limit)
+		  const uint32_t pixel_per_second_limit)
 {
 	struct drm_evdi_connect cmd = {
 		.connected = 1,
 		.dev_index = handle->device_index,
 		.edid = edid,
 		.edid_length = edid_length,
-		.sku_area_limit = sku_area_limit,
+		.sku_area_limit = pixel_per_second_limit,
 	};
 
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");
