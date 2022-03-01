@@ -86,6 +86,7 @@ struct evdi_framebuffer {
 	struct drm_framebuffer base;
 	struct evdi_gem_object *obj;
 	bool active;
+	bool mode_updated;
 };
 
 #define to_evdi_fb(x) container_of(x, struct evdi_framebuffer, base)

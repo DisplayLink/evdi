@@ -755,6 +755,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 
 	bits_per_pixel = fb->format->cpp[0] * 8;
 	pixel_format = fb->format->format;
+	painter->scanout_fb->mode_updated = true;
 
 
 	evdi_log_pixel_format(pixel_format, buf, sizeof(buf));
@@ -1078,7 +1079,12 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		}
 	}
 
-	if ((unsigned int)cmd->buf_width != efb->base.width ||
+	if (efb->mode_updated) {
+		efb->mode_updated = false;
+		err = 0;
+		goto err_fb;
+	}
+	else if ((unsigned int)cmd->buf_width != efb->base.width ||
 		(unsigned int)cmd->buf_height != efb->base.height) {
 		EVDI_ERROR("Invalid buffer dimension\n");
 		err = -EINVAL;
