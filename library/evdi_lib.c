@@ -682,7 +682,7 @@ void evdi_connect(evdi_handle handle,
 		.dev_index = handle->device_index,
 		.edid = edid,
 		.edid_length = edid_length,
-		.sku_area_limit = pixel_per_second_limit,
+		.pixel_per_second_limit = pixel_per_second_limit,
 	};
 
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "connect");

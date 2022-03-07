@@ -38,7 +38,7 @@ struct drm_evdi_connect32 {
 	int32_t dev_index;
 	uint32_t edid_ptr32;
 	uint32_t edid_length;
-	uint32_t sku_area_limit;
+	uint32_t pixel_per_second_limit;
 };
 
 struct drm_evdi_grabpix32 {
@@ -76,7 +76,7 @@ static int compat_evdi_connect(struct file *file,
 		|| __put_user((void __user *)(unsigned long)req32.edid_ptr32,
 			  &request->edid)
 		|| __put_user(req32.edid_length, &request->edid_length)
-		|| __put_user(req32.sku_area_limit, &request->sku_area_limit))
+		|| __put_user(req32.pixel_per_second_limit, &request->pixel_per_second_limit))
 		return -EFAULT;
 
 	return drm_ioctl(file, DRM_IOCTL_EVDI_CONNECT,

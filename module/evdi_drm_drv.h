@@ -51,7 +51,7 @@ struct evdi_device {
 	struct evdi_cursor *cursor;
 	bool cursor_events_enabled;
 
-	uint32_t sku_area_limit;
+	uint32_t pixel_per_second_limit;
 
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
