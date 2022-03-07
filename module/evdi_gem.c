@@ -280,7 +280,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 
 	if (obj->base.import_attach) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
-		struct dma_buf_map map;
+		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(NULL);
 
 		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
 		if (ret)
