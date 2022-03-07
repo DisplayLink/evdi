@@ -1083,8 +1083,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		efb->mode_updated = false;
 		err = 0;
 		goto err_fb;
-	}
-	else if ((unsigned int)cmd->buf_width != efb->base.width ||
+	} else if ((unsigned int)cmd->buf_width != efb->base.width ||
 		(unsigned int)cmd->buf_height != efb->base.height) {
 		EVDI_ERROR("Invalid buffer dimension\n");
 		err = -EINVAL;
