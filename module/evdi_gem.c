@@ -47,6 +47,15 @@ static struct drm_gem_object_funcs gem_obj_funcs = {
 };
 #endif
 
+static bool evdi_was_called_by_mutter(void)
+{
+	char task_comm[TASK_COMM_LEN] = { 0 };
+
+	get_task_comm(task_comm, current);
+
+	return strcmp(task_comm, "gnome-shell") == 0;
+}
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -91,6 +100,8 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 	obj->base.funcs = &gem_obj_funcs;
 #endif
 
+	obj->allow_sw_cursor_rect_updates = false;
+
 	mutex_init(&obj->pages_lock);
 
 	return obj;
@@ -121,6 +132,7 @@ evdi_gem_create(struct drm_file *file,
 #else
 	drm_gem_object_put_unlocked(&obj->base);
 #endif
+	obj->allow_sw_cursor_rect_updates = evdi_was_called_by_mutter();
 	*handle_p = handle;
 	return 0;
 }
@@ -284,7 +296,6 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	}
 
 	ret = evdi_pin_pages(obj);
-	ret = evdi_gem_get_pages(obj, GFP_KERNEL);
 	if (ret)
 		return ret;
 
@@ -318,7 +329,6 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 		obj->vmapping = NULL;
 	}
 
-	evdi_gem_put_pages(obj);
 	evdi_unpin_pages(obj);
 }
 
@@ -365,7 +375,6 @@ int evdi_gem_mmap(struct drm_file *file,
 	}
 	gobj = to_evdi_bo(obj);
 
-	ret = evdi_gem_get_pages(gobj, GFP_KERNEL);
 	ret = evdi_pin_pages(gobj);
 	if (ret)
 		goto out;
@@ -390,19 +399,15 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 {
 	struct evdi_gem_object *obj;
 	int npages;
-        if (!evdi_vmap_texture) {
-		if (evdi_disable_texture_import)
-			return ERR_PTR(-ENOMEM);
+	bool called_by_mutter;
 
-			else if (strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
-				char task_comm[TASK_COMM_LEN] = { 0 };
+	called_by_mutter = evdi_was_called_by_mutter();
 
-				get_task_comm(task_comm, current);
-
-				if (strcmp(task_comm, "gnome-shell") == 0)
-					return ERR_PTR(-ENOMEM);
-			}
+	if (evdi_disable_texture_import ||
+	    (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0)) {
+		return ERR_PTR(-ENOMEM);
 	}
+
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
 		return ERR_CAST(obj);
@@ -421,6 +426,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	drm_prime_sg_to_page_addr_arrays(sg, obj->pages, NULL, npages);
 #endif
 	obj->sg = sg;
+	obj->allow_sw_cursor_rect_updates = called_by_mutter;
 	return &obj->base;
 }
 
