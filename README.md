@@ -1,46 +1,5 @@
 # Extensible Virtual Display Interface
 
-For Gnome/Wayland please use upstream EVDI: https://github.com/DisplayLink/evdi
-
-## The hack-fix for slow screen update on AMD/DisplayLink screens
-
-The EVDI driver uses CPU to copy framebuffer. In order to make that copy fast the CPU requires cached access to the buffer. This is the case for integrated Intel GPU's. In case of AMD APU's (e.g. Ryzen 4750U) and most discrete GPU's the access to the framebuffer is uncached. Hence the copy is very slow. This branch is a hack-fix. It ignores AMDGPU driver and provides direct cached CPU access to the framebuffer. This is NOT A CORRECT way to implement it as the AMDGPU driver should be responsible for managing its memory. Although it seems to work with the latest kernels, users mileage may vary (crashes have been reported). It should only be tried on AMD APU's (not discrete GPU's).
-
-Gnome/Wayland circumvents the problem described above by commanding the GPU to perform additional copy of the framebuffer which is then fed into EVDI. That buffer is cached and can be copied without hassle by EVDI. There are however two framebuffer copies instead of one which can affect performance. X11 does not implement such a work-around. 
-  
-
-## How to use it.
-(make sure you know how to revert it in case it does not work)
-
-### With DKMS version >= 2.8.2  
-(Note:  a distribution's dkms binary can be upgraded: https://github.com/dell/dkms/)  
-
-This will allow the EVDI module to be automatically built, signed (if using Secure Boot), and installed during kernel upgrades.  
-
-1. Install latest DisplayLink driver, get your DisplayLink screen to work (although with slow update rate)
-2. Clone this repo and checkout this branch: amd_vmap_texture
-3. copy files from module dir into /usr/src/evdi* (highest version) dir
-4. Run:
-   sudo dkms uninstall evdi/version  
-   sudo dkms unbuild evdi/version  
-   sudo dkms build evdi/version  
-   sudo dkms install evdi/version  
-5. append "vmap_texture=1" to /etc/modprobe.d/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
-6. reboot.
-
-A shell script to automate this process was contributed by dkebler and can be found as evdi-install.sh.  
-
-## With DKMS version < 2.8.2  
-(Note:  The EVDI module will need to be replaced after each kernel upgrade. If secure boot is enabled, the .ko file will need to be signed.)  
-
-1. Install latest DisplayLink driver, get your DisplayLink screen to work (although with slow update rate)
-2. Clone this repo and checkout this branch: amd_vmap_texture
-3. Build the kernel module (cd evdi/module, then make)  If secure boot is enabled, sign evdi.ko now.
-4. sudo modinfo evdi (to get the location of the running kernel module)
-5. sudo cp ./evdi.ko (location from #4)
-6. append "vmap_texture=1" to /etc/modprobe/evdi.conf (the content of the file should look like this "options evdi initial_device_count=4 vmap_texture=1")
-7. reboot.
-
 [![Build Status](https://travis-ci.org/DisplayLink/evdi.svg?branch=devel)](https://travis-ci.org/DisplayLink/evdi)
 
 The Extensible Virtual Display Interface (EVDI) is a Linux&reg; kernel module that enables management of multiple screens, allowing user-space programs to take control over what happens with the image. It is essentially a virtual display you can add, remove and receive screen updates for, in an application that uses the `libevdi` library.

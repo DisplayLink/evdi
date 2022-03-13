@@ -27,7 +27,7 @@ MODULE_PARM_DESC(initial_device_count, "Initial DRM device count (default: 0)");
 
 module_param_named(vmap_texture,
 		   evdi_vmap_texture, ushort, 0644);
-MODULE_PARM_DESC(vmap_texture, "map GPU texture for faster CPU access, AMD slow copy work-around (default: 0, set 1 to disable)");
+MODULE_PARM_DESC(vmap_texture, "cached texture mapping for faster CPU access, AMD slow copy work-around (default: 0, set 1 to disable)");
 module_param_named(disable_texture_import,
 		   evdi_disable_texture_import, ushort, 0644);
 MODULE_PARM_DESC(disable_texture_import, "Disable fast path GPU texture import (default: 0, set 1 to disable)");
