@@ -25,6 +25,9 @@
 #include <drm/drm_probe_helper.h>
 #endif
 
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#include <drm/drm_managed.h>
+#endif
 #include "evdi_drm_drv.h"
 #include "evdi_platform_drv.h"
 #include "evdi_cursor.h"
@@ -143,6 +146,14 @@ static struct drm_driver driver = {
 	.patchlevel = DRIVER_PATCH,
 };
 
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
+				       __always_unused void *ptr)
+{
+	EVDI_INFO("Evdi drm_device removed.\n");
+}
+#endif
+
 static int evdi_drm_device_setup(struct drm_device *dev)
 {
 	struct evdi_device *evdi;
@@ -181,6 +192,11 @@ static int evdi_drm_device_setup(struct drm_device *dev)
 
 	drm_kms_helper_poll_init(dev);
 
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+	ret = drmm_add_action_or_reset(dev, evdi_drm_device_release_cb, NULL);
+	if (ret)
+		goto err_fb;
+#endif
 	return 0;
 
 err_fb:
