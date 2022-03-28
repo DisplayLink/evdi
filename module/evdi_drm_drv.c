@@ -281,6 +281,7 @@ err_free:
 int evdi_drm_device_remove(struct drm_device *dev)
 {
 	drm_dev_unplug(dev);
+	drm_dev_put(dev);
 	return 0;
 }
 
