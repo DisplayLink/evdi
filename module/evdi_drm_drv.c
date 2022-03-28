@@ -143,7 +143,7 @@ static struct drm_driver driver = {
 	.patchlevel = DRIVER_PATCH,
 };
 
-static int evdi_driver_setup(struct drm_device *dev)
+static int evdi_drm_device_setup(struct drm_device *dev)
 {
 	struct evdi_device *evdi;
 	int ret;
@@ -263,7 +263,7 @@ struct drm_device *evdi_drm_device_create(struct device *parent)
 	if (IS_ERR(dev))
 		return dev;
 
-	ret = evdi_driver_setup(dev);
+	ret = evdi_drm_device_setup(dev);
 	if (ret)
 		goto err_free;
 
