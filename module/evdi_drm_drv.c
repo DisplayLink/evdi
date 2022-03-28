@@ -92,7 +92,7 @@ static struct drm_driver driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
 #endif
-	.unload = evdi_driver_unload,
+	.unload = evdi_drm_device_unload,
 
 	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
@@ -195,7 +195,7 @@ err_free:
 	return ret;
 }
 
-void evdi_driver_unload(struct drm_device *dev)
+void evdi_drm_device_unload(struct drm_device *dev)
 {
 	struct evdi_device *evdi = dev->dev_private;
 
