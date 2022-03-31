@@ -24,10 +24,10 @@
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>
 #endif
-
 #if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_managed.h>
 #endif
+#include <drm/drm_atomic_helper.h>
 #include "evdi_drm_drv.h"
 #include "evdi_platform_drv.h"
 #include "evdi_cursor.h"
@@ -297,6 +297,7 @@ err_free:
 int evdi_drm_device_remove(struct drm_device *dev)
 {
 	drm_dev_unplug(dev);
+	drm_atomic_helper_shutdown(dev);
 	drm_dev_put(dev);
 	return 0;
 }
