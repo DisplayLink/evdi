@@ -403,8 +403,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 
 	called_by_mutter = evdi_was_called_by_mutter();
 
-	if (evdi_disable_texture_import ||
-	    (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0)) {
+	if (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
 		return ERR_PTR(-ENOMEM);
 	}
 
