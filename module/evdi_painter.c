@@ -1209,6 +1209,9 @@ void evdi_painter_cleanup(struct evdi_painter *painter)
 	kfree(painter->edid);
 	painter->edid_length = 0;
 	painter->edid = NULL;
+	if (painter->scanout_fb)
+		drm_framebuffer_put(&painter->scanout_fb->base);
+	painter->scanout_fb = NULL;
 
 	evdi_painter_send_vblank(painter);
 
