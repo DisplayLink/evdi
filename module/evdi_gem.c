@@ -56,6 +56,14 @@ static bool evdi_was_called_by_mutter(void)
 	return strcmp(task_comm, "gnome-shell") == 0;
 }
 
+static bool evdi_drm_gem_object_use_import_attach(struct drm_gem_object *obj)
+{
+	if (!obj || !obj->import_attach)
+		return false;
+
+	return obj->import_attach && strcmp(obj->import_attach->dmabuf->owner->name, "amdgpu") != 0;
+}
+
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
 				       struct drm_gem_object *obj)
 {
@@ -278,7 +286,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	int page_count = obj->base.size / PAGE_SIZE;
 	int ret;
 
-	if (obj->base.import_attach) {
+	if (evdi_drm_gem_object_use_import_attach(&obj->base)) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(NULL);
 
@@ -307,7 +315,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 
 void evdi_gem_vunmap(struct evdi_gem_object *obj)
 {
-	if (obj->base.import_attach) {
+	if (evdi_drm_gem_object_use_import_attach(&obj->base)) {
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		struct dma_buf_map map;
 
@@ -402,10 +410,6 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	bool called_by_mutter;
 
 	called_by_mutter = evdi_was_called_by_mutter();
-
-	if (called_by_mutter && strcmp(attach->dmabuf->owner->name, "amdgpu") == 0) {
-		return ERR_PTR(-ENOMEM);
-	}
 
 	obj = evdi_gem_alloc_object(dev, attach->dmabuf->size);
 	if (IS_ERR(obj))
