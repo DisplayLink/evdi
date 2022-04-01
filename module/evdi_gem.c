@@ -241,7 +241,7 @@ static int evdi_gem_get_pages(struct evdi_gem_object *obj,
 	obj->pages = pages;
 
 #if defined(CONFIG_X86)
-	drm_clflush_pages(obj->pages, obj->base.size / PAGE_SIZE);
+	drm_clflush_pages(obj->pages, DIV_ROUND_UP(obj->base.size, PAGE_SIZE));
 #endif
 
 	return 0;
@@ -283,7 +283,7 @@ static void evdi_unpin_pages(struct evdi_gem_object *obj)
 
 int evdi_gem_vmap(struct evdi_gem_object *obj)
 {
-	int page_count = obj->base.size / PAGE_SIZE;
+	int page_count = DIV_ROUND_UP(obj->base.size, PAGE_SIZE);
 	int ret;
 
 	if (evdi_drm_gem_object_use_import_attach(&obj->base)) {
@@ -415,7 +415,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 	if (IS_ERR(obj))
 		return ERR_CAST(obj);
 
-	npages = PAGE_ALIGN(attach->dmabuf->size) / PAGE_SIZE;
+	npages = DIV_ROUND_UP(attach->dmabuf->size, PAGE_SIZE);
 	DRM_DEBUG_PRIME("Importing %d pages\n", npages);
 	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
 	if (!obj->pages) {
