@@ -11,7 +11,7 @@ ifneq (,$(findstring 1, $(EL8)))
 EL8FLAG := -DEL8
 endif
 
-Raspbian := $(shell cat /etc/os-release 2>/dev/null | grep -c "Raspbian" )
+Raspbian := $(shell grep -Eic 'raspb(erry|ian)' /proc/cpuinfo /etc/os-release 2>/dev/null )
 ifeq (,$(findstring 0, $(Raspbian)))
 RPIFLAG := -DRPI
 endif
