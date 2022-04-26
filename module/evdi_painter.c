@@ -574,7 +574,7 @@ struct drm_clip_rect evdi_painter_framebuffer_size(
 	efb = painter->scanout_fb;
 	if (!efb) {
 		if (painter->is_connected)
-			EVDI_DEBUG("Scanout buffer not set.");
+			EVDI_WARN("Scanout buffer not set.");
 		goto unlock;
 	}
 	rect.x1 = 0;
@@ -602,7 +602,7 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	efb = painter->scanout_fb;
 	if (!efb) {
 		if (painter->is_connected)
-			EVDI_DEBUG("(card%d) Skip clip rect. Scanout buffer not set.\n",
+			EVDI_WARN("(card%d) Skip clip rect. Scanout buffer not set.\n",
 			   evdi->dev_index);
 		goto unlock;
 	}
@@ -1080,7 +1080,7 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 
 	if ((unsigned int)cmd->buf_width != efb->base.width ||
 		(unsigned int)cmd->buf_height != efb->base.height) {
-		EVDI_ERROR("Invalid buffer dimension\n");
+		EVDI_DEBUG("Invalid buffer dimension\n");
 		err = -EINVAL;
 		goto err_fb;
 	}
@@ -1315,7 +1315,7 @@ bool evdi_painter_i2c_data_notify(struct evdi_painter *painter, struct i2c_msg *
 	}
 
 	if (msg->addr != I2C_ADDRESS_DDCCI) {
-		EVDI_DEBUG("Ignored ddc/ci data for address 0x%x\n", msg->addr);
+		EVDI_WARN("Ignored ddc/ci data for address 0x%x\n", msg->addr);
 		return false;
 	}
 

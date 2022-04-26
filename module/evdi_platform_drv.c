@@ -155,7 +155,7 @@ int evdi_platform_add_devices(struct device *device, unsigned int val)
 		return -EINVAL;
 	}
 
-	EVDI_DEBUG("Increasing device count to %u\n", dev_count + val);
+	EVDI_INFO("Increasing device count to %u\n", dev_count + val);
 	while (val-- && evdi_platform_device_add(device, NULL) == 0)
 		;
 	return 0;

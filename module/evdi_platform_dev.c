@@ -41,8 +41,8 @@ struct platform_device *evdi_platform_dev_create(struct platform_device_info *in
 
 	platform_dev = platform_device_register_full(info);
 	if (dma_set_mask(&platform_dev->dev, DMA_BIT_MASK(64))) {
-		EVDI_DEBUG("Unable to change dma mask to 64 bit. ");
-		EVDI_DEBUG("Sticking with 32 bit\n");
+		EVDI_WARN("Unable to change dma mask to 64 bit. ");
+		EVDI_WARN("Sticking with 32 bit\n");
 	}
 
 	EVDI_INFO("Evdi platform_device create\n");

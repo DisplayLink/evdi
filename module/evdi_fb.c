@@ -63,22 +63,22 @@ struct drm_clip_rect evdi_framebuffer_sanitize_rect(
 
 
 	if (rect.x1 > fb->base.width) {
-		EVDI_WARN("Wrong clip rect: x1 > fb.width\n");
+		EVDI_DEBUG("Wrong clip rect: x1 > fb.width\n");
 		rect.x1 = fb->base.width;
 	}
 
 	if (rect.y1 > fb->base.height) {
-		EVDI_WARN("Wrong clip rect: y1 > fb.height\n");
+		EVDI_DEBUG("Wrong clip rect: y1 > fb.height\n");
 		rect.y1 = fb->base.height;
 	}
 
 	if (rect.x2 > fb->base.width) {
-		EVDI_WARN("Wrong clip rect: x2 > fb.width\n");
+		EVDI_DEBUG("Wrong clip rect: x2 > fb.width\n");
 		rect.x2 = fb->base.width;
 	}
 
 	if (rect.y2 > fb->base.height) {
-		EVDI_WARN("Wrong clip rect: y2 > fb.height\n");
+		EVDI_DEBUG("Wrong clip rect: y2 > fb.height\n");
 		rect.y2 = fb->base.height;
 	}
 
