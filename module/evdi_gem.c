@@ -10,7 +10,8 @@
 
 #include <linux/sched.h>
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE
+#elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-buf-map.h>
 #endif
 #if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
