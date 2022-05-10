@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copyright (c) 2022 DisplayLink (UK) Ltd.
+
+evdi_maintainer='Synaptics Technical Support <technical-enquiries@synaptics.com>'
+
+evdi_description="Bundle of evdi and libevdi"
+
+evdi_version='1.11.0'
+

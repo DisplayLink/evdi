@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# Copyright (c) 2022 DisplayLink (UK) Ltd.
+
+set -eu
+
+if [[ ! $# -eq 1 ]]; then
+  echo "Usage: ${BASH_SOURCE[0]##*/} <arch>"
+  exit 1
+fi
+
+readonly evdi_arch=${1:?}
+
+create_evdi_deb_package()
+{
+  local temp_dir
+  temp_dir=$(mktemp -d)
+
+  local deb_dir="$temp_dir/EVDI"
+  local control_dir="$deb_dir/DEBIAN"
+  local displaylink_dir="$deb_dir/opt/displaylink"
+
+  mkdir -p "$control_dir" "$displaylink_dir" "$deb_dir"/etc/{modules-load,modprobe}.d
+
+  local archive_path="$displaylink_dir/evdi.tar.gz"
+
+  git archive --format tar.gz -9 --output "$archive_path" HEAD
+
+  if ! make -C library; then
+    echo >&2 "Failed to build evdi library"
+    rm -rf "$temp_dir"
+    return 1
+  fi
+
+  if ! install -Dm 644 library/libevdi.so "$deb_dir/usr/lib/libevdi.so"; then
+    echo >&2 "Failed to copy evdi library"
+    rm -rf "$temp_dir"
+    return 1
+  fi
+
+  echo 'evdi' > "$deb_dir/etc/modules-load.d/evdi.conf"
+
+  echo 'options evdi initial_device_count=4' \
+        > "$deb_dir/etc/modprobe.d/evdi.conf"
+
+  cat > "$control_dir/control" << EOF
+Source: evdi
+Section: Kernels
+Maintainer: $evdi_maintainer
+Depends: dkms, libdrm-dev, libc6-dev
+Package: evdi
+Architecture: $evdi_arch
+Description: $evdi_description
+Version: $evdi_version
+EOF
+
+  cat > "$control_dir/postinst" << 'EOF'
+#!/usr/bin/env bash
+
+build_evdi()
+{
+  local archive='/opt/displaylink/evdi.tar.gz'
+  local evdi_dir="$1"
+
+  if ! tar xf "$archive" -C "$evdi_dir"; then
+    echo >&2 "Unable to extract $archive to $evdi_dir"
+    return 1
+  fi
+
+  local dkms_evdi_path='/var/lib/dkms/evdi'
+  local make_log_regex="$dkms_evdi_path/[[:alnum:]./]+/make\\.log"
+  local dkms_log="$evdi_dir/dkms.log"
+  local evdi_make_log_path
+  evdi_make_log_path="/var/log/displaylink/evdi_install_make.$(date '+%F-%H%M').log"
+
+  dkms install "$evdi_dir/module" 2>&1 | tee "$dkms_log" | sed -E "s~$make_log_regex~$evdi_make_log_path~"
+  local retval=${PIPESTATUS[0]}
+
+  if [[ $retval == 3 ]]; then
+    echo >&2 "EVDI DKMS module already installed."
+
+  elif [[ $retval != 0 ]]; then
+    echo >&2 "Failed to install evdi to the kernel tree."
+    grep -Eo "$make_log_regex" "$dkms_log" | head -n1 | xargs -r -I '{}' cp '{}' "$evdi_make_log_path"
+    make -sC "$evdi_dir/module" uninstall_dkms
+    return 1
+  fi
+}
+
+cleanup()
+{
+  [[ -d $temp_dir ]] && rm -rf "$temp_dir"
+}
+
+temp_dir=$(mktemp -d) || exit 1
+
+trap cleanup EXIT
+
+build_evdi "$temp_dir"
+cleanup
+EOF
+
+  cat > "$control_dir/prerm" << 'EOF'
+#!/usr/bin/env bash
+
+remove_evdi()
+{
+  local archive='/opt/displaylink/evdi.tar.gz'
+  local evdi_dir="$1"
+
+  if ! tar xf "$archive" -C "$evdi_dir"; then
+    echo >&2 "Unable to extract $archive to $evdi_dir"
+    return 1
+  fi
+
+  make -sC "$evdi_dir/module" uninstall_dkms
+}
+
+cleanup()
+{
+  [[ -d $temp_dir ]] && rm -rf "$temp_dir"
+}
+
+temp_dir=$(mktemp -d) || exit 1
+
+trap cleanup EXIT
+
+remove_evdi "$temp_dir"
+cleanup
+EOF
+
+  chmod 0755 "$control_dir"/{prerm,postinst}
+
+  (
+    cd "$temp_dir"
+    dpkg-deb --build EVDI
+  )
+
+  mv "$temp_dir/EVDI.deb" "evdi-$evdi_arch.deb"
+
+  rm -rf "$temp_dir"
+}
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+. ci/deb_config || exit 1
+
+: "${evdi_maintainer:?}" "${evdi_description:?}" "${evdi_version:?}"
+
+create_evdi_deb_package
+
