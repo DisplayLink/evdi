@@ -21,6 +21,7 @@ sed -i "s/^LIBVER := .*$/LIBVER := ${MAJOR}.${MINOR}.${PATCH}/" library/Makefile
 
 sed -i "s/^PACKAGE_VERSION=.*$/PACKAGE_VERSION=${MAJOR}.${MINOR}.${PATCH}/" module/dkms.conf
 
+sed -i "s/^evdi_version=.*$/evdi_version='${MAJOR}.${MINOR}.${PATCH}'/" ci/deb_config
 
 sed -i "s/^#define DRIVER_MAJOR .*$/#define DRIVER_MAJOR ${MAJOR}/" module/evdi_platform_drv.h
 sed -i "s/^#define DRIVER_MINOR .*$/#define DRIVER_MINOR ${MINOR}/" module/evdi_platform_drv.h
