@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Copyright (c) 2022 DisplayLink (UK) Ltd.
+
+set -e
+
+if [[ ! -f $1 ]]; then
+  echo "Usage: ${BASH_SOURCE[0]##*/} <evdi.deb>"
+  exit 1
+fi
+
+files_exist()
+{
+  while [[ $# -gt 0 ]]; do
+    [[ -e $1 ]] || return 1
+    shift
+  done
+  return 0
+}
+
+print_missing_files()
+{
+  while [[ $# -gt 0 ]]; do
+    [[ -e $1 ]] || echo >&2 "Couldn't find file: $1"
+    shift
+  done
+}
+
+files=(
+  '/opt/displaylink/evdi.tar.gz'
+  '/etc/modules-load.d/evdi.conf'
+  '/etc/modprobe.d/evdi.conf'
+  '/usr/lib/libevdi.so'
+)
+
+if files_exist "${files[@]}"; then
+  echo >&2 "EVDI files appear to be already installed"
+  exit 1
+fi
+
+if ! dpkg -i "$1"; then
+  echo >&2 "DPKG failed to install: $1"
+  exit 1
+fi
+
+if ! files_exist "${files[@]}"; then
+  print_missing_files "${files[@]}"
+  exit 1
+fi
+
+:
