@@ -3,7 +3,7 @@
 
 evdi_maintainer='Synaptics Technical Support <technical-enquiries@synaptics.com>'
 
-evdi_description="Bundle of evdi and libevdi"
-
 evdi_version='1.11.0'
+
+evdi_description="The Extensible Virtual Display Interface (EVDI) is a Linux® kernel module that enables management of multiple screens, allowing user-space programs to take control over what happens with the image. It is essentially a virtual display you can add, remove and receive screen updates for, in an application that uses the libevdi library."
 

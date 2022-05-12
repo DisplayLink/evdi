@@ -25,10 +25,11 @@ print_missing_files()
   done
 }
 
+. "$(dirname "${BASH_SOURCE[0]}")/deb_config" || exit 1
+
 files=(
-  '/opt/displaylink/evdi.tar.gz'
   '/etc/modules-load.d/evdi.conf'
-  '/etc/modprobe.d/evdi.conf'
+  "/usr/src/evdi-$evdi_version"
   '/usr/lib/libevdi.so'
 )
 
@@ -37,13 +38,18 @@ if files_exist "${files[@]}"; then
   exit 1
 fi
 
-if ! dpkg -i "$1"; then
+if ! sudo dpkg -i "$1"; then
   echo >&2 "DPKG failed to install: $1"
   exit 1
 fi
 
 if ! files_exist "${files[@]}"; then
   print_missing_files "${files[@]}"
+  exit 1
+fi
+
+if ! (modprobe evdi || modinfo evdi); then
+  echo >&2 "modprobe failed"
   exit 1
 fi
 
