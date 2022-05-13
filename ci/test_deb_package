@@ -38,7 +38,7 @@ if files_exist "${files[@]}"; then
   exit 1
 fi
 
-if ! sudo dpkg -i "$1"; then
+if ! dpkg -i "$1"; then
   echo >&2 "DPKG failed to install: $1"
   exit 1
 fi
@@ -48,7 +48,7 @@ if ! files_exist "${files[@]}"; then
   exit 1
 fi
 
-if ! (modprobe evdi || modinfo evdi); then
+if ! (modprobe evdi && modinfo evdi); then
   echo >&2 "modprobe failed"
   exit 1
 fi
