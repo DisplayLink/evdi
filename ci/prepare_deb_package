@@ -48,6 +48,12 @@ create_evdi_deb_package()
       rm -rf "$temp_dir"
       return 1
     fi
+
+    if ! install -m 644 library/LICENSE "$control_dir/copyright"; then
+      echo >&2 "Failed to copy library LICENSE"
+      rm -rf "$temp_dir"
+      return 1
+    fi
   )
 
   echo 'evdi' > "$deb_dir/etc/modules-load.d/evdi.conf"
