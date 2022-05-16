@@ -123,6 +123,7 @@ EOF
 #!/usr/bin/env bash
 
 dkms remove evdi/$evdi_version --all
+rm '/etc/modprobe.d/evdi.conf'
 EOF
 
   chmod 0755 "$control_dir"/{prerm,postinst}
