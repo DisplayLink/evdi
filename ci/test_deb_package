@@ -29,6 +29,7 @@ print_missing_files()
 
 files=(
   '/etc/modules-load.d/evdi.conf'
+  '/etc/modprobe.d/evdi.conf'
   "/usr/src/evdi-$evdi_version"
   '/usr/lib/libevdi.so'
 )

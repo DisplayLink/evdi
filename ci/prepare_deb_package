@@ -101,7 +101,22 @@ build_evdi()
   rm "\$dkms_log"
 }
 
-build_evdi
+add_mod_options()
+{
+  local conf_file='/etc/modprobe.d/evdi.conf'
+  [[ -f \$conf_file ]] && return
+
+  echo "options evdi initial_device_count=4" > "\$conf_file"
+
+  local drm_deps
+  drm_deps=\$(sed -n '/^drm_kms_helper/p' /proc/modules | awk '{print \$4}' | tr ',' ' ')
+  drm_deps=\${drm_deps/evdi/}
+  [[ -z \$drm_deps ]] && return 0
+
+  echo "softdep evdi pre: \$drm_deps" >> "\$conf_file"
+}
+
+build_evdi && add_mod_options
 EOF
 
   cat > "$control_dir/prerm" << EOF
