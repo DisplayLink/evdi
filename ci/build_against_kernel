@@ -119,28 +119,24 @@ prepare_repo_sources() { # PACKAGE SOURCES CC
   local SOURCES="${2}"
   local CC="${3}"
   local SRC_DIR=
-  SRC_DIR="$(pwd)/${SOURCES}"
+  SRC_DIR="$(pwd)/linux"
 
-  if [ ! -e linux.git ]; then
-    git clone --bare https://github.com/torvalds/linux linux.git
-    git remote add github https://github.com/torvalds/linux
+  echo "Package = $PACKAGE"
+  echo "SOURCES = $SOURCES"
+  echo "CC=$CC"
+  echo "SRC_DIR = $SRC_DIR"
+
+  if [ ! -e linux ]; then
+    git clone https://github.com/torvalds/linux
   fi
 
-  if [ "${MODE}" = "REPO-CLEAN" ]; then (
-    cd linux.git
-    git fetch github
-  ) fi
+  cd linux
+  git fetch
+  git fetch --tags
+  git clean -fdx
+  git checkout "$PACKAGE"
 
-  if [ "${MODE}" = "REPO-CLEAN" ] || [ "${MODE}" = "REPO-CACHED" ]; then
-    rm -rf "${SOURCES}"
-  fi
-
-  if [ ! -e "${SOURCES}" ]; then
-    git clone --depth 1 --branch "${PACKAGE}" "file://$(pwd)/linux.git" "${SOURCES}"
-    prepare_kernel "${SRC_DIR}" "${CC}"
-  elif [ "${MODE}" != "REPO-CI" ]; then
-    prepare_kernel "${SRC_DIR}" "${CC}"
-  fi
+  prepare_kernel "${SRC_DIR}" "${CC}"
 }
 
 prepare_sources() { ( # PACKAGE SOURCES CC
@@ -180,12 +176,16 @@ build_one() { # KVER
   echo ""
 
   local src_dir
+  local KTAG=v${KVER}
   if [ "${KVER}" = "master" ]; then
-    prepare_sources "master" "linux-master" "${CC}"
-    src_dir="$(pwd)/${TMP}/linux-master"
+    KTAG="origin/master"
   else
-    prepare_sources "v${KVER}" "linux-${KVER}" "${CC}"
-    src_dir="$(pwd)/${TMP}/linux-${KVER}"
+    KTAG="v$KVER"
+  fi
+  prepare_sources "$KTAG" "linux-$KVER" "${CC}"
+  src_dir="$(pwd)/${TMP}/linux-$KVER"
+  if [[ ${MODE} == REPO* ]]; then
+    src_dir="$(pwd)/${TMP}/linux"
   fi
 
   make KDIR="${src_dir}" CC="${CC}" --jobs="${JOBS}"
@@ -207,14 +207,6 @@ do
 
     --ci)
       MODE="CI"
- 	     ;;
-
-    --repo|--repo-clean)
-      MODE="REPO-CLEAN"
-      ;;
-
-    --repo-cached)
-      MODE="REPO-CACHED"
       ;;
 
     --repo-ci)
