@@ -87,6 +87,15 @@ get_versions_from_file() { # file
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
+get_last_linux_rc_tag() {
+  local repo_dir=$TMP/linux
+
+  (cd "$repo_dir"
+      git fetch --tags
+      git tag --sort=-creatordate | grep "\-rc" | head -n 1
+  )
+}
+
 prepare_tar_gz_sources() { # PACKAGE SOURCES CC
   local PACKAGE="${1}.tar.gz"
   local SOURCES="${2}"
@@ -246,6 +255,12 @@ do
       echo "Unknown option '${1}'" >&2
       usage >&2
       exit 1
+      ;;
+
+    rc)
+      KVER=$(get_last_linux_rc_tag)
+      KVER=${KVER:1}
+      build_one "${KVER}"
       ;;
 
     all)
