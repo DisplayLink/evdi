@@ -35,7 +35,7 @@ struct evdi_fbdev {
 	struct drm_fb_helper helper;
 	struct evdi_framebuffer efb;
 	struct list_head fbdev_list;
-	struct fb_ops fb_ops;
+	const struct fb_ops *fb_ops;
 	int fb_count;
 };
 
@@ -202,8 +202,7 @@ static int evdi_fb_release(struct fb_info *info, int user)
 
 	return 0;
 }
-
-static struct fb_ops evdifb_ops = {
+static const struct fb_ops evdifb_ops = {
 	.owner = THIS_MODULE,
 	.fb_check_var = drm_fb_helper_check_var,
 	.fb_set_par = drm_fb_helper_set_par,
@@ -419,8 +418,8 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
 #endif
 
-	efbdev->fb_ops = evdifb_ops;
-	info->fbops = &efbdev->fb_ops;
+	efbdev->fb_ops = &evdifb_ops;
+	info->fbops = efbdev->fb_ops;
 
 #if KERNEL_VERSION(5, 2, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_fb_helper_fill_info(info, &efbdev->helper, sizes);

@@ -159,8 +159,10 @@ prepare_kernel() { ( # SRC_DIR CC
   make prepare CC="${2}" --jobs="${JOBS}"
   make modules_prepare CC="${2}" --jobs="${JOBS}"
 
-  if [[ ${KVER:0:1} -lt "5" ]]; then
-    make scripts CC="${2}" --jobs="${JOBS}"
+  if [[ "${KVER}" != "master" ]] ; then 
+    if [[ "${KVER:0:1}" -lt "5" ]]; then
+      make scripts CC="${2}" --jobs="${JOBS}"
+    fi
   fi
 ) }
 
@@ -177,7 +179,8 @@ build_one() { # KVER
 
   local src_dir
   local KTAG=v${KVER}
-  if [ "${KVER}" = "master" ]; then
+  local extra_cflags=
+  if [ "${KVER}" == "master" ]; then
     KTAG="origin/master"
   else
     KTAG="v$KVER"
@@ -187,8 +190,11 @@ build_one() { # KVER
   if [[ ${MODE} == REPO* ]]; then
     src_dir="$(pwd)/${TMP}/linux"
   fi
-
-  make KDIR="${src_dir}" CC="${CC}" --jobs="${JOBS}"
+  if [[ "${KVER}" != "master" ]] ; then
+    [[ ${KVER:0:1} -lt "5" ]] && extra_cflags="-Wno-discarded-qualifiers"
+    [[ ${KVER:0:1} == "5" ]] && [[ ${KVER:2:2} -lt "6" ]] && extra_cflags="-Wno-discarded-qualifiers"
+  fi
+  CFLAGS="$extra_cflags" make KDIR="${src_dir}" CC="${CC}" --jobs="${JOBS}"
 }
 
 MODE="CLEAN"
