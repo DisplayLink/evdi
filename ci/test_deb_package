@@ -37,10 +37,10 @@ validate_binary_architecture()
 
   binary_arch=$(file "$binary" | awk -F ', ' '{print $2}')
 
-  [[ "$arch" == "amd64" ]] && [[ "$binary_arch" != "x86-64" ]] && echo "$binary architecture $binary_arch does not match $arch" && false
-  [[ "$arch" == "i386"  ]]  && [[ "$binary_arch" != "Intel 80386"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
-  [[ "$arch" == "arm64" ]] && [[ "$binary_arch" != "ARM aarch64"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
-  [[ "$arch" == "armhf" ]] && [[ "$binary_arch" != "ARM"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
+  [[ "$arch" == "amd64" && "$binary_arch" != "x86-64" ]] && echo "$binary architecture $binary_arch does not match $arch" && false
+  [[ "$arch" == "i386"  && "$binary_arch" != "Intel 80386"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
+  [[ "$arch" == "arm64" && "$binary_arch" != "ARM aarch64"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
+  [[ "$arch" == "armhf" && "$binary_arch" != "ARM"  ]] && echo "$binary architecture $binary_arch does not match $arch" && false
 
   true
 }
@@ -72,43 +72,7 @@ inspect_deb_contents()
   rm -rf "$temp_dir"
 }
 
-print_missing_files()
-{
-  while [[ $# -gt 0 ]]; do
-    [[ -e $1 ]] || echo >&2 "Couldn't find file: $1"
-    shift
-  done
-}
-
-
 . "$(dirname "${BASH_SOURCE[0]}")/deb_config" || exit 1
-
-files=(
-  '/etc/modules-load.d/evdi.conf'
-  '/etc/modprobe.d/evdi.conf'
-  "/usr/src/evdi-$evdi_version"
-  '/usr/lib/libevdi.so'
-)
-
-if files_exist "${files[@]}"; then
-  echo >&2 "EVDI files appear to be already installed"
-  exit 1
-fi
-
-if ! dpkg -i "$1"; then
-  echo >&2 "DPKG failed to install: $1"
-  exit 1
-fi
-
-if ! files_exist "${files[@]}"; then
-  print_missing_files "${files[@]}"
-  exit 1
-fi
-
-if ! (modprobe evdi && modinfo evdi); then
-  echo >&2 "modprobe failed"
-  exit 1
-fi
 
 inspect_deb_contents "$(to_realpath "$1")"
 echo "Evdi package $1 is OK!"
