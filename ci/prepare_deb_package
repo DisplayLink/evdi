@@ -18,11 +18,9 @@ create_evdi_deb_package()
   local repo_dir="$1"
   local deb_dir="$temp_dir/EVDI"
   local control_dir="$deb_dir/DEBIAN"
-  local displaylink_dir="$deb_dir/opt/displaylink"
 
   mkdir -p \
       "$control_dir" \
-      "$displaylink_dir" \
       "$deb_dir/usr/src" \
       "$deb_dir"/etc/{modules-load,modprobe}.d
 
