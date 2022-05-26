@@ -138,7 +138,11 @@ EOF
 
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
+evdi_version=
+evdi_description=
+evdi_maintainer=
 . "$script_dir/deb_config" || exit 1
+
 
 : "${evdi_maintainer:?}" "${evdi_description:?}" "${evdi_version:?}"
 

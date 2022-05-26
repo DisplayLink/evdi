@@ -12,7 +12,7 @@ files=(
 
 KVER="v$(grep --only-matching --perl-regexp 'KVER=\K[\d\.]*' .travis.yml | tail -n 1)"
 
-for file in ${files[@]}; do
+for file in "${files[@]}"; do
   wget -N -q "https://raw.githubusercontent.com/torvalds/linux/${KVER}/scripts/${file}"
 done
 
@@ -27,6 +27,6 @@ result=$((result || $?))
 ./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE,PREFER_PR_LEVEL -f ./module/*
 result=$((result || $?))
 
-rm ${files[@]}
+rm "${files[@]}"
 
 exit ${result}

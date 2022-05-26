@@ -5,9 +5,12 @@ set -e
 set -u
 
 usage() {
-  local bold=$(tput bold)
-  local underline=$(tput smul)
-  local normal=$(tput sgr0)
+  local bold=
+  bold=$(tput bold)
+  local underline=
+  underline=$(tput smul)
+  local normal=
+  normal=$(tput sgr0)
 
   cat << EOF
 ${bold}SYNOPSIS${normal}
@@ -88,7 +91,8 @@ prepare_tar_gz_sources() { # PACKAGE SOURCES CC
   local PACKAGE="${1}.tar.gz"
   local SOURCES="${2}"
   local CC="${3}"
-  local SRC_DIR="$(pwd)/${SOURCES}"
+  local SRC_DIR=
+  SRC_DIR="$(pwd)/${SOURCES}"
 
   if [ "${MODE}" = "CLEAN" ]; then
     rm -f "${PACKAGE}"
@@ -114,7 +118,8 @@ prepare_repo_sources() { # PACKAGE SOURCES CC
   local PACKAGE="${1}"
   local SOURCES="${2}"
   local CC="${3}"
-  local SRC_DIR="$(pwd)/${SOURCES}"
+  local SRC_DIR=
+  SRC_DIR="$(pwd)/${SOURCES}"
 
   if [ ! -e linux.git ]; then
     git clone --bare https://github.com/torvalds/linux linux.git
@@ -154,12 +159,12 @@ prepare_sources() { ( # PACKAGE SOURCES CC
 
 prepare_kernel() { ( # SRC_DIR CC
   cd "${1}"
-  make olddefconfig CC="${2}" --jobs=${JOBS}
-  make prepare CC="${2}" --jobs=${JOBS}
-  make modules_prepare CC="${2}" --jobs=${JOBS}
+  make olddefconfig CC="${2}" --jobs="${JOBS}"
+  make prepare CC="${2}" --jobs="${JOBS}"
+  make modules_prepare CC="${2}" --jobs="${JOBS}"
 
-  if [[ ${KVER:0:1} < "5" ]]; then
-    make scripts CC="${2}" --jobs=${JOBS}
+  if [[ ${KVER:0:1} -lt "5" ]]; then
+    make scripts CC="${2}" --jobs="${JOBS}"
   fi
 ) }
 
@@ -167,7 +172,7 @@ build_one() { # KVER
   local KVER=${1}
   local CC="${CC:-gcc}"
 
-  local HEADER="$(echo "# Running ${MODE} --jobs=${JOBS} build for ${KVER} in ${TMP}")"
+  local HEADER="# Running ${MODE} --jobs=${JOBS} build for ${KVER} in ${TMP}"
 
   echo ""
   echo "${HEADER//?/#}"
@@ -183,7 +188,7 @@ build_one() { # KVER
     src_dir="$(pwd)/${TMP}/linux-${KVER}"
   fi
 
-  make KDIR="${src_dir}" CC="${CC}" --jobs=${JOBS}
+  make KDIR="${src_dir}" CC="${CC}" --jobs="${JOBS}"
 }
 
 MODE="CLEAN"
