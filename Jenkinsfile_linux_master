@@ -1,0 +1,17 @@
+// Copyright (c) 2022 DisplayLink (UK) Ltd.
+pipeline {
+    agent {
+        dockerfile {
+            filename 'src/Dockerfile'
+        }
+    }
+    stages {
+        stage ('Build against linux-master') {
+            steps {
+                dir('src') {
+                    sh '''./ci/build_against_kernel --repo-ci master'''
+                }
+            }
+        }
+    }
+}
