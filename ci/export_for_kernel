@@ -29,8 +29,6 @@ KERNEL_VERSION() { # MAJ MIN PATCH
   echo $(( ${1} * 65536 + ${2} * 256 + ${3} ))
 }
 
-LINUX_VERSION_CODE=$(KERNEL_VERSION "${MAJ}" "${MIN}" "${PATCH}")
-
 progress() { # current max
   local current=${1}
   local max=${2}
@@ -61,6 +59,7 @@ copy_module() { # module suffix
 }
 
 get_condition() { # line
+# shellcheck disable=SC2016
   sed \
     -e 's/#if//' \
     -e 's/#elif//' \
@@ -98,7 +97,9 @@ export_file() { # file
     case $state in
       OUT_OF_IF)
         if [[ "${line}" != "#include <linux/version.h>" ]]; then
+          # shellcheck disable=SC2076
           if [[ "${line}" =~ "#if KERNEL_VERSION" ]]; then
+            # shellcheck disable=SC2046
             if [ $(eval_line "${line}") == 1 ]; then
               state="IN_TRUE"
             else
@@ -111,6 +112,7 @@ export_file() { # file
         ;;
 
       IN_TRUE)
+        # shellcheck disable=SC2076
         if [[ "${line}" =~ "#elif KERNEL_VERSION" ]] || \
            [[ "${line}" == "#else" ]]; then
           state="WAS_IN_TRUE"
@@ -128,7 +130,9 @@ export_file() { # file
         ;;
 
       IN_FALSE)
+        # shellcheck disable=SC2076
         if [[ "${line}" =~ "#elif KERNEL_VERSION" ]]; then
+          # shellcheck disable=SC2046
           if [ $(eval_line "${line}") == 1 ]; then
             state="IN_TRUE"
           fi
