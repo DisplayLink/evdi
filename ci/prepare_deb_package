@@ -141,6 +141,7 @@ script_dir="$(dirname "${BASH_SOURCE[0]}")"
 evdi_version=
 evdi_description=
 evdi_maintainer=
+# shellcheck disable=SC1090
 . "$script_dir/deb_config" || exit 1
 
 

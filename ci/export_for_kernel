@@ -16,6 +16,7 @@ EOF
 fi
 
 KVER=${1}
+# shellcheck disable=SC2162
 IFS='.' read -a VERS <<< "${KVER}"
 MAJ=${VERS[0]}
 MIN=${VERS[1]:-0}
@@ -42,9 +43,11 @@ progress() { # current max
   done
   printf "| %s%%" $(( 100*(current*100)/(max*100) ))
 
-  if [[ ${current} != ${max} ]]; then
+  if [[ ${current} != "${max}" ]]; then
+    # shellcheck disable=SC1117
     printf "\r"
   else
+    # shellcheck disable=SC1117
     printf "\n"
   fi
 }
@@ -160,7 +163,7 @@ modify_files() { # module
   max_count=$(count_files "${MODULE}")
   count=0
 
-  for file in ${1}/*; do
+  for file in "${1}"/*; do
     progress ${count} "${max_count}"
 
     case "${file}" in

@@ -72,6 +72,7 @@ inspect_deb_contents()
   rm -rf "$temp_dir"
 }
 
+# shellcheck disable=SC1090
 . "$(dirname "${BASH_SOURCE[0]}")/deb_config" || exit 1
 
 inspect_deb_contents "$(to_realpath "$1")"

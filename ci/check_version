@@ -6,6 +6,7 @@ set -eu
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
 evdi_version=
+# shellcheck disable=SC1090
 . "$script_dir/deb_config"
 
 git_evdi_version=

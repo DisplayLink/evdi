@@ -83,7 +83,7 @@ EOF
 }
 
 get_versions_from_file() { # file
-  local PREFIX="^  \- KVER="
+  local PREFIX="^  \\- KVER="
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
@@ -92,7 +92,7 @@ get_last_linux_rc_tag() {
 
   (cd "$repo_dir"
       git fetch --tags
-      git tag --sort=-creatordate | grep "\-rc" | head -n 1
+      git tag --sort=-creatordate | grep "\\-rc" | head -n 1
   )
 }
 
