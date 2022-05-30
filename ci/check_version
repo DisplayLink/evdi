@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Copyright (c) 2022 DisplayLink (UK) Ltd.
+
+set -eu
+
+script_dir="$(dirname "${BASH_SOURCE[0]}")"
+
+evdi_version=
+. "$script_dir/deb_config"
+
+git_evdi_version=
+(cd "$script_dir"
+  git_evdi_version=$(git describe --tags --match=v* | awk -F '-' '{print $1}')
+  [[ "${git_evdi_version}" != "v${evdi_version}" ]]  && (echo >&2 "evdi version v$evdi_version does not match git tag ${git_evdi_version}" && exit 1)
+  echo "evdi version v$evdi_version match git tag ${git_evdi_version}"
+)
+

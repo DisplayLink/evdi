@@ -6,6 +6,19 @@ pipeline {
         }
     }
     stages {
+        stage ('Init') {
+            environment {
+              EVDI_VERSION = sh(script: '''(cd src; . ./ci/deb_config; echo $evdi_version)''', returnStdout: true).trim()
+            }
+            steps {
+                dir('src') {
+                    sh '''./ci/check_version'''
+                    sh '''bash -c "[[ evdi-${EVDI_VERSION} ==  ${JOB_BASE_NAME}* ]]"'''
+                }
+                buildName "evdi-${EVDI_VERSION}-${BUILD_NUMBER}"
+                buildDescription "#${BUILD_NUMBER}-${GIT_DESC}"
+            }
+        }
         stage ('Style check') {
             steps {
                 dir('src') {

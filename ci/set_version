@@ -31,3 +31,8 @@ sed -i "s/^MODVER=.*/MODVER=${MAJOR}.${MINOR}.${PATCH}/" module/Makefile
 
 
 sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"/" module/evdi_platform_drv.h
+
+tag="v${MAJOR}.${MINOR}.${PATCH}"
+git tag "${tag}"
+echo -e "Please push tag ${tag} with: \\ngit push origin refs/tags/${tag}:refs/tags/${tag}"
+
