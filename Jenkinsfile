@@ -8,6 +8,7 @@ pipeline {
     stages {
         stage ('Init') {
             environment {
+              GIT_DESC = sh(script: '''(cd src; git describe --tags --match=v*)''', returnStdout: true).trim()
               EVDI_VERSION = sh(script: '''(cd src; . ./ci/deb_config; echo $evdi_version)''', returnStdout: true).trim()
             }
             steps {
@@ -76,6 +77,35 @@ pipeline {
                     sh '''./ci/build_against_kernel --repo-ci rc'''
                 }
             }
+        }
+        stage ('Publish') {
+          steps {
+            rtBuildInfo (
+                captureEnv: true,
+                maxBuilds: 2048,
+                maxDays: 1095, // 3 years
+                deleteBuildArtifacts: true)
+            rtUpload (
+              serverId: 'Artifactory',
+                  spec: '''{
+                    "files": [
+                      {
+                      "pattern": "publish/evdi-*amd64.deb",
+                      "target": "swbuilds-scratch/linux/evdi/amd64/${BUILD_DISPLAY_NAME}.deb"
+                      },
+                      {
+                      "pattern": "publish/evdi-*armhf.deb",
+                      "target": "swbuilds-scratch/linux/evdi/armhf/${BUILD_DISPLAY_NAME}.deb"
+                      },
+                      {
+                      "pattern": "publish/evdi-*arm64.deb",
+                      "target": "swbuilds-scratch/linux/evdi/arm64/${BUILD_DISPLAY_NAME}.deb"
+                      }
+                    ]}''',
+                  failNoOp: true)
+            rtPublishBuildInfo (
+              serverId: 'Artifactory')
+          }
         }
     }
 }
