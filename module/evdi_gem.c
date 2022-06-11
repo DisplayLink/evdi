@@ -62,10 +62,10 @@ static bool evdi_was_called_by_mutter(void)
 
 static bool evdi_drm_gem_object_use_import_attach(struct drm_gem_object *obj)
 {
-	if (!obj || !obj->import_attach)
+	if (!obj || !obj->import_attach || !obj->import_attach->dmabuf->owner)
 		return false;
 
-	return obj->import_attach && strcmp(obj->import_attach->dmabuf->owner->name, "amdgpu") != 0;
+	return strcmp(obj->import_attach->dmabuf->owner->name, "amdgpu") != 0;
 }
 
 uint32_t evdi_gem_object_handle_lookup(struct drm_file *filp,
