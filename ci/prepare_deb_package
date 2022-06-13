@@ -3,12 +3,13 @@
 
 set -eu
 
-if [[ ! $# -eq 1 ]]; then
-  echo "Usage: ${BASH_SOURCE[0]##*/} <arch>"
+if [[ ! $# -eq 2 ]]; then
+  echo "Usage: ${BASH_SOURCE[0]##*/} <arch> <debian_revision>"
   exit 1
 fi
 
 readonly evdi_arch=${1:?}
+readonly debian_revision=${2:?}
 
 create_evdi_deb_package()
 {
@@ -64,7 +65,7 @@ Depends: dkms, libdrm-dev, libc6-dev
 Package: evdi
 Architecture: $evdi_arch
 Description: $evdi_description
-Version: $evdi_version
+Version: $evdi_version-$debian_revision
 EOF
 
   cat > "$control_dir/postinst" << EOF
@@ -131,7 +132,7 @@ EOF
     dpkg-deb --build EVDI
   )
 
-  mv "$temp_dir/EVDI.deb" "evdi-$evdi_arch.deb"
+  mv "$temp_dir/EVDI.deb" "evdi-${evdi_version}-${debian_revision}_${evdi_arch}.deb"
 
   rm -rf "$temp_dir"
 }
