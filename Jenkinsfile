@@ -90,15 +90,15 @@ pipeline {
                   spec: '''{
                     "files": [
                       {
-                      "pattern": "publish/evdi-*amd64.deb",
+                      "pattern": "publish/evdi-${EVDI_VERSION}-${BUILD_NUMBER}_amd64.deb",
                       "target": "swbuilds-scratch/linux/evdi/amd64/${BUILD_DISPLAY_NAME}_amd64.deb"
                       },
                       {
-                      "pattern": "publish/evdi-*armhf.deb",
+                      "pattern": "publish/evdi-${EVDI_VERSION}-${BUILD_NUMBER}_armhf.deb",
                       "target": "swbuilds-scratch/linux/evdi/armhf/${BUILD_DISPLAY_NAME}_armhf.deb"
                       },
                       {
-                      "pattern": "publish/evdi-*arm64.deb",
+                      "pattern": "publish/evdi-${EVDI_VERSION}-${BUILD_NUMBER}_arm64.deb",
                       "target": "swbuilds-scratch/linux/evdi/arm64/${BUILD_DISPLAY_NAME}_arm64.deb"
                       }
                     ]}''',
