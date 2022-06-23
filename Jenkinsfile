@@ -107,5 +107,15 @@ pipeline {
               serverId: 'Artifactory')
           }
         }
+        stage ( 'Run job: promote build' )
+        {
+          steps {
+            build (
+                job: 'PPD-POSIX/promote build',
+                parameters: [string(name: 'SERVER', value: 'DEVELOPMENT'),
+                  string(name: 'buildName', value: "${env.JOB_NAME}".replaceAll('/', " :: ")),
+                  string(name: 'buildNumber', value: "${env.BUILD_NUMBER}")])
+          }
+        }
     }
 }
