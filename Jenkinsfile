@@ -47,9 +47,7 @@ pipeline {
             steps {
                 dir('publish') {
                     sh '''../src/ci/prepare_deb_package armhf ${BUILD_NUMBER}'''
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh '''../src/ci/test_deb_package evdi-${EVDI_VERSION}-${BUILD_NUMBER}_armhf.deb'''
-                    }
+                    sh '''../src/ci/test_deb_package evdi-${EVDI_VERSION}-${BUILD_NUMBER}_armhf.deb'''
                 }
             }
         }
@@ -57,9 +55,7 @@ pipeline {
             steps {
                 dir('publish') {
                     sh '''../src/ci/prepare_deb_package arm64 ${BUILD_NUMBER}'''
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh '''../src/ci/test_deb_package evdi-${EVDI_VERSION}-${BUILD_NUMBER}_arm64.deb'''
-                    }
+                    sh '''../src/ci/test_deb_package evdi-${EVDI_VERSION}-${BUILD_NUMBER}_arm64.deb'''
                 }
             }
         }

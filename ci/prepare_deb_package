@@ -11,6 +11,31 @@ fi
 readonly evdi_arch=${1:?}
 readonly debian_revision=${2:?}
 
+export_CC_flag_with_proper_compiler()
+{
+  [[ ${CC+x} ]] && return
+
+  case $evdi_arch in
+  amd64)
+  export CC=gcc
+  ;;
+  armhf)
+  export CC=arm-linux-gnueabihf-gcc
+  ;;
+  arm64)
+  export CC=aarch64-linux-gnu-gcc
+  ;;
+  esac
+}
+
+build_libevdi()
+{
+  (
+    export_CC_flag_with_proper_compiler
+    make -C library clean default
+  )
+}
+
 create_evdi_deb_package()
 {
   local temp_dir
@@ -36,7 +61,7 @@ create_evdi_deb_package()
       return 1
     fi
 
-    if ! make -C library; then
+    if ! build_libevdi; then
       echo >&2 "Failed to build evdi library"
       rm -rf "$temp_dir"
       return 1
