@@ -675,6 +675,7 @@ void evdi_close(evdi_handle handle)
 void evdi_connect(evdi_handle handle,
 		  const unsigned char *edid,
 		  const unsigned int edid_length,
+		  const uint32_t pixel_area_limit,
 		  const uint32_t pixel_per_second_limit)
 {
 	struct drm_evdi_connect cmd = {
@@ -682,6 +683,7 @@ void evdi_connect(evdi_handle handle,
 		.dev_index = handle->device_index,
 		.edid = edid,
 		.edid_length = edid_length,
+		.pixel_area_limit = pixel_area_limit,
 		.pixel_per_second_limit = pixel_per_second_limit,
 	};
 
@@ -690,7 +692,7 @@ void evdi_connect(evdi_handle handle,
 
 void evdi_disconnect(evdi_handle handle)
 {
-	struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0 };
+	struct drm_evdi_connect cmd = { 0, 0, 0, 0, 0, 0 };
 
 	do_ioctl(handle->fd, DRM_IOCTL_EVDI_CONNECT, &cmd, "disconnect");
 }

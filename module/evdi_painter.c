@@ -839,6 +839,7 @@ static void evdi_remove_i2c_adapter(struct evdi_device *evdi)
 static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
+		     uint32_t pixel_area_limit,
 		     uint32_t pixel_per_second_limit,
 		     struct drm_file *file, __always_unused int dev_index)
 {
@@ -884,6 +885,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	painter_lock(painter);
 
+        evdi->pixel_area_limit = pixel_area_limit;
 	evdi->pixel_per_second_limit = pixel_per_second_limit;
 	painter->drm_filp = file;
 	kfree(painter->edid);
@@ -976,6 +978,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 			ret = evdi_painter_connect(evdi,
 					     cmd->edid,
 					     cmd->edid_length,
+					     cmd->pixel_area_limit,
 					     cmd->pixel_per_second_limit,
 					     file,
 					     cmd->dev_index);

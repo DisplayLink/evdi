@@ -47,6 +47,7 @@ struct drm_evdi_connect {
 	int32_t dev_index;
 	const unsigned char * __user edid;
 	uint32_t edid_length;
+	uint32_t pixel_area_limit;
 	uint32_t pixel_per_second_limit;
 };
 
