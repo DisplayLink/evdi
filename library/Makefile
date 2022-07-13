@@ -10,7 +10,7 @@ RM ?= rm
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS)
 
-LIBVER := 1.11.0
+LIBVER := 1.12.0
 LIBABI := 0
 
 PREFIX ?= /usr/local
