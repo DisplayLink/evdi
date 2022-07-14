@@ -31,7 +31,7 @@ pipeline {
         stage ('Shellcheck') {
             steps {
                 dir('src') {
-                  sh '''shellcheck ./ci/*'''
+                  sh '''find ci -type f -exec file '{}' + | grep shell | sed 's/:.*$//' | xargs shellcheck'''
                 }
             }
         }

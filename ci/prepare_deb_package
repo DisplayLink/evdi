@@ -44,10 +44,12 @@ create_evdi_deb_package()
   local repo_dir="$1"
   local deb_dir="$temp_dir/EVDI"
   local control_dir="$deb_dir/DEBIAN"
+  local docs_dir="$deb_dir/usr/share/doc/$evdi_package_name"
 
   mkdir -p \
       "$control_dir" \
       "$deb_dir/usr/src" \
+      "$docs_dir" \
       "$deb_dir"/etc/{modules-load,modprobe}.d
 
   (
@@ -67,13 +69,21 @@ create_evdi_deb_package()
       return 1
     fi
 
-    if ! install -Dm 644 library/libevdi.so "$deb_dir/usr/lib/libevdi.so"; then
+    if ! install -Dm 644 library/libevdi.so "$deb_dir/usr/lib/libevdi.so.$evdi_version"; then
       echo >&2 "Failed to copy evdi library"
       rm -rf "$temp_dir"
       return 1
+    else
+    (
+      local major_version=${evdi_version%%.*}
+      cd "$deb_dir/usr/lib/"
+      ln -s "libevdi.so.$evdi_version" \
+           "libevdi.so"
+      ln -s "libevdi.so.$evdi_version" \
+          "libevdi.so.$major_version"
+    )
     fi
-
-    if ! install -m 644 library/LICENSE "$control_dir/copyright"; then
+    if ! install -m 644 library/LICENSE "$docs_dir/copyright"; then
       echo >&2 "Failed to copy library LICENSE"
       rm -rf "$temp_dir"
       return 1
@@ -82,15 +92,21 @@ create_evdi_deb_package()
 
   echo 'evdi' > "$deb_dir/etc/modules-load.d/evdi.conf"
 
+  cat > "$control_dir/conffiles" << EOF
+/etc/modules-load.d/evdi.conf
+EOF
+
   cat > "$control_dir/control" << EOF
-Source: evdi
-Section: Kernels
-Maintainer: $evdi_maintainer
-Depends: dkms, libdrm-dev, libc6-dev
 Package: evdi
-Architecture: $evdi_arch
-Description: $evdi_description
 Version: $evdi_version-$debian_revision
+Maintainer: $evdi_maintainer
+Source: evdi
+Section: kernel
+Depends: dkms, libdrm-dev, libc6-dev
+Conflicts: libevdi0
+Architecture: $evdi_arch
+Priority: optional
+Description: $evdi_description
 EOF
 
   cat > "$control_dir/preinst" << EOF
@@ -104,7 +120,9 @@ fi
 EOF
 
   cat > "$control_dir/postinst" << EOF
-#!/usr/bin/env bash
+#!/bin/bash
+
+set -e
 
 build_evdi()
 {
@@ -154,7 +172,9 @@ build_evdi && add_mod_options
 EOF
 
   cat > "$control_dir/prerm" << EOF
-#!/usr/bin/env bash
+#!/bin/sh
+
+set -e
 
 dkms remove evdi/$evdi_version --all
 rm -f '/etc/modprobe.d/evdi.conf'
@@ -164,7 +184,7 @@ EOF
 
   (
     cd "$temp_dir"
-    dpkg-deb --build EVDI
+    fakeroot dpkg-deb --build EVDI
   )
 
   mv "$temp_dir/EVDI.deb" "evdi-${evdi_version}-${debian_revision}_${evdi_arch}.deb"
@@ -174,6 +194,7 @@ EOF
 
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
+evdi_package_name=
 evdi_version=
 evdi_description=
 evdi_maintainer=

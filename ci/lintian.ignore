@@ -1,0 +1,50 @@
+# Copyright (c) 2022 DisplayLink (UK) Ltd.
+# List of ignored Lintian tags for evdi package
+
+package-name-doesnt-match-sonames
+# This tag is being ignored because shared object has name that misses
+# regex check for soname names.
+# More info:
+#    https://lintian.debian.org/tags/package-name-doesnt-match-sonames
+
+unstripped-binary-or-object
+# Probably a false positive, all objects seem stripped, even after manual calls to
+# strip or dh_strip this tag appears.
+#    https://lintian.debian.org/tags/unstripped-binary-or-object
+
+non-dev-pkg-with-shlib-symlink
+#    https://lintian.debian.org/tags/non-dev-pkg-with-shlib-symlink
+
+no-shlibs-control-file
+#    https://lintian.debian.org/tags/no-shlibs-control-file
+
+copyright-should-refer-to-common-license-file-for-lgpl
+# Ignoring the tag
+#    https://lintian.debian.org/tags/copyright-not-using-common-license-for-lgpl
+
+extra-license-file
+#    https://lintian.debian.org/tags/extra-license-file
+
+debian-changelog-file-missing
+# Silenced for development purposes
+#    https://lintian.debian.org/tags/debian-changelog-file-missing
+
+control-file-has-bad-permissions
+# Looks like a false positive, prints "0755 != 0755"
+#    https://lintian.debian.org/tags/control-file-has-bad-permissions
+
+non-standard-file-perm
+# Looks like a false positive, prints "0755 != 0755"
+#    https://lintian.debian.org/tags/non-standard-file-perm
+
+non-standard-dir-perm
+# Looks like a false positive, prints "0755 != 0755"
+#    https://lintian.debian.org/tags/non-standard-dir-perm
+
+description-too-long
+#    https://lintian.debian.org/tags/description-too-long
+
+package-must-activate-ldconfig-trigger
+# Not in this case
+# use postinst-must-call-ldconfig when developing with Ubuntu lintian
+#    https://lintian.debian.org/tags/lacks-ldconfig-trigger

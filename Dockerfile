@@ -5,8 +5,10 @@ MAINTAINER Synaptics Technical Support <technical-enquiries@synaptics.com>
 # Install basic tools
 RUN apt-get update && apt-get install -y \
 	coreutils \
+	fakeroot \
 	file \
 	git \
+	lintian \
 	make \
 	shellcheck \
 	wget

@@ -2,11 +2,17 @@
 # Copyright (c) 2022 DisplayLink (UK) Ltd.
 
 # shellcheck disable=SC2034
+evdi_package_name='evdi'
+
+# shellcheck disable=SC2034
 evdi_maintainer='Synaptics Technical Support <technical-enquiries@synaptics.com>'
 
 # shellcheck disable=SC2034
 evdi_version='1.12.0'
 
 # shellcheck disable=SC2034
-evdi_description="The Extensible Virtual Display Interface (EVDI) is a Linux® kernel module that enables management of multiple screens, allowing user-space programs to take control over what happens with the image. It is essentially a virtual display you can add, remove and receive screen updates for, in an application that uses the libevdi library."
+evdi_description="Extensible Virtual Display Interface (EVDI) is a Linux® kernel module that enables management of multiple screens.
+ It allows user-space programs to take control over what happens with the image.
+ It is essentially a virtual display you can add, remove and receive screen
+ updates for, in an application that uses the libevdi library."
 

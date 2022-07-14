@@ -45,9 +45,18 @@ validate_binary_architecture()
   true
 }
 
+lintian_check()
+{
+  local deb="$1"
+  local ignore_list="$2"
+
+  lintian "$deb" --no-tag-display-limit --suppress-tags-from-file "$ignore_list"
+}
+
 inspect_deb_contents()
 {
   local deb=$1
+  local ignore_list="$2"
   local arch=
   local temp_dir
   temp_dir=$(mktemp -d)
@@ -56,8 +65,10 @@ inspect_deb_contents()
   files=(
     'etc/modules-load.d/evdi.conf'
     "usr/src/evdi-$evdi_version"
-    'usr/lib/libevdi.so'
+    "usr/lib/libevdi.so.$evdi_version"
   )
+
+  lintian_check "$deb" "$ignore_list" || (echo "Lintian found errors in the deb package" && false)
 
   (cd "$temp_dir"
       dpkg-deb -x "$deb" "$temp_dir"
@@ -67,7 +78,7 @@ inspect_deb_contents()
           [[ -e "$f" ]] || (echo >&2 "Couldn't find file: $f" && exit 1)
       done
 
-     validate_binary_architecture "$arch" "$temp_dir/usr/lib/libevdi.so"
+     validate_binary_architecture "$arch" "$temp_dir/usr/lib/libevdi.so.$evdi_version"
   )
   rm -rf "$temp_dir"
 }
@@ -75,7 +86,8 @@ inspect_deb_contents()
 # shellcheck disable=SC1090
 . "$(dirname "${BASH_SOURCE[0]}")/deb_config" || exit 1
 
-inspect_deb_contents "$(to_realpath "$1")"
+
+inspect_deb_contents "$(to_realpath "$1")" "$(dirname "${BASH_SOURCE[0]}")/lintian.ignore"
 echo "Evdi package $1 is OK!"
 
 :
