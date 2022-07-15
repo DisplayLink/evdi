@@ -18,6 +18,8 @@ sed -i "s/^#define LIBEVDI_VERSION_MINOR .*$/#define LIBEVDI_VERSION_MINOR ${MIN
 sed -i "s/^#define LIBEVDI_VERSION_PATCH .*$/#define LIBEVDI_VERSION_PATCH ${PATCH}/" library/evdi_lib.h
 
 sed -i "s/^LIBVER := .*$/LIBVER := ${MAJOR}.${MINOR}.${PATCH}/" library/Makefile
+sed -i "s/^LIBABI := .*$/LIBABI := ${MAJOR}/" library/Makefile
+sed -i "s/^LIBABI := .*$/LIBABI := ${MAJOR}/" pyevdi/Makefile
 
 sed -i "s/^PACKAGE_VERSION=.*$/PACKAGE_VERSION=${MAJOR}.${MINOR}.${PATCH}/" module/dkms.conf
 
