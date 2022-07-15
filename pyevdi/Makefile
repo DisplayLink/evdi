@@ -12,7 +12,7 @@ INCL_DIRS := -I../library $$(python3 -m pybind11 --includes)
 
 CXXFLAGS := $(INCL_DIRS) -std=c++11 -fPIC $(CXXFLAGS)
 
-LDFLAGS := -L../library $(LDFLAGS)
+LDFLAGS := -L../library -Wl,--no-undefined $$(python3-config --ldflags --embed) -shared
 
 NAME := PyEvdi.so
 
