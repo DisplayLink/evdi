@@ -14,10 +14,12 @@ all:
 install:
 	$(MAKE) -C module install
 	$(MAKE) -C library install
+	$(MAKE) -C pyevdi install
 
 uninstall:
 	$(MAKE) -C module uninstall
 	$(MAKE) -C library uninstall
+	$(MAKE) -C pyevdi uninstall
 
 clean:
 	$(MAKE) clean -C module $(MFLAGS)
