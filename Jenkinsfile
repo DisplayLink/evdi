@@ -59,7 +59,15 @@ pipeline {
                 }
             }
         }
-
+	stage ('Build pyevdi') {
+            steps {
+                dir('src') {
+                    sh '''make clean'''	
+                    sh '''make -C library'''
+                    sh '''make -C pyevdi'''
+                }
+            }
+        }
         stage ('Build against released kernels') {
             steps {
                 dir('src') {
