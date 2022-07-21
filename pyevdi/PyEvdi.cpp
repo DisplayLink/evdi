@@ -7,10 +7,35 @@
 
 namespace py = pybind11;
 
+void log_function (void *user_data, const char * format, ...)
+{
+    va_list args1, args2;
+    va_start(args1, format);
+
+    va_copy(args2, args1);
+
+    int size = 1+std::vsnprintf(nullptr, 0, format, args1);
+    va_end(args1);
+
+    char buffer[size];
+
+    std::vsnprintf(buffer, size, format, args2);
+    va_end(args2);
+
+    std::string str(buffer);
+
+    py::module logging = py::module::import("logging");
+    logging.attr("log")(logging.attr("INFO"), str);
+}
+
 
 PYBIND11_MODULE(PyEvdi, m) {
     m.doc() = "python bindings for evdi library";
 
+    evdi_logging el;
+    el.function = &log_function;
+    evdi_set_logging(el);
+    
     evdi_lib_version lv;
     evdi_get_lib_version(&lv);
 
