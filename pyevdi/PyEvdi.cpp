@@ -1,8 +1,12 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
 #include "../library/evdi_lib.h"
 #include <pybind11/pybind11.h>
+#include "Card.h"
+#include <cstdio>
+#include <cstdarg>
 
 namespace py = pybind11;
+
 
 PYBIND11_MODULE(PyEvdi, m) {
     m.doc() = "python bindings for evdi library";
@@ -22,4 +26,7 @@ PYBIND11_MODULE(PyEvdi, m) {
         .value("NOT_PRESENT", NOT_PRESENT)
         .export_values(); 
 
+    py::class_<Card>(m, "Card")
+        .def(py::init<int>())
+        .def("close", &Card::close);
 }
