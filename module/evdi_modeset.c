@@ -538,7 +538,7 @@ void evdi_modeset_init(struct drm_device *dev)
 
 void evdi_modeset_cleanup(__maybe_unused struct drm_device *dev)
 {
-#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #else
 	drm_mode_config_cleanup(dev);
 #endif
