@@ -24,7 +24,7 @@
 #if KERNEL_VERSION(5, 1, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_probe_helper.h>
 #endif
-#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_managed.h>
 #endif
 #include <drm/drm_atomic_helper.h>
@@ -146,7 +146,7 @@ static struct drm_driver driver = {
 	.patchlevel = DRIVER_PATCH,
 };
 
-#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 				       __always_unused void *ptr)
 {
@@ -192,7 +192,7 @@ static int evdi_drm_device_setup(struct drm_device *dev)
 
 	drm_kms_helper_poll_init(dev);
 
-#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	ret = drmm_add_action_or_reset(dev, evdi_drm_device_release_cb, NULL);
 	if (ret)
 		goto err_fb;
