@@ -14,7 +14,7 @@
 #elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-buf-map.h>
 #endif
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #include <drm/drm_prime.h>
 #include <drm/drm_file.h>
 #elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
@@ -27,7 +27,7 @@
 #include <linux/dma-buf.h>
 #include <drm/drm_cache.h>
 
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 

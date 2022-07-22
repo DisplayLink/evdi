@@ -10,7 +10,7 @@
 #include "linux/thread_info.h"
 #include "linux/mm.h"
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #include <drm/drm_file.h>
 #include <drm/drm_vblank.h>
 #include <drm/drm_ioctl.h>
@@ -31,7 +31,7 @@
 
 #include <linux/dma-buf.h>
 
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
