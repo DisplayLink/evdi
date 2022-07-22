@@ -93,6 +93,16 @@ Description: $evdi_description
 Version: $evdi_version-$debian_revision
 EOF
 
+  cat > "$control_dir/preinst" << EOF
+#!/bin/bash
+
+if [[ -e /opt/displaylink/evdi.tar.gz ]]
+then
+  echo >&2 "Error: Another EVDI distribution detected"
+  exit 1
+fi
+EOF
+
   cat > "$control_dir/postinst" << EOF
 #!/usr/bin/env bash
 
@@ -150,7 +160,7 @@ dkms remove evdi/$evdi_version --all
 rm -f '/etc/modprobe.d/evdi.conf'
 EOF
 
-  chmod 0755 "$control_dir"/{prerm,postinst}
+  chmod 0755 "$control_dir"/{prerm,preinst,postinst}
 
   (
     cd "$temp_dir"
