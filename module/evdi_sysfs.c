@@ -51,6 +51,7 @@ struct evdi_usb_addr {
 	struct usb_device *usb;
 };
 
+#ifdef CONFIG_USB_SUPPORT
 static int evdi_platform_device_attach(struct device *device,
 		struct evdi_usb_addr *parent_addr);
 
@@ -165,6 +166,16 @@ static int evdi_platform_device_attach(struct device *device,
 	parent = &parent_addr->usb->dev;
 	return evdi_platform_device_add(device, parent);
 }
+
+#else /* !CONFIG_USB_SUPPORT */
+
+static ssize_t add_device_with_usb_path(struct device *dev,
+			 const char *buf, size_t count)
+{
+	return -EINVAL;
+}
+
+#endif /* CONFIG_USB_SUPPORT */
 
 static ssize_t add_store(struct device *dev,
 			 __always_unused struct device_attribute *attr,
