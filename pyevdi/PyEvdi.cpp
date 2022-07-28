@@ -1,6 +1,7 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
 #include "../library/evdi_lib.h"
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 #include "Card.h"
 #include <cstdio>
 #include <cstdarg>
@@ -45,13 +46,27 @@ PYBIND11_MODULE(PyEvdi, m) {
 
     m.def("add_device", &evdi_add_device);
 
-    py::enum_<evdi_device_status>(m, "evdi_device_status")
+
+    py::enum_<evdi_device_status>(m, "DeviceStatus")
         .value("AVAILABLE", AVAILABLE)
         .value("UNRECOGNIZED", UNRECOGNIZED)
         .value("NOT_PRESENT", NOT_PRESENT)
         .export_values(); 
 
+    py::class_<evdi_mode>(m, "DisplayMode")
+        .def(py::init<>())
+        .def_readwrite("width", &evdi_mode::width)
+        .def_readwrite("height", &evdi_mode::height)
+        .def_readwrite("refresh_rate", &evdi_mode::refresh_rate)
+        .def_readwrite("bits_per_pixel", &evdi_mode::bits_per_pixel)
+        .def_readwrite("pixel_format", &evdi_mode::pixel_format);
+
     py::class_<Card>(m, "Card")
         .def(py::init<int>())
-        .def("close", &Card::close);
+        .def("getMode", &Card::getMode)
+        .def("close", &Card::close)
+        .def("connect", &Card::connect)
+        .def("disconnect", &Card::disconnect)
+        .def("handle_events", &Card::handle_events)
+        .def_readwrite("mode_changed_handler", &Card::m_modeHandler);
 }

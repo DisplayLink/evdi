@@ -3,9 +3,7 @@ import PyEvdi
 import pytest
 import os
 import re
-
-def is_not_running_as_root():
-    return os.geteuid() != 0
+import utilities
 
 def testCheckDevice():
     for i in get_available_devices():
@@ -13,7 +11,7 @@ def testCheckDevice():
     assert PyEvdi.check_device(0) == PyEvdi.UNRECOGNIZED
     assert PyEvdi.check_device(25) == PyEvdi.NOT_PRESENT
 
-@pytest.mark.skipif(is_not_running_as_root(), reason = 'Only root can add a new device.')
+@pytest.mark.skipif(utilities.is_not_running_as_root(), reason = 'Only root can add a new device.')
 def testAddDevice():
     assert PyEvdi.add_device() == 1
 
