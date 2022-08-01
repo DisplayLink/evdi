@@ -49,6 +49,7 @@ create_evdi_deb_package()
   mkdir -p \
       "$control_dir" \
       "$deb_dir/usr/src" \
+      "$deb_dir/var/log/displaylink" \
       "$docs_dir" \
       "$deb_dir"/etc/{modules-load,modprobe}.d
 
