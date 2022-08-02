@@ -5,10 +5,12 @@
 #include "Card.h"
 #include <cstdio>
 #include <cstdarg>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 
-void log_function (void *user_data, const char * format, ...)
+void log_function (void */*user_data*/, const char * format, ...)
 {
     va_list args1, args2;
     va_start(args1, format);
@@ -61,6 +63,28 @@ PYBIND11_MODULE(PyEvdi, m) {
         .def_readwrite("bits_per_pixel", &evdi_mode::bits_per_pixel)
         .def_readwrite("pixel_format", &evdi_mode::pixel_format);
 
+    py::class_<evdi_rect>(m, "evdi_rect")
+        .def(py::init<>())
+        .def_readwrite("x1", &evdi_rect::x1)
+        .def_readwrite("x2", &evdi_rect::x2)
+        .def_readwrite("y1", &evdi_rect::y1)
+        .def_readwrite("y2", &evdi_rect::y2);
+
+    py::class_<Buffer, std::shared_ptr<Buffer>>(m, "Buffer")
+        .def_property_readonly("id", [](Buffer& self) { return self.buffer.id; })
+        .def_property_readonly("bytes", [](Buffer& self) { return self.buffer.buffer; })
+        .def_property_readonly("width", [](Buffer& self) { return self.buffer.width; })
+        .def_property_readonly("height", [](Buffer& self) { return self.buffer.height; })
+        .def_property_readonly("stride", [](Buffer& self) { return self.buffer.stride; })
+        .def_property_readonly("rects", [](Buffer& self) {
+            std::vector<evdi_rect> rects; 
+            for(int i = 0; i < self.buffer.rect_count; i++){
+                rects.push_back(self.buffer.rects[i]);
+            }
+            return rects;
+        })
+        .def_property_readonly("rect_count", [](Buffer& self) { return self.buffer.rect_count; });
+
     py::class_<Card>(m, "Card")
         .def(py::init<int>())
         .def("getMode", &Card::getMode)
@@ -68,5 +92,6 @@ PYBIND11_MODULE(PyEvdi, m) {
         .def("connect", &Card::connect)
         .def("disconnect", &Card::disconnect)
         .def("handle_events", &Card::handle_events)
+        .def_readwrite("acquire_framebuffer_cb", &Card::acquire_framebuffer_cb)
         .def_readwrite("mode_changed_handler", &Card::m_modeHandler);
 }
