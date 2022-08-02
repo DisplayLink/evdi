@@ -104,7 +104,7 @@ Maintainer: $evdi_maintainer
 Source: evdi
 Section: kernel
 Depends: dkms, libdrm-dev, libc6-dev
-Conflicts: libevdi0
+Conflicts: libevdi0, libevdi0-dev, evdi-dkms
 Architecture: $evdi_arch
 Priority: optional
 Description: $evdi_description
