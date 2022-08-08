@@ -4,6 +4,7 @@ MAINTAINER Synaptics Technical Support <technical-enquiries@synaptics.com>
 
 # Install basic tools
 RUN apt-get update && apt-get install -y \
+	curl \
 	coreutils \
 	fakeroot \
 	file \
@@ -12,6 +13,10 @@ RUN apt-get update && apt-get install -y \
 	make \
 	shellcheck \
 	wget
+
+# Install java for Synopsys detect
+RUN apt-get update && apt-get install -y default-jre default-jdk
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
 
 RUN dpkg --add-architecture i386
 RUN dpkg --add-architecture armhf

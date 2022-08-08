@@ -35,6 +35,16 @@ pipeline {
                 }
             }
         }
+        stage('BlackDuck Scan') {
+            environment {
+               DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
+            }
+            steps {
+                    dir("src") {
+                      synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+                    }
+            }
+        }
         stage ('Build evdi-amd64.deb') {
             steps {
                 dir('publish') {
