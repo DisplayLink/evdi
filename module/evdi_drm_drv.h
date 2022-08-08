@@ -34,11 +34,13 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
+#include <drm/drm_framebuffer.h>
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <linux/dma-resv.h>
 #else
 #include <linux/reservation.h>
 #endif
+
 #include "evdi_debug.h"
 
 
