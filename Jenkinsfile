@@ -44,7 +44,7 @@ pipeline {
             }
             steps {
                     dir("src") {
-                      synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+                      synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.detector.search.exclusion.paths='tmp' --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
                     }
             }
         }
