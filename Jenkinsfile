@@ -13,8 +13,11 @@ pipeline {
         stage ('Init') {
             steps {
                 dir('src') {
-                    sh '''./ci/check_version'''
-                    sh '''bash -c "[[ evdi-${EVDI_VERSION} ==  ${JOB_BASE_NAME}* ]]"'''
+                    sh '''
+                    ./ci/check_version
+                    EVDI_VERSION_SHORT=$(echo ${EVDI_VERSION} | awk -F '.' '{printf("%d.%d", $1, $2)}')
+                    bash -c "[[ ${JOB_BASE_NAME} == *evdi-${EVDI_VERSION_SHORT}* ]]"
+                    '''
                 }
                 buildName "evdi-${EVDI_VERSION}-${BUILD_NUMBER}"
                 buildDescription "#${BUILD_NUMBER}-${GIT_DESC}"
@@ -69,7 +72,7 @@ pipeline {
                 }
             }
         }
-	stage ('Build pyevdi') {
+        stage ('Build pyevdi') {
             steps {
                 dir('src') {
                     sh '''make clean'''	
