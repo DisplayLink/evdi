@@ -19,12 +19,12 @@ void card_C_mode_handler(struct evdi_mode mode, void *user_data)
     py::module logging = py::module::import("logging");
     logging.attr("info")("Got mode_changed signal.");
     Card* card = reinterpret_cast<Card*>(user_data);
-    
+
     assert(card);
 
     card->setMode(mode);
     card->makeBuffers(2);
-    
+
     if(card->m_modeHandler != nullptr){
         card->m_modeHandler(mode);
     }
@@ -51,9 +51,9 @@ void Card::clearBuffers()
     buffers.clear();
 }
 
-void dpms_handler(int dpms_mode, void *user_data){
+void dpms_handler(int dpms_mode, void* /*user_data*/){
     py::module logging = py::module::import("logging");
-    logging.attr("info")("Got dpms signal.");
+    logging.attr("info")("Got dpms signal." + std::to_string(dpms_mode));
 }
 
 Card::Card(int device) :
@@ -89,13 +89,13 @@ void Card::close()
         clearBuffers();
         evdi_close(evdiHandle);
     }
-    evdiHandle = nullptr;  
+    evdiHandle = nullptr;
 }
 
-void Card::connect(const char *edid, const unsigned int edid_length, 
+void Card::connect(const char *edid, const unsigned int edid_length,
     const uint32_t pixel_area_limit, const uint32_t pixel_per_second_limit)
-{   
-    evdi_connect(evdiHandle, reinterpret_cast<const unsigned char *>(edid), 
+{
+    evdi_connect(evdiHandle, reinterpret_cast<const unsigned char *>(edid),
         edid_length, pixel_area_limit, pixel_per_second_limit);
 }
 
@@ -129,19 +129,19 @@ void Card::handle_events(int waiting_time)
 void Card::request_update()
 {
     if(buffer_requested){
-        return; 
+        return;
     }
 
     for(auto &i : buffers){
         if(i.use_count() == 1)
         {
-            buffer_requested = i; 
+            buffer_requested = i;
             break;
         }
     }
-    
+
     if(!buffer_requested){
-        return; 
+        return;
     }
 
     bool update_ready = evdi_request_update(evdiHandle, buffer_requested->buffer.id);
@@ -154,7 +154,7 @@ void Card::request_update()
 void Card::grab_pixels()
 {
     if(!buffer_requested){
-        return; 
+        return;
     }
 
     evdi_grab_pixels(evdiHandle, buffer_requested->buffer.rects, &buffer_requested->buffer.rect_count);

@@ -32,7 +32,7 @@ public:
     explicit Card(int device);
     ~Card();
     void close();
-    void connect(const char *edid, const unsigned int edid_length, 
+    void connect(const char *edid, const unsigned int edid_length,
         const uint32_t pixel_area_limit, const uint32_t pixel_per_second_limit);
     void disconnect();
 
