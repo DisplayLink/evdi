@@ -30,6 +30,7 @@
 #else
 #include <drm/drm_irq.h>
 #endif
+#include <drm/drm_framebuffer.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
