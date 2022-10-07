@@ -11,6 +11,7 @@ config DRM_EVDI
 	depends on DRM
 	depends on USB_SUPPORT
 	depends on USB_ARCH_HAS_HCD
+	depends on MODULES
 	select USB
 	select DRM_KMS_HELPER
 	help
