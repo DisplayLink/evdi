@@ -8,6 +8,8 @@ pipeline {
     environment {
       GIT_DESC = sh(script: '''(cd src; git describe --tags --match=v*)''', returnStdout: true).trim()
       EVDI_VERSION = sh(script: '''(cd src; . ./ci/deb_config; echo $evdi_version)''', returnStdout: true).trim()
+      PUBLISH = sh(script: '''bash -c "[[ ${GIT_BRANCH} =~ ^(origin/devel$|origin/release//*) ]] && echo true || echo false"
+                           ''', returnStdout: true).trim()
     }
     stages {
         stage ('Init') {
@@ -39,6 +41,7 @@ pipeline {
             }
         }
         stage('BlackDuck Scan') {
+            when { environment name: 'PUBLISH', value: 'true' }
             environment {
                DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
             }
@@ -96,6 +99,7 @@ pipeline {
             }
         }
         stage ('Publish') {
+          when { environment name: 'PUBLISH', value: 'true' }
           steps {
             rtBuildInfo (
                 captureEnv: true,
@@ -126,6 +130,7 @@ pipeline {
         }
         stage ( 'Run job: promote build' )
         {
+          when { environment name: 'PUBLISH', value: 'true' }
           steps {
             build (
                 job: 'PPD-POSIX/promote build',
