@@ -26,11 +26,11 @@
 #include <drm/drmP.h>
 #endif
 #if KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE || defined(EL9)
+#include <drm/drm_framebuffer.h>
 #include <drm/drm_legacy.h>
 #else
 #include <drm/drm_irq.h>
 #endif
-#include <drm/drm_framebuffer.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_rect.h>
