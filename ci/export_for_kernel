@@ -30,6 +30,9 @@ KERNEL_VERSION() { # MAJ MIN PATCH
   echo $(( ${1} * 65536 + ${2} * 256 + ${3} ))
 }
 
+export LINUX_VERSION_CODE=
+LINUX_VERSION_CODE=$(KERNEL_VERSION "${MAJ}" "${MIN}" "${PATCH}")
+
 progress() { # current max
   local current=${1}
   local max=${2}
@@ -154,6 +157,7 @@ modify_file() { # file
   local tmp="${file}.tmp"
   rm -f "${tmp}"
 
+  sed -i -e 's/ || defined(EL8)//g' -e 's/ || defined(EL9)//g'  -e 's/ || defined(RPI)//g'  "${file}"
   export_file "${file}" > "${tmp}"
 
   mv "${tmp}" "${file}"
