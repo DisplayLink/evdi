@@ -26,10 +26,7 @@
 #include <drm/drmP.h>
 #endif
 #if KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE || defined(EL9)
-#include <drm/drm_legacy.h>
-#if KERNEL_VERSION(6, 0, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_framebuffer.h>
-#endif
 #else
 #include <drm/drm_irq.h>
 #endif
