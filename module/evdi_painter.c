@@ -885,7 +885,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	painter_lock(painter);
 
-        evdi->pixel_area_limit = pixel_area_limit;
+	evdi->pixel_area_limit = pixel_area_limit;
 	evdi->pixel_per_second_limit = pixel_per_second_limit;
 	painter->drm_filp = file;
 	kfree(painter->edid);
