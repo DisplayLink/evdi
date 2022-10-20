@@ -1,5 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0-only
- * Copyright (c) 2016 - 2020 DisplayLink (UK) Ltd.
+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+ *
+ * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -9,6 +10,14 @@
 #ifndef __UAPI_EVDI_DRM_H__
 #define __UAPI_EVDI_DRM_H__
 
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
+#include <stdint.h>
+#endif
+
+#include "drm.h"
+
 /* Output events sent from driver to evdi lib */
 #define DRM_EVDI_EVENT_UPDATE_READY  0x80000000
 #define DRM_EVDI_EVENT_DPMS          0x80000001
@@ -17,7 +26,6 @@
 #define DRM_EVDI_EVENT_CURSOR_SET    0x80000004
 #define DRM_EVDI_EVENT_CURSOR_MOVE   0x80000005
 #define DRM_EVDI_EVENT_DDCCI_DATA    0x80000006
-
 
 struct drm_evdi_event_update_ready {
 	struct drm_event base;

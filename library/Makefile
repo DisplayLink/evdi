@@ -8,7 +8,7 @@ LN ?= ln
 RM ?= rm
 
 DEPS = evdi_ioctl.h
-CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS)
+CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS) $$(pkg-config --cflags-only-I libdrm)
 
 LIBVER := 1.12.0
 LIBABI := 1
