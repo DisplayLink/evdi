@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 	lintian \
 	make \
 	shellcheck \
+	pkg-config \
 	wget
 
 # Install java for Synopsys detect
