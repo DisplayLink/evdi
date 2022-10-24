@@ -6,9 +6,10 @@ INSTALL ?= install
 CP ?= cp
 LN ?= ln
 RM ?= rm
+PKG_CONFIG ?= pkg-config
 
 DEPS = evdi_ioctl.h
-CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS) $$(pkg-config --cflags-only-I libdrm)
+CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS) $$($(PKG_CONFIG) --cflags-only-I libdrm)
 
 LIBVER := 1.12.0
 LIBABI := 1
