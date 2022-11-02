@@ -1217,6 +1217,7 @@ void evdi_painter_cleanup(struct evdi_painter *painter)
 
 	painter->drm_device = NULL;
 	painter_unlock(painter);
+	kfree(painter);
 }
 
 void evdi_painter_set_scanout_buffer(struct evdi_painter *painter,

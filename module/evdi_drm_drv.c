@@ -95,7 +95,6 @@ static struct drm_driver driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME
 			 | DRIVER_ATOMIC,
 #endif
-	.unload = evdi_drm_device_unload,
 
 	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
@@ -146,13 +145,17 @@ static struct drm_driver driver = {
 	.patchlevel = DRIVER_PATCH,
 };
 
-#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 				       __always_unused void *ptr)
 {
+	struct evdi_device *evdi = dev->dev_private;
+
+	evdi_cursor_free(evdi->cursor);
+	evdi_painter_cleanup(evdi->painter);
+	kfree(evdi);
+	dev->dev_private = NULL;
 	EVDI_INFO("Evdi drm_device removed.\n");
 }
-#endif
 
 static int evdi_drm_device_init(struct drm_device *dev)
 {
@@ -206,30 +209,6 @@ err_free:
 	kfree(evdi);
 	dev->dev_private = NULL;
 	return ret;
-}
-
-void evdi_drm_device_unload(struct drm_device *dev)
-{
-	struct evdi_device *evdi = dev->dev_private;
-
-	EVDI_CHECKPT();
-
-	drm_kms_helper_poll_fini(dev);
-
-#ifdef CONFIG_FB
-	evdi_fbdev_unplug(dev);
-#endif /* CONFIG_FB */
-	if (evdi->cursor)
-		evdi_cursor_free(evdi->cursor);
-
-	evdi_painter_cleanup(evdi->painter);
-#ifdef CONFIG_FB
-	evdi_fbdev_cleanup(dev);
-#endif /* CONFIG_FB */
-	evdi_modeset_cleanup(dev);
-
-	kfree(evdi);
-	dev->dev_private = NULL;
 }
 
 int evdi_driver_open(struct drm_device *dev, __always_unused struct drm_file *file)
@@ -288,10 +267,25 @@ err_free:
 	return ERR_PTR(ret);
 }
 
+static void evdi_drm_device_deinit(struct drm_device *dev)
+{
+	drm_kms_helper_poll_fini(dev);
+#ifdef CONFIG_FB
+	evdi_fbdev_unplug(dev);
+	evdi_fbdev_cleanup(dev);
+#endif /* CONFIG_FB */
+	evdi_modeset_cleanup(dev);
+	drm_atomic_helper_shutdown(dev);
+}
+
 int evdi_drm_device_remove(struct drm_device *dev)
 {
 	drm_dev_unplug(dev);
-	drm_atomic_helper_shutdown(dev);
+	evdi_drm_device_deinit(dev);
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#else
+	evdi_drm_device_release_cb(dev, NULL);
+#endif
 	drm_dev_put(dev);
 	return 0;
 }
