@@ -91,12 +91,6 @@ create_evdi_deb_package()
     fi
   )
 
-  echo 'evdi' > "$deb_dir/etc/modules-load.d/evdi.conf"
-
-  cat > "$control_dir/conffiles" << EOF
-/etc/modules-load.d/evdi.conf
-EOF
-
   cat > "$control_dir/control" << EOF
 Package: evdi
 Version: $evdi_version-$debian_revision
@@ -156,6 +150,9 @@ build_evdi()
 
 add_mod_options()
 {
+  local module_file='/etc/modules-load.d/evdi.conf'
+  echo 'evdi' > "\$module_file"
+
   local conf_file='/etc/modprobe.d/evdi.conf'
   [[ -f \$conf_file ]] && return
 
@@ -169,16 +166,17 @@ add_mod_options()
   echo "softdep evdi pre: \$drm_deps" >> "\$conf_file"
 }
 
-build_evdi && add_mod_options
+build_evdi
+add_mod_options
 EOF
 
   cat > "$control_dir/prerm" << EOF
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
 dkms remove evdi/$evdi_version --all
-rm -f '/etc/modprobe.d/evdi.conf'
+rm -f /etc/{modprobe,modules-load}.d/evdi.conf
 EOF
 
   chmod 0755 "$control_dir"/{prerm,preinst,postinst}
