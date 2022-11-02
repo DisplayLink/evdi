@@ -154,7 +154,7 @@ static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 }
 #endif
 
-static int evdi_drm_device_setup(struct drm_device *dev)
+static int evdi_drm_device_init(struct drm_device *dev)
 {
 	struct evdi_device *evdi;
 	int ret;
@@ -165,49 +165,46 @@ static int evdi_drm_device_setup(struct drm_device *dev)
 		return -ENOMEM;
 
 	evdi->ddev = dev;
-	dev->dev_private = evdi;
 	evdi->dev_index = dev->primary->index;
-
 	evdi->cursor_events_enabled = false;
+	dev->dev_private = evdi;
+	ret = evdi_painter_init(evdi);
+	if (ret)
+		goto err_free;
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err_free;
 
-	EVDI_CHECKPT();
 	evdi_modeset_init(dev);
-
 #ifdef CONFIG_FB
 	ret = evdi_fbdev_init(dev);
 	if (ret)
-		goto err_cursor;
+		goto err_init;
 #endif /* CONFIG_FB */
 
 	ret = drm_vblank_init(dev, 1);
 	if (ret)
-		goto err_fb;
-
-	ret = evdi_painter_init(evdi);
-	if (ret)
-		goto err_fb;
-
+		goto err_init;
 	drm_kms_helper_poll_init(dev);
 
 #if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	ret = drmm_add_action_or_reset(dev, evdi_drm_device_release_cb, NULL);
 	if (ret)
-		goto err_fb;
+		goto err_init;
 #endif
+
 	return 0;
 
-err_fb:
+err_init:
 #ifdef CONFIG_FB
 	evdi_fbdev_cleanup(dev);
-err_cursor:
 #endif /* CONFIG_FB */
-	evdi_cursor_free(evdi->cursor);
 err_free:
 	EVDI_ERROR("Failed to setup drm device %d\n", ret);
+	evdi_cursor_free(evdi->cursor);
+	kfree(evdi->painter);
 	kfree(evdi);
+	dev->dev_private = NULL;
 	return ret;
 }
 
@@ -232,15 +229,15 @@ void evdi_drm_device_unload(struct drm_device *dev)
 	evdi_modeset_cleanup(dev);
 
 	kfree(evdi);
+	dev->dev_private = NULL;
 }
 
-int evdi_driver_open(struct drm_device *drm_dev, __always_unused struct drm_file *file)
+int evdi_driver_open(struct drm_device *dev, __always_unused struct drm_file *file)
 {
-	struct evdi_device *evdi = drm_dev->dev_private;
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_INFO("(card%d) Opened by %s\n", evdi->dev_index, buf);
+	EVDI_INFO("(card%d) Opened by %s\n", dev->primary->index, buf);
 	return 0;
 }
 
@@ -258,16 +255,13 @@ void evdi_driver_preclose(struct drm_device *drm_dev, struct drm_file *file)
 	evdi_driver_close(drm_dev, file);
 }
 
-void evdi_driver_postclose(struct drm_device *drm_dev, struct drm_file *file)
+void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file)
 {
-	struct evdi_device *evdi = drm_dev->dev_private;
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
-	EVDI_INFO("(card%d) Closed by %s\n",
-		   evdi->dev_index, buf);
-
-	evdi_driver_close(drm_dev, file);
+	evdi_driver_close(dev, file);
+	EVDI_INFO("(card%d) Closed by %s\n", dev->primary->index, buf);
 }
 
 struct drm_device *evdi_drm_device_create(struct device *parent)
@@ -279,7 +273,7 @@ struct drm_device *evdi_drm_device_create(struct device *parent)
 	if (IS_ERR(dev))
 		return dev;
 
-	ret = evdi_drm_device_setup(dev);
+	ret = evdi_drm_device_init(dev);
 	if (ret)
 		goto err_free;
 
