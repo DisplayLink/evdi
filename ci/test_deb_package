@@ -63,7 +63,6 @@ inspect_deb_contents()
   arch=$(get_architecture "$deb")
 
   files=(
-    'etc/modules-load.d/evdi.conf'
     "usr/src/evdi-$evdi_version"
     "usr/lib/libevdi.so.$evdi_version"
   )
