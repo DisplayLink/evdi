@@ -125,27 +125,22 @@ build_evdi()
   local dkms_evdi_path='/var/lib/dkms/evdi'
   local make_log_regex="\$dkms_evdi_path/[[:alnum:]./]+/make\\\\.log"
 
-  local dkms_log
-  dkms_log=\$(mktemp) || exit 1
-
   local evdi_make_log_path
   evdi_make_log_path="/var/log/displaylink/evdi_install_make.\$(date '+%F-%H%M').log"
 
-  dkms install "\$evdi_dir" 2>&1 | tee "\$dkms_log" | sed -E "s~\$make_log_regex~\$evdi_make_log_path~"
-  local retval=\${PIPESTATUS[0]}
+  dkms install "\$evdi_dir"
+  local retval=\$?
+  local dkms_log_path
+  dkms_log_path=\$(find "/var/lib/dkms/evdi/${evdi_version}" -name make.log)
+  cp "\${dkms_log_path}" "\${evdi_make_log_path}"
 
   if [[ \$retval == 3 ]]; then
     echo >&2 "EVDI DKMS module already installed."
-
   elif [[ \$retval != 0 ]]; then
     echo >&2 "Failed to install evdi to the kernel tree."
-    grep -Eo "\$make_log_regex" "\$dkms_log" | head -n1 | xargs -r -I '{}' cp '{}' "\$evdi_make_log_path"
     dkms remove 'evdi/$evdi_version' --all
-    rm "\$dkms_log"
     exit 1
   fi
-
-  rm "\$dkms_log"
 }
 
 add_mod_options()
