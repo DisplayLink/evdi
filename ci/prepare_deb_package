@@ -172,6 +172,11 @@ set -e
 
 dkms remove evdi/$evdi_version --all
 rm -f /etc/{modprobe,modules-load}.d/evdi.conf
+
+if [[ \$1 == remove ]]; then
+  rm -rf /var/log/displaylink
+fi
+
 EOF
 
   chmod 0755 "$control_dir"/{prerm,preinst,postinst}
