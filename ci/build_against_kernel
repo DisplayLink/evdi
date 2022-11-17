@@ -87,8 +87,27 @@ get_versions_from_file() { # file
   grep "${PREFIX}" < "${1}" | sed -e "s/${PREFIX}//g"
 }
 
+get_supported_linux_versions() {
+  local repo_dir=$TMP/linux
+  local CC="${CC:-gcc}"
+  mkdir -p "$TMP"
+  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null
+
+  (cd "$repo_dir"
+      git fetch --tags 1>&2 2>/dev/null
+      local supported_versions=""
+      supported_versions=$(git tag --sort=-creatordate -l 'v*' | grep -v "rc" | grep -v "v1" | grep -v "v2" | grep -v "v3" | grep -v "v4" | xargs)
+      supported_versions="$supported_versions v4.19 v4.20"
+      echo "$supported_versions"
+  )
+}
+
 get_last_linux_rc_tag() {
   local repo_dir=$TMP/linux
+  local CC="${CC:-gcc}"
+  mkdir -p "$TMP"
+
+  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null
 
   (cd "$repo_dir"
       git fetch --tags
@@ -123,15 +142,13 @@ prepare_tar_gz_sources() { # PACKAGE SOURCES CC
   fi
 }
 
-prepare_repo_sources() { # PACKAGE SOURCES CC
+prepare_repo_sources() { # PACKAGE CC
   local PACKAGE="${1}"
-  local SOURCES="${2}"
-  local CC="${3}"
+  local CC="${2}"
   local SRC_DIR=
   SRC_DIR="$(pwd)/linux"
 
   echo "Package = $PACKAGE"
-  echo "SOURCES = $SOURCES"
   echo "CC=$CC"
   echo "SRC_DIR = $SRC_DIR"
 
@@ -139,13 +156,13 @@ prepare_repo_sources() { # PACKAGE SOURCES CC
     git clone https://github.com/torvalds/linux
   fi
 
-  cd linux
+  (cd linux
   git fetch
   git fetch --tags
   git clean -fdx
   git checkout "$PACKAGE"
 
-  prepare_kernel "${SRC_DIR}" "${CC}"
+  prepare_kernel "${SRC_DIR}" "${CC}")
 }
 
 prepare_sources() { ( # PACKAGE SOURCES CC
@@ -156,7 +173,7 @@ prepare_sources() { ( # PACKAGE SOURCES CC
   cd "${TMP}"
 
   if [[ ${MODE} == REPO* ]]; then
-    prepare_repo_sources "${1}" "${2}" "${3}"
+    prepare_repo_sources "${1}" "${3}"
   else
     prepare_tar_gz_sources "${1}" "${2}" "${3}"
   fi
@@ -205,6 +222,7 @@ build_one() { # KVER
   fi
   CFLAGS="$extra_cflags" make -C module KDIR="${src_dir}" CC="${CC}" --jobs="${JOBS}"
 }
+
 
 MODE="CLEAN"
 JOBS="1"
@@ -264,7 +282,8 @@ do
       ;;
 
     all)
-      for KVER in $(get_versions_from_file '.travis.yml'); do
+      for KVER in $(get_supported_linux_versions); do
+        KVER=${KVER:1}
         build_one "${KVER}"
       done
       ;;
