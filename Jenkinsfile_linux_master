@@ -6,10 +6,27 @@ pipeline {
         }
     }
     stages {
-        stage ('Build against linux-master') {
+        stage ('Generate stages') {
             steps {
                 dir('src') {
-                    sh '''./ci/build_against_kernel --repo-ci master'''
+                    script {
+                      def list = [ "origin/devel" ]
+                      def branches_to_build = sh(script: '''git branch -r -l origin/release/* | xargs''', returnStdout: true).trim()
+                      list.addAll(branches_to_build.split())
+                      for(int i=0; i < list.size(); i++) {
+                        def branchName = list[i];
+                        stage(branchName) {
+                            withEnv(["STAGE_BRANCH=$branchName"]) {
+                            sh '''
+                              git checkout ${STAGE_BRANCH}
+                              ./ci/build_against_kernel --repo-ci master
+                              ./ci/build_against_kernel --repo-ci rc
+                              ./ci/build_against_kernel --repo-ci all
+                              '''
+                            }
+                        }
+                      }
+                    }
                 }
             }
         }
