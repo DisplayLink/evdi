@@ -130,6 +130,10 @@ build_evdi()
 
   dkms install "\$evdi_dir"
   local retval=\$?
+  if mokutil --sb-state | grep -i "SecureBoot enabled" > /dev/null; then
+    update-secureboot-policy --enroll-key 2> /dev/null || echo >&2 "Failed to enroll SecureBoot key."
+  fi
+
   local dkms_log_path
   dkms_log_path=\$(find "/var/lib/dkms/evdi/${evdi_version}" -name make.log)
   cp "\${dkms_log_path}" "\${evdi_make_log_path}"
