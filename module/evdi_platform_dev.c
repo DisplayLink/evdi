@@ -52,6 +52,12 @@ struct platform_device *evdi_platform_dev_create(struct platform_device_info *in
 
 void evdi_platform_dev_destroy(struct platform_device *dev)
 {
+#if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
+#if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
+	dev->dev.iommu = NULL;
+#else
+#endif
+#endif
 	platform_device_unregister(dev);
 	EVDI_INFO("Evdi platform_device destroy\n");
 }
@@ -63,7 +69,7 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
-	struct dev_iommu iommu;
+	static struct dev_iommu fake_iommu = { .priv = (void *)-1 };
 #endif
 #endif
 	EVDI_CHECKPT();
@@ -74,9 +80,7 @@ int evdi_platform_device_probe(struct platform_device *pdev)
 /* Intel-IOMMU workaround: platform-bus unsupported, force ID-mapping */
 #if IS_ENABLED(CONFIG_IOMMU_API) && defined(CONFIG_INTEL_IOMMU)
 #if KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE || defined(EL8)
-	memset(&iommu, 0, sizeof(iommu));
-	iommu.priv = (void *)-1;
-	pdev->dev.iommu = &iommu;
+	pdev->dev.iommu = &fake_iommu;
 #else
 #define INTEL_IOMMU_DUMMY_DOMAIN                ((void *)-1)
 	pdev->dev.archdata.iommu = INTEL_IOMMU_DUMMY_DOMAIN;
