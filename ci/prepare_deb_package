@@ -119,6 +119,21 @@ EOF
 
 set -e
 
+function notify-send2()
+{
+    #Detect the id of the user
+    local user
+    user=\$(logname)
+    local cmd_path
+    cmd_path=\$(command -v notify-send)
+    [[ \$user ]] || return 0
+    local uid
+    uid=\$(id -u "\$user")
+    sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" \
+      test -x "\$cmd_path" || return
+    sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" "\$cmd_path" "\$@"
+}
+
 build_evdi()
 {
   local evdi_dir='/usr/src/evdi-$evdi_version'
@@ -130,8 +145,12 @@ build_evdi()
 
   dkms install "\$evdi_dir"
   local retval=\$?
-  if mokutil --sb-state | grep -i "SecureBoot enabled" > /dev/null; then
-    update-secureboot-policy --enroll-key 2> /dev/null || echo >&2 "Failed to enroll SecureBoot key."
+  if mokutil --sb-state | grep -Fi "SecureBoot enabled" > /dev/null; then
+    if update-secureboot-policy --enroll-key 2> /dev/null; then
+      notify-send2 -a "EVDI" "SecureBoot enabled. Reboot your computer to ensure proper functioning of the module."
+    else
+      echo >&2 "Failed to enroll SecureBoot key."
+    fi
   fi
 
   local dkms_log_path
