@@ -121,17 +121,14 @@ set -e
 
 function notify-send2()
 {
-    #Detect the id of the user
-    local user
-    user=\$(logname)
-    local cmd_path
-    cmd_path=\$(command -v notify-send)
-    [[ \$user ]] || return 0
-    local uid
-    uid=\$(id -u "\$user")
-    sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" \
-      test -x "\$cmd_path" || return
-    sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" "\$cmd_path" "\$@"
+  local user uid program_path
+
+  user=\$(logname) \
+    && [[ \$user ]] \
+    && uid=\$(id -u "\$user") \
+    && program_path=\$(command -v notify-send) \
+    && sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" "\$program_path" "\$@" \
+    || return 0
 }
 
 build_evdi()
