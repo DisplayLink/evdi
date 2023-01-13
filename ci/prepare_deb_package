@@ -145,6 +145,7 @@ build_evdi()
   if mokutil --sb-state | grep -Fi "SecureBoot enabled" > /dev/null; then
     if update-secureboot-policy --enroll-key 2> /dev/null; then
       notify-send2 -a "EVDI" "SecureBoot enabled. Reboot your computer to ensure proper functioning of the module."
+      printf "\n\n%s\n\n\n" "SecureBoot enabled. Reboot your computer to ensure proper functioning of the module."
     else
       echo >&2 "Failed to enroll SecureBoot key."
     fi
