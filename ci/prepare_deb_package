@@ -182,9 +182,9 @@ add_mod_options()
 build_evdi
 add_mod_options
 notify-send2 -a "DisplayLinkManager" "Reboot required" \
-        "DisplayLinkManager installed successfully. Reboot your computer to ensure proper functioning of the software."
+        "DisplayLink evdi module installed successfully. Reboot your computer to ensure proper functioning of the software."
 
-printf "\n\n%s\n%s\n%s\n\n\n" "Reboot required" "DisplayLinkManager installed successfully." \
+printf "\n\n%s\n%s\n%s\n\n\n" "Reboot required" "DisplayLink evdi module installed successfully." \
         "Please reboot your computer to ensure the proper functioning of the software."
 EOF
 
