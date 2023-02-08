@@ -143,10 +143,7 @@ build_evdi()
   dkms install "\$evdi_dir"
   local retval=\$?
   if mokutil --sb-state | grep -Fi "SecureBoot enabled" > /dev/null; then
-    if update-secureboot-policy --enroll-key 2> /dev/null; then
-      notify-send2 -a "EVDI" "SecureBoot enabled. Reboot your computer to ensure proper functioning of the module."
-      printf "\n\n%s\n\n\n" "SecureBoot enabled. Reboot your computer to ensure proper functioning of the module."
-    else
+    if ! update-secureboot-policy --enroll-key 2> /dev/null; then
       echo >&2 "Failed to enroll SecureBoot key."
     fi
   fi
@@ -184,6 +181,11 @@ add_mod_options()
 
 build_evdi
 add_mod_options
+notify-send2 -a "DisplayLinkManager" "Reboot required" \
+        "DisplayLinkManager installed successfully. Reboot your computer to ensure proper functioning of the software."
+
+printf "\n\n%s\n%s\n%s\n\n\n" "Reboot required" "DisplayLinkManager installed successfully." \
+        "Please reboot your computer to ensure the proper functioning of the software."
 EOF
 
   cat > "$control_dir/prerm" << EOF
