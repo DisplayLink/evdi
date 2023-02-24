@@ -18,6 +18,8 @@
 #endif
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
+#include <drm/drm_encoder.h>
+#include <drm/drm_modeset_helper_vtables.h>
 #include "evdi_drm_drv.h"
 
 /* dummy encoder */
