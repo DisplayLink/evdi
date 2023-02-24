@@ -160,7 +160,7 @@ prepare_repo_sources() { # PACKAGE CC
   git fetch
   git fetch --tags
   git clean -fdx
-  git checkout "$PACKAGE"
+  git checkout "$PACKAGE" -f
 
   prepare_kernel "${SRC_DIR}" "${CC}")
 }
@@ -179,8 +179,24 @@ prepare_sources() { ( # PACKAGE SOURCES CC
   fi
 ) }
 
+increment_kernel_version()
+{
+  (cd "$1"
+  REGEX="\(VERSION *= *\)\([0-9]\+\)"
+
+  version=$(sed -ne "s/${REGEX}/\2/p" Makefile | head -1)
+  ((version++))
+
+  sed -ie "s/${REGEX}/\1${version}/" Makefile
+  )
+}
+
 prepare_kernel() { ( # SRC_DIR CC
   cd "${1}"
+  if [[ "${KVER}" == "master" ]] ; then
+    increment_kernel_version "${1}"
+  fi
+
   make olddefconfig CC="${2}" --jobs="${JOBS}"
   make prepare CC="${2}" --jobs="${JOBS}"
   make modules_prepare CC="${2}" --jobs="${JOBS}"
