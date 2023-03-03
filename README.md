@@ -26,7 +26,9 @@ This is a first release. DisplayLink are open to suggestions and feedback on imp
 
 ## Licensing
 
-Please refer to the LICENSE information in `module` and `library` subfolders of this project.
+Elements of this project are licensed under various licenses. In particular, the `module` and `library` are licensed
+under GPL v2 and LGPL v2.1 respectively - consult separate `LICENSE` files in subfolders. Remaining files and subfolders (unless
+a separate `LICENSE` file states otherwise) are licensed under MIT license.
 
 ### More information
 
