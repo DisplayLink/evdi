@@ -8,7 +8,7 @@ pipeline {
     environment {
       GIT_DESC = sh(script: '''(cd src; git describe --tags --match=v*)''', returnStdout: true).trim()
       EVDI_VERSION = sh(script: '''(cd src; . ./ci/deb_config; echo $evdi_version)''', returnStdout: true).trim()
-      PUBLISH = sh(script: '''bash -c "[[ ${GIT_BRANCH} =~ ^(origin/devel$|origin/release//*) ]] && echo true || echo false"
+      PUBLISH = sh(script: '''bash -c "[[ ${GIT_BRANCH} =~ ^origin/(devel$|github_devel$|release//*) ]] && echo true || echo false"
                            ''', returnStdout: true).trim()
     }
     stages {
