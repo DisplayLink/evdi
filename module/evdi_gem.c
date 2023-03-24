@@ -384,6 +384,8 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 #endif
 	obj->resv = NULL;
 	mutex_destroy(&obj->pages_lock);
+	drm_gem_object_release(&obj->base);
+	kfree(obj);
 }
 
 /*
