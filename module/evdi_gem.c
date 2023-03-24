@@ -133,6 +133,7 @@ evdi_gem_create(struct drm_file *file,
 	if (obj == NULL)
 		return -ENOMEM;
 
+	obj->allow_sw_cursor_rect_updates = evdi_was_called_by_mutter();
 	ret = drm_gem_handle_create(file, &obj->base, &handle);
 	if (ret) {
 		drm_gem_object_release(&obj->base);
@@ -144,7 +145,6 @@ evdi_gem_create(struct drm_file *file,
 #else
 	drm_gem_object_put_unlocked(&obj->base);
 #endif
-	obj->allow_sw_cursor_rect_updates = evdi_was_called_by_mutter();
 	*handle_p = handle;
 	return 0;
 }
