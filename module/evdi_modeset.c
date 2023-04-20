@@ -327,6 +327,7 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 {
 #if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+
 #else
 #endif
 	if (plane && plane->state && plane->dev && plane->dev->dev_private) {

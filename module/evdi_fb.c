@@ -224,7 +224,7 @@ static const struct fb_ops evdifb_ops = {
 #else
 /*
  * Function taken from
- * https://lists.freedesktop.org/archives/dri-devel/2018-September/188716.html
+ * https://lore.kernel.org/dri-devel/20180905233901.2321-5-drawat@vmware.com/
  */
 static int evdi_user_framebuffer_dirty(
 		struct drm_framebuffer *fb,
