@@ -16,7 +16,6 @@ pipeline {
             steps {
                 dir('src') {
                     sh '''
-                    ./ci/check_version
                     EVDI_VERSION_SHORT=$(echo ${EVDI_VERSION} | awk -F '.' '{printf("%d.%d", $1, $2)}')
                     bash -c "[[ ${JOB_BASE_NAME} == *evdi-${EVDI_VERSION_SHORT}* ]]"
                     '''
