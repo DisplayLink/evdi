@@ -36,11 +36,6 @@
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_framebuffer.h>
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
-#include <linux/dma-resv.h>
-#else
-#include <linux/reservation.h>
-#endif
 
 #include "evdi_debug.h"
 
@@ -74,13 +69,6 @@ struct evdi_gem_object {
 	bool vmap_is_iomem;
 #endif
 	struct sg_table *sg;
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
-	struct dma_resv *resv;
-	struct dma_resv _resv;
-#else
-	struct reservation_object *resv;
-	struct reservation_object _resv;
-#endif
 	bool allow_sw_cursor_rect_updates;
 };
 

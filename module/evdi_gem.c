@@ -101,12 +101,6 @@ struct evdi_gem_object *evdi_gem_alloc_object(struct drm_device *dev,
 		return NULL;
 	}
 
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
-	dma_resv_init(&obj->_resv);
-#else
-	reservation_object_init(&obj->_resv);
-#endif
-	obj->resv = &obj->_resv;
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	obj->base.funcs = &gem_obj_funcs;
@@ -377,12 +371,6 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (gem_obj->dev->vma_offset_manager)
 		drm_gem_free_mmap_offset(gem_obj);
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
-	dma_resv_fini(&obj->_resv);
-#else
-	reservation_object_fini(&obj->_resv);
-#endif
-	obj->resv = NULL;
 	mutex_destroy(&obj->pages_lock);
 	drm_gem_object_release(&obj->base);
 	kfree(obj);
