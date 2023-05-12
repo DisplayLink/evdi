@@ -12,11 +12,10 @@
 
 #ifdef __KERNEL__
 #include <linux/types.h>
+#include <drm/drm.h>
 #else
 #include <stdint.h>
 #endif
-
-#include <drm/drm.h>
 
 /* Output events sent from driver to evdi lib */
 #define DRM_EVDI_EVENT_UPDATE_READY  0x80000000
