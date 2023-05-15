@@ -95,7 +95,7 @@ void Card::close()
 void Card::connect(const char *edid, const unsigned int edid_length,
     const uint32_t pixel_area_limit, const uint32_t pixel_per_second_limit)
 {
-    evdi_connect(evdiHandle, reinterpret_cast<const unsigned char *>(edid),
+    evdi_connect2(evdiHandle, reinterpret_cast<const unsigned char *>(edid),
         edid_length, pixel_area_limit, pixel_per_second_limit);
 }
 

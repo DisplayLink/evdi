@@ -89,8 +89,23 @@ Closes an opened EVDI handle.
 ### Connection
 #### Opening connections
 
-    #!c
 	void evdi_connect(evdi_handle handle,
+			  const unsigned char* edid,
+			  const unsigned edid_length,
+			  const uint32_t sku_area_limit);
+
+Creates a connection between the EVDI and Linux DRM subsystem, resulting in kernel mode driver processing a hot plug event.
+
+**Arguments**:
+
+* `handle` to an opened device
+* `edid` should be a pointer to a memory block with contents of an EDID of a monitor that will be exposed to kernel
+* `edid_length` is the length of the EDID block (typically 512 bytes, or more if extension blocks are present)
+* `sku_area_limit` is maximum pixel area (width x height) connected device can display. Does not limit the refresh rate on the connected device.
+
+
+    #!c
+	void evdi_connect2(evdi_handle handle,
 			  const unsigned char* edid,
 			  const unsigned edid_length,
 			  const uint32_t pixel_area_limit,

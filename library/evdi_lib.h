@@ -108,6 +108,9 @@ evdi_handle evdi_open_attached_to(const char *sysfs_parent_device);
 void evdi_close(evdi_handle handle);
 void evdi_connect(evdi_handle handle, const unsigned char *edid,
 		  const unsigned int edid_length,
+		  const uint32_t sku_area_limit);
+void evdi_connect2(evdi_handle handle, const unsigned char *edid,
+		  const unsigned int edid_length,
 		  const uint32_t pixel_area_limit,
 		  const uint32_t pixel_per_second_limit);
 void evdi_disconnect(evdi_handle handle);

@@ -675,6 +675,14 @@ void evdi_close(evdi_handle handle)
 void evdi_connect(evdi_handle handle,
 		  const unsigned char *edid,
 		  const unsigned int edid_length,
+		  const uint32_t sku_area_limit)
+{
+	evdi_connect2(handle, edid, edid_length, sku_area_limit, sku_area_limit*60);
+}
+
+void evdi_connect2(evdi_handle handle,
+		  const unsigned char *edid,
+		  const unsigned int edid_length,
 		  const uint32_t pixel_area_limit,
 		  const uint32_t pixel_per_second_limit)
 {
