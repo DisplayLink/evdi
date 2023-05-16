@@ -62,7 +62,7 @@ CP ?= cp
 DKMS ?= dkms
 RM ?= rm
 
-MODVER=1.13.1
+MODVER=1.14.0
 
 ifeq ($(KVER),)
 	KVER := $(shell uname -r)
