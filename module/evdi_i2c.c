@@ -42,7 +42,7 @@ int evdi_i2c_add(struct i2c_adapter *adapter, struct device *parent,
 	adapter->owner  = THIS_MODULE;
 	adapter->class  = I2C_CLASS_DDC;
 	adapter->algo   = &dli2c_algorithm;
-	strcpy(adapter->name, "DisplayLink I2C Adapter");
+	strscpy(adapter->name, "DisplayLink I2C Adapter", sizeof(adapter->name));
 	adapter->dev.parent = parent;
 	adapter->algo_data = ddev;
 

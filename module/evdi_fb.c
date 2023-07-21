@@ -411,7 +411,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 #endif
 
 
-	strcpy(info->fix.id, "evdidrmfb");
+	strscpy(info->fix.id, "evdidrmfb", sizeof(info->fix.id));
 
 	info->screen_base = efbdev->efb.obj->vmapping;
 	info->fix.smem_len = size;
