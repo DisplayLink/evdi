@@ -34,8 +34,8 @@ sed -i "s/^MODVER=.*/MODVER=${MAJOR}.${MINOR}.${PATCH}/" module/Makefile
 
 sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"/" module/evdi_platform_drv.h
 
-sed -i "s/^VERSION_MAJOR=.*$/VERSION_MAJOR = ${MAJOR}/" pyevdi/test/test_version.py
-sed -i "s/^VERSION_MINOR=.*$/VERSION_MINOR = ${MINOR}/" pyevdi/test/test_version.py
+sed -i "s/^VERSION_MAJOR =.*$/VERSION_MAJOR = ${MAJOR}/" pyevdi/test/test_version.py
+sed -i "s/^VERSION_MINOR =.*$/VERSION_MINOR = ${MINOR}/" pyevdi/test/test_version.py
 
 tag="v${MAJOR}.${MINOR}.${PATCH}"
 git tag "${tag}"
