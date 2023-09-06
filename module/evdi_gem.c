@@ -205,12 +205,13 @@ int evdi_gem_fault(struct vm_fault *vmf)
 #endif
 	struct evdi_gem_object *obj = to_evdi_bo(vma->vm_private_data);
 	struct page *page;
-	unsigned int page_offset;
+	pgoff_t page_offset;
+	loff_t num_pages = obj->base.size >> PAGE_SHIFT;
 	int ret = 0;
 
 	page_offset = (vmf->address - vma->vm_start) >> PAGE_SHIFT;
 
-	if (!obj->pages)
+	if (!obj->pages || page_offset >= num_pages)
 		return VM_FAULT_SIGBUS;
 
 	page = obj->pages[page_offset];
