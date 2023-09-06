@@ -3,6 +3,7 @@ pipeline {
     agent {
         dockerfile {
             filename 'src/Dockerfile'
+            label 'linux && big && docker'
         }
     }
     stages {
