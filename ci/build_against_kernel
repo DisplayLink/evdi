@@ -88,10 +88,12 @@ get_versions_from_file() { # file
 }
 
 get_supported_linux_versions() {
-  local repo_dir=$TMP/linux
+  local repo_dir
+  repo_dir="$(pwd)/$TMP/linux"
   local CC="${CC:-gcc}"
   mkdir -p "$TMP"
-  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null
+  (cd "$TMP"
+  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null)
 
   (cd "$repo_dir"
       git fetch --tags 1>&2 2>/dev/null
@@ -103,11 +105,13 @@ get_supported_linux_versions() {
 }
 
 get_last_linux_rc_tag() {
-  local repo_dir=$TMP/linux
+  local repo_dir
+  repo_dir="$(pwd)/$TMP/linux"
   local CC="${CC:-gcc}"
   mkdir -p "$TMP"
 
-  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null
+  (cd "$TMP"
+  prepare_repo_sources "origin/master" "${CC}" 1>&2 2>/dev/null)
 
   (cd "$repo_dir"
       git fetch --tags
