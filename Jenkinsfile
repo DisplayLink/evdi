@@ -8,8 +8,6 @@ pipeline {
     }
     environment {
       EVDI_VERSION = sh(script: '''(. ./ci/deb_config; echo $evdi_version)''', returnStdout: true).trim()
-      PUBLISH = sh(script: '''bash -c "[[ ${GIT_BRANCH} =~ ^origin/(devel$|github_devel$|release//*) ]] && echo true || echo false"
-                           ''', returnStdout: true).trim()
     }
     stages {
         stage ('Init') {
@@ -32,7 +30,7 @@ pipeline {
             }
         }
         stage('BlackDuck Scan') {
-            when { environment name: 'PUBLISH', value: 'true' }
+            when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
             environment {
                DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
             }
@@ -82,7 +80,7 @@ pipeline {
             }
         }
         stage ('Publish') {
-          when { environment name: 'PUBLISH', value: 'true' }
+          when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
           steps {
             rtBuildInfo (
                 captureEnv: true,
@@ -113,12 +111,12 @@ pipeline {
         }
         stage ( 'Run job: promote build' )
         {
-          when { environment name: 'PUBLISH', value: 'true' }
+          when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
           steps {
             build (
                 job: 'PPD-POSIX/promote build',
                 parameters: [string(name: 'SERVER', value: 'DEVELOPMENT'),
-                  string(name: 'buildName', value: "${env.JOB_NAME}".replaceAll('/', " :: ")),
+                  string(name: 'buildName', value: "${env.JOB_NAME}".replaceAll('/', " :: ").replaceAll('%2F', " :: ")),
                   string(name: 'buildNumber', value: "${env.BUILD_NUMBER}")])
           }
         }
