@@ -62,6 +62,21 @@ err:
 	return ret;
 }
 
+static bool is_lowest_frequency_mode_of_given_resolution(
+	struct drm_connector *connector, struct drm_display_mode *mode)
+{
+	struct drm_display_mode *modeptr;
+
+	list_for_each_entry(modeptr, &(connector->modes), head) {
+		if (modeptr->hdisplay == mode->hdisplay &&
+			modeptr->vdisplay == mode->vdisplay &&
+			drm_mode_vrefresh(modeptr) < drm_mode_vrefresh(mode)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
 					    struct drm_display_mode *mode)
 {
@@ -72,9 +87,9 @@ static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
 	if (evdi->pixel_per_second_limit == 0)
 		return MODE_OK;
 
-	if (area_limit > evdi->pixel_area_limit ||
-	    mode_limit > evdi->pixel_per_second_limit) {
-		EVDI_WARN("(card%d) Mode %dx%d@%d rejected\n",
+	if (area_limit > evdi->pixel_area_limit) {
+		EVDI_WARN(
+			"(card%d) Mode %dx%d@%d rejected. Reason: mode area too big\n",
 			evdi->dev_index,
 			mode->hdisplay,
 			mode->vdisplay,
@@ -82,7 +97,27 @@ static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
 		return MODE_BAD;
 	}
 
-	return MODE_OK;
+	if (mode_limit <= evdi->pixel_per_second_limit)
+		return MODE_OK;
+
+	if (is_lowest_frequency_mode_of_given_resolution(connector, mode)) {
+		EVDI_WARN(
+			"(card%d) Mode exceeds maximal frame rate for the device. Mode %dx%d@%d may have a limited output frame rate",
+			evdi->dev_index,
+			mode->hdisplay,
+			mode->vdisplay,
+			drm_mode_vrefresh(mode));
+		return MODE_OK;
+	}
+
+	EVDI_WARN(
+		"(card%d) Mode %dx%d@%d rejected. Reason: mode pixel clock too high\n",
+		evdi->dev_index,
+		mode->hdisplay,
+		mode->vdisplay,
+		drm_mode_vrefresh(mode));
+
+	return MODE_BAD;
 }
 
 static enum drm_connector_status
