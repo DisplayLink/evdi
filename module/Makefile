@@ -16,6 +16,11 @@ ifneq (,$(findstring 1, $(EL9)))
 EL9FLAG := -DEL9
 endif
 
+EL93 := $(shell cat /etc/redhat-release 2>/dev/null | grep -c " 9.3" )
+ifneq (,$(findstring 1, $(EL93)))
+EL93FLAG := -DEL93
+endif
+
 Raspbian := $(shell grep -Eic 'raspb(erry|ian)' /proc/cpuinfo /etc/os-release 2>/dev/null )
 ifeq (,$(findstring 0, $(Raspbian)))
 RPIFLAG := -DRPI
