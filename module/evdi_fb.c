@@ -404,7 +404,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	fb = &efbdev->efb.base;
 
 	efbdev->helper.fb = fb;
-#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	efbdev->helper.info = info;
 #else
 	efbdev->helper.fbdev = info;
@@ -465,7 +465,7 @@ static void evdi_fbdev_destroy(__always_unused struct drm_device *dev,
 {
 	struct fb_info *info;
 
-#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	if (efbdev->helper.info) {
 		info = efbdev->helper.info;
 #else
@@ -502,7 +502,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 		return -ENOMEM;
 
 	evdi->fbdev = efbdev;
-#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	drm_fb_helper_prepare(dev, &efbdev->helper, 32, &evdi_fb_helper_funcs);
 #else
 	drm_fb_helper_prepare(dev, &efbdev->helper, &evdi_fb_helper_funcs);
@@ -523,7 +523,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 	drm_fb_helper_single_add_all_connectors(&efbdev->helper);
 #endif
 
-#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	ret = drm_fb_helper_initial_config(&efbdev->helper);
 #else
 	ret = drm_fb_helper_initial_config(&efbdev->helper, 32);
@@ -557,7 +557,7 @@ void evdi_fbdev_unplug(struct drm_device *dev)
 		return;
 
 	efbdev = evdi->fbdev;
-#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	if (efbdev->helper.info) {
 		struct fb_info *info;
 

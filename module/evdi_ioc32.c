@@ -22,9 +22,9 @@
 #include <linux/compat.h>
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 #include <drm/drm_ioctl.h>
-#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
 #endif
