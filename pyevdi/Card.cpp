@@ -1,4 +1,5 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
+#include <functional.h>
 #include "../library/evdi_lib.h"
 #include <pybind11/pybind11.h>
 #include "Card.h"
