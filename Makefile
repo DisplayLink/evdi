@@ -12,12 +12,12 @@ all:
 	CXXFLAGS="-I../module -I../library $(FLAGS_CXX) $(CXXFLAGS)" $(MAKE) -C pyevdi $(MFLAGS)
 
 install:
-	$(MAKE) -C module install
+	$(MAKE) -C module install_dkms
 	$(MAKE) -C library install
 	$(MAKE) -C pyevdi install
 
 uninstall:
-	$(MAKE) -C module uninstall
+	$(MAKE) -C module uninstall_dkms
 	$(MAKE) -C library uninstall
 	$(MAKE) -C pyevdi uninstall
 
