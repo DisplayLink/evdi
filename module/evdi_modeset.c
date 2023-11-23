@@ -12,10 +12,10 @@
  */
 
 #include <linux/version.h>
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 #include <drm/drm_vblank.h>
 #include <drm/drm_damage_helper.h>
-#elif KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#elif KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE
 #include <drm/drm_damage_helper.h>
 #else
 #include <drm/drmP.h>

@@ -14,10 +14,10 @@
 #elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-buf-map.h>
 #endif
-#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 #include <drm/drm_prime.h>
 #include <drm/drm_file.h>
-#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
 #endif
@@ -183,6 +183,7 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (ret)
 		return ret;
 
+/* Some VMA modifier function patches present in 6.3 were reverted in EL kernels */
 #if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE
 	vm_flags_mod(vma, VM_MIXEDMAP, VM_PFNMAP);
 #else
@@ -291,7 +292,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 	if (evdi_drm_gem_object_use_import_attach(&obj->base)) {
 #if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 		struct iosys_map map = IOSYS_MAP_INIT_VADDR(NULL);
-#elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 		struct dma_buf_map map = DMA_BUF_MAP_INIT_VADDR(NULL);
 #endif
 
@@ -332,7 +333,7 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
 
-#elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 		struct dma_buf_map map;
 
 		if (obj->vmap_is_iomem)
