@@ -117,81 +117,13 @@ EOF
   cat > "$control_dir/postinst" << EOF
 #!/bin/bash
 
-set -e
-
-function notify-send2()
-{
-  local user uid program_path
-
-  user=\$(logname) \
-    && [[ \$user ]] \
-    && uid=\$(id -u "\$user") \
-    && program_path=\$(command -v notify-send) \
-    && sudo -u "\$user" "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$uid/bus" "\$program_path" "\$@" \
-    || return 0
-}
-
-build_evdi()
-{
-  local evdi_dir='/usr/src/evdi-$evdi_version'
-  local dkms_evdi_path='/var/lib/dkms/evdi'
-  local make_log_regex="\$dkms_evdi_path/[[:alnum:]./]+/make\\\\.log"
-
-  local evdi_make_log_path
-  evdi_make_log_path="/var/log/displaylink/evdi_install_make.\$(date '+%F-%H%M').log"
-
-  dkms install "\$evdi_dir"
-  local retval=\$?
-  if mokutil --sb-state | grep -Fi "SecureBoot enabled" > /dev/null; then
-    if ! update-secureboot-policy --enroll-key 2> /dev/null; then
-      echo >&2 "Failed to enroll SecureBoot key."
-    fi
-  fi
-
-  local dkms_log_path
-  dkms_log_path=\$(find "/var/lib/dkms/evdi/${evdi_version}" -name make.log)
-  cp "\${dkms_log_path}" "\${evdi_make_log_path}"
-
-  if [[ \$retval == 3 ]]; then
-    echo >&2 "EVDI DKMS module already installed."
-  elif [[ \$retval != 0 ]]; then
-    echo >&2 "Failed to install evdi to the kernel tree."
-    dkms remove 'evdi/$evdi_version' --all
-    exit 1
-  fi
-}
-
-add_mod_options()
-{
-  local module_file='/etc/modules-load.d/evdi.conf'
-  echo 'evdi' > "\$module_file"
-
-  local conf_file='/etc/modprobe.d/evdi.conf'
-  [[ -f \$conf_file ]] && return
-
-  echo "options evdi initial_device_count=4" > "\$conf_file"
-
-  local drm_deps
-  drm_deps=\$(sed -n '/^drm_kms_helper/p' /proc/modules | awk '{print \$4}' | tr ',' ' ')
-  drm_deps=\${drm_deps/evdi/}
-  [[ -z \$drm_deps ]] && return 0
-
-  echo "softdep evdi pre: \$drm_deps" >> "\$conf_file"
-}
-
-build_evdi
-add_mod_options
-notify-send2 -a "DisplayLinkManager" "Reboot required" \
-        "DisplayLink evdi module installed successfully. Reboot your computer to ensure proper functioning of the software."
-
-printf "\n\n%s\n%s\n%s\n\n\n" "Reboot required" "DisplayLink evdi module installed successfully." \
-        "Please reboot your computer to ensure the proper functioning of the software."
+if [[ \$1 == configure ]]; then
+  /usr/src/evdi-$evdi_version/dkms_install.sh
+fi
 EOF
 
   cat > "$control_dir/prerm" << EOF
 #!/bin/bash
-
-set -e
 
 dkms remove 'evdi/$evdi_version' --all
 rm -f /etc/{modprobe,modules-load}.d/evdi.conf

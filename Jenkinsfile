@@ -26,7 +26,7 @@ pipeline {
         }
         stage ('Shellcheck') {
             steps {
-              sh '''find ci -type f -exec file '{}' + | grep shell | sed 's/:.*$//' | xargs shellcheck'''
+              sh '''find ci module -type f -exec file '{}' + | grep shell | sed 's/:.*$//' | xargs shellcheck'''
             }
         }
         stage('BlackDuck Scan') {
