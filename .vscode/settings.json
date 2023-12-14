@@ -1,0 +1,13 @@
+{
+  "[cpp]": {
+    "editor.formatOnType": false,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false
+  },
+  "[c]": {
+    "editor.formatOnType": false,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false
+  },
+  "C_Cpp.clang_format_style": "file",
+}
