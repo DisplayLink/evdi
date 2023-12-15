@@ -20,3 +20,8 @@ tmp/
 checkpatch.pl
 const_structs.checkpatch
 spelling.txt
+
+__pycache__/
+.venv_evdi/
+.cache/
+compile_commands.json
