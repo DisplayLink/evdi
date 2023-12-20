@@ -60,9 +60,7 @@ evdi_dkms_install()
     return 1
   fi
 
-  if [[ -z $EVDI_REBOOT_RATIONALE ]] && xorg_or_tty_running; then
-    EVDI_REBOOT_RATIONALE="The user session is running X11 (or tty)."
-  fi
+  evdi_requires_reboot || reboot_if_xorg_or_tty_running
 }
 
 evdi_add_mod_options()
@@ -96,16 +94,26 @@ function notify-send2()
     || return 0
 }
 
-function xorg_or_tty_running()
+function reboot_if_xorg_or_tty_running()
 {
-  local SESSION_NO user
-  command -v logname > /dev/null || return 0
-  user=$(logname)
-  [[ $user ]] || return 0
-  SESSION_NO=$(loginctl | awk "/$user/ {print \$1; exit}")
-  [[ $SESSION_NO ]] || return 1
-  session=$(loginctl show-session "$SESSION_NO" -p Type)
-  [[ $session == *=x11 || $session == *=tty ]]
+  local session=${XDG_SESSION_TYPE-}
+  if [[ -z $session ]]; then
+    local session_id=${XDG_SESSION_ID-}
+    if [[ -z $session_id ]]; then
+      local user
+      user=$(logname 2>/dev/null)
+      [[ -n $user ]] || return 0
+      session_id=$(loginctl | awk "/$user/ {print \$1; exit}")
+      [[ -n $session_id ]] || return 0
+    fi
+    session=$(loginctl show-session "$session_id" -p Type)
+    session=${session#*=}
+  fi
+  case $session in
+    x11|tty)
+      EVDI_REBOOT_RATIONALE="Detected user session type is: $session."
+      ;;
+  esac
 }
 
 function evdi_requires_reboot()
@@ -115,7 +123,7 @@ function evdi_requires_reboot()
 
 function evdi_success_message()
 {
-  printf '\n\n'
+  printf '\n%s\n\n' "DisplayLink evdi module installed successfully."
 
   if evdi_requires_reboot; then
     notify-send2 -a "DisplayLinkManager" "Reboot required" \
@@ -125,15 +133,11 @@ function evdi_success_message()
       /usr/share/update-notifier/notify-reboot-required
     fi
 
-    echo "Reboot required"
-    echo "DisplayLink evdi module installed successfully."
-    echo "$EVDI_REBOOT_RATIONALE"
-    echo "Please reboot your computer to ensure the proper functioning of the software."
-  else
-    echo "DisplayLink evdi module installed successfully."
+    echo " Reboot required!"
+    echo " $EVDI_REBOOT_RATIONALE"
+    echo " Please, reboot your computer to ensure proper functioning of the software."
+    echo
   fi
-  printf '\n\n'
-
 }
 
 # if the script is NOT sourced
