@@ -219,6 +219,7 @@ int evdi_gem_fault(struct vm_fault *vmf)
 	case -EAGAIN:
 	case 0:
 	case -ERESTARTSYS:
+	case -EBUSY:
 		return VM_FAULT_NOPAGE;
 	case -ENOMEM:
 		return VM_FAULT_OOM;
