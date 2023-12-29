@@ -43,6 +43,10 @@ error()
 
 evdi_dkms_install()
 {
+  if dkms status evdi/$evdi_version | grep installed &> /dev/null; then
+    echo "Removing old evdi/$evdi_version module."
+    dkms remove evdi/$evdi_version
+  fi
   dkms install "$EVDI_DIR"
   local retval=$?
 
