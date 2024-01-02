@@ -105,6 +105,7 @@ function reboot_if_xorg_or_tty_running()
     local session_id=${XDG_SESSION_ID-}
     if [[ -z $session_id ]]; then
       local user
+      logname &>/dev/null || return 0
       user=$(logname 2>/dev/null)
       [[ -n $user ]] || return 0
       session_id=$(loginctl | awk "/$user/ {print \$1; exit}")
