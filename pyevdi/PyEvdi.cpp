@@ -1,12 +1,17 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
-#include "../library/evdi_lib.h"
-#include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
-#include "Card.h"
-#include <cstdio>
 #include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <pybind11/functional.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <span>
+
+#include "../library/evdi_lib.h"
+#include "Card.h"
 
 namespace py = pybind11;
 
@@ -33,7 +38,7 @@ void log_function(void * /*user_data*/, const char *format, ...)
 
 PYBIND11_MODULE(PyEvdi, m)
 {
-	m.doc() = "python bindings for evdi library";
+	m.doc() = "Python bindings for evdi library";
 
 	evdi_logging el;
 	el.function = &log_function;
@@ -108,7 +113,7 @@ PYBIND11_MODULE(PyEvdi, m)
 		.def("connect", &Card::connect)
 		.def("disconnect", &Card::disconnect)
 		.def("handle_events", &Card::handle_events)
-		.def_readwrite("acquire_framebuffer_cb",
-			       &Card::acquire_framebuffer_cb)
-		.def_readwrite("mode_changed_handler", &Card::m_modeHandler);
+		.def_readwrite("acquire_framebuffer_handler",
+			       &Card::acquire_framebuffer_handler)
+		.def_readwrite("mode_changed_handler", &Card::mode_handler);
 }

@@ -20,6 +20,6 @@ def get_available_evdi_card():
     return -1
 
 def get_edid():
-    with open("4K60HzTest.edid", mode='rb') as file:
+    with open("sample_edid/4K60HzTest.edid", mode='rb') as file:
         ed = file.read()
     return ed

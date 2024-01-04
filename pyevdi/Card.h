@@ -2,9 +2,15 @@
 #ifndef CARD_H
 #define CARD_H
 
-#include "Buffer.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
+#include <functional>
 #include <list>
 #include <memory>
+
+#include "Buffer.h"
+
+namespace py = pybind11;
 
 class Card {
 	evdi_handle evdiHandle;
@@ -25,9 +31,11 @@ class Card {
 	friend void card_C_mode_handler(struct evdi_mode mode, void *user_data);
 
     public:
-	std::function<void(struct evdi_mode)> m_modeHandler;
-	std::function<void(std::shared_ptr<Buffer> buffer)>
-		acquire_framebuffer_cb;
+	/// used py::function to allow lambdas to work
+	/// void(struct evdi_mode)
+	py::function mode_handler;
+	/// void(std::shared_ptr<Buffer> buffer)
+	py::function acquire_framebuffer_handler;
 
 	explicit Card(int device);
 	~Card();
