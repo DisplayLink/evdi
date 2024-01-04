@@ -18,8 +18,8 @@ make install                    # Install PyEvdi
 
 To run tests:
 ```bash
-pip install pytest        # Install test dependencies
-pytest test               # Run tests
+pip install pytest pytest-mock  # Install test dependencies
+pytest test                     # Run tests
 ```
 
 ### Generate `compile_commands.json`
