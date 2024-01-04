@@ -51,7 +51,7 @@ def testHandlingEventsTenTimesWithDefaultHandlers():
     card.disconnect()
     card.close()
 
-def my_acquire_framebuffer_cb(buffer) -> None:
+def my_acquire_framebuffer_handler(buffer) -> None:
     print("received buffer", buffer.id)
     print("rect_count:", buffer.rect_count, "\nrects:")
     for i in buffer.rects:
@@ -63,7 +63,7 @@ def my_acquire_framebuffer_cb(buffer) -> None:
 def testHandlingEventsTenTimesWithAquireFramebufferSet():
     card = PyEvdi.Card(utilities.get_available_evdi_card())
 
-    card.acquire_framebuffer_cb = my_acquire_framebuffer_cb
+    card.acquire_framebuffer_handler = my_acquire_framebuffer_handler
 
     edid = utilities.get_edid()
     card.connect(edid, len(edid), utilities._FullHDAreaLimit, utilities._FullHDAreaLimit * utilities._60Hz)

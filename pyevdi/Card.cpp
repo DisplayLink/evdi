@@ -1,8 +1,9 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
+#include <format>
+
 #include "../library/evdi_lib.h"
-#include <pybind11/pybind11.h>
-#include "Card.h"
 #include "Buffer.h"
+#include "Card.h"
 
 namespace py = pybind11;
 
@@ -24,8 +25,8 @@ void card_C_mode_handler(struct evdi_mode mode, void *user_data)
 	card->setMode(mode);
 	card->makeBuffers(2);
 
-	if (card->m_modeHandler != nullptr) {
-		card->m_modeHandler(mode);
+	if (!card->mode_handler.is_none()) {
+		card->mode_handler(mode);
 	}
 
 	card->request_update();
@@ -53,22 +54,18 @@ void Card::clearBuffers()
 void dpms_handler(int dpms_mode, void * /*user_data*/)
 {
 	py::module logging = py::module::import("logging");
-	logging.attr("info")("Got dpms signal." + std::to_string(dpms_mode));
+	logging.attr("info")(std::format("Got dpms signal: \"{}\"", dpms_mode));
 }
 
 Card::Card(int device)
 	: evdiHandle(evdi_open(device))
 {
 	if (evdiHandle == nullptr) {
-		throw py::value_error("Card /dev/dri/card" +
-				      std::to_string(device) +
-				      "does not exists!");
+		throw py::value_error(std::format(
+			"Failed to open card \"/dev/dri/card{}\"", device));
 	}
 
 	memset(&eventContext, 0, sizeof(eventContext));
-
-	m_modeHandler = nullptr;
-	acquire_framebuffer_cb = nullptr;
 
 	eventContext.mode_changed_handler = &card_C_mode_handler;
 	eventContext.update_ready_handler = &default_update_ready_handler;
@@ -161,8 +158,8 @@ void Card::grab_pixels()
 	evdi_grab_pixels(evdiHandle, buffer_requested->buffer.rects,
 			 &buffer_requested->buffer.rect_count);
 
-	if (acquire_framebuffer_cb)
-		acquire_framebuffer_cb(std::move(buffer_requested));
+	if (acquire_framebuffer_handler)
+		acquire_framebuffer_handler(std::move(buffer_requested));
 	buffer_requested = nullptr;
 
 	request_update();

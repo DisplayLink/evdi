@@ -12,7 +12,7 @@ LIBABI := 1
 INCL_DIRS := -I../library $$(python3 -m pybind11 --includes)
 
 # -fvisibility=hidden https://pybind11.readthedocs.io/en/stable/faq.html#someclass-declared-with-greater-visibility-than-the-type-of-its-field-someclass-member-wattributes
-CXXFLAGS := $(INCL_DIRS) -std=c++11 -fPIC -fvisibility=hidden $(CXXFLAGS)
+CXXFLAGS := $(INCL_DIRS) -std=c++20 -fPIC -fvisibility=hidden $(CXXFLAGS)
 
 LDFLAGS := -L../library -Wl,--no-undefined $$(python3-config --ldflags --embed) -shared
 
