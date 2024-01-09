@@ -39,3 +39,10 @@ RUN apt-get update && apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux
 # Dependencies for pybind
 RUN apt-get update && apt-get install -y python3 libpython3-dev python3-pip
 RUN pip3 install pybind11
+
+# needed to generate the compile_commands.json
+run apt-get update && apt-get install -y bear
+
+# Install SonarQube utils
+RUN cd /tmp && curl -ksSLo sonar-scanner-cli.zip https://artifactory:443/artifactory/third-party-tools/SonarQube/sonar-scanner-cli-linux.zip
+RUN unzip -o /tmp/sonar-scanner-cli.zip -d /tmp && cp -r /tmp/sonar-scanner-*-linux/* /usr/local/ && chmod a+x /usr/local/bin/sonar-scanner

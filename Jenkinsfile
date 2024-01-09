@@ -69,6 +69,19 @@ pipeline {
                 sh '''make -C pyevdi'''
             }
         }
+        stage('SonarQube Scan') {
+            steps {
+                sh "make clean"
+                sh "bear -- make all-with-rc-linux"
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                          -D sonar.cfamily.compile-commands=compile_commands.json \
+                          -D sonar.projectVersion="${BUILD_NUMBER}"
+                    '''
+                }
+            }
+        }
         stage ('Build against released kernels') {
             steps {
                 sh '''./ci/build_against_kernel --repo-ci all'''
