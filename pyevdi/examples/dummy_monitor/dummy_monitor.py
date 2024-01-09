@@ -4,9 +4,9 @@ import PyEvdi
 import argparse
 import os
 import sys
-from PySide6.QtCore import Qt, QSize, QTimer, QByteArray
-from PySide6.QtGui import QImage, QPainter, QColor
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QImage, QPainter, QColor, QPixmap
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 import numpy as np
 
 from moving_average import MovingAverage
@@ -48,29 +48,55 @@ class ImageBufferWidget(QWidget):
         super().__init__()
         self.setMinimumSize(width, height)
         self.options = options
-        self.image = QImage(self.options.resolution[0], self.options.resolution[1], QImage.Format_RGB888)
-        self.image.fill(QColor(255, 255, 0))
+        width, height = options.resolution
+        self.pixmap = QPixmap(self.width(), self.height())
+        self.pixmap.fill(QColor(255, 0, 0))
+        self.painter = QPainter(self)
 
     def paintEvent(self, event):
       print("paintEvent")
-      painter = QPainter(self)
-      painter.drawImage(self.rect(), self.image)
+
+      self.painter.begin(self)
+
+      new_pixmap = self.scale_image(self.pixmap)
+
+      # Calculate the starting x and y coordinates to center the image
+      start_x = (self.width() - new_pixmap.width()) // 2
+      start_y = (self.height() - new_pixmap.height()) // 2
+
+      self.painter.drawPixmap(start_x, start_y, new_pixmap)
+
+      self.painter.end()
+
+    def scale_image(self, image: QImage) -> QImage:
+      scale_width = self.width() / image.width()
+      scale_height = self.height() / image.height()
+      scale = min(scale_width, scale_height)
+
+      scaled_width = int(image.width() * scale)
+      scaled_height = int(image.height() * scale)
+
+      scaled_width = min(scaled_width, self.width())
+      scaled_height = min(scaled_height, self.height())
+
+      return image.scaled(scaled_width, scaled_height, Qt.KeepAspectRatio)
 
     def update_image(self, buffer):
-        now = time.time()
         print("update_image: buffer id:", buffer.id)
-
-        x_size, y_size = buffer.width, buffer.height
-        #for y in range(y_size):
-        #    for x in range(x_size):
-        #        color = buffer_get_color(buffer, x, y)
-        #        rgb: int = buffer.bytes[y, x]
-        #        bytes = [rgb >> 24, (rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF]
-        #        color =  QColor(bytes[1], bytes[2], bytes[3])
-        #        self.image.setPixelColor(x, y, color)
+        now = time.time()
+        # x_size, y_size = buffer.width, buffer.height
+        # for y in range(y_size):
+        #     for x in range(x_size):
+        #         rgb: int = buffer.bytes[y, x]
+        #         bytes = [rgb >> 24, (rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF]
+        #         color =  QColor(bytes[1], bytes[2], bytes[3])
+        #         self.image.setPixelColor(x, y, color)
 
         # np_array = np.array(buffer, copy = False) # This is possible thanks to buffer protocol
-        self.image = QImage(buffer.bytes, buffer.height, buffer.width, QImage.Format_RGB32)
+        # self.image = QImage(np_array, buffer.width, buffer.height, QImage.Format_RGB32)
+
+        image = QImage(buffer.bytes, buffer.width, buffer.height, QImage.Format_RGB32)
+        self.pixmap = self.pixmap.fromImage(image)
 
         took = time.time() - now
         print("update_image: took", took, "seconds")
@@ -80,7 +106,7 @@ class MainWindow(QMainWindow):
     def __init__(self, options: Options):
         super().__init__()
         self.setWindowTitle("EVDI virtual monitor")
-        self.image_buffer_widget = ImageBufferWidget(400, 300, options)
+        self.image_buffer_widget = ImageBufferWidget(128, 128, options)
         self.setCentralWidget(self.image_buffer_widget)
 
     def resizeEvent(self, event):
