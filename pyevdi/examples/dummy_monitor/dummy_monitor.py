@@ -138,8 +138,6 @@ def framebuffer_handler(buffer, app):
   fps = 1000 / time_since_last_frame
   fps_move_average.push(fps)
 
-
-
   if app is not None:
     app.image_buffer_widget.update_image(buffer)
   del buffer
@@ -163,12 +161,8 @@ def main(options: Options) -> None:
 
 
     my_app = None
-    def my_acquire_framebuffer_handler(buffer):
-      framebuffer_handler(buffer, my_app)
-    def my_mode_changed_handler(mode):
-      mode_changed_handler(mode, my_app)
-    card.acquire_framebuffer_handler = my_acquire_framebuffer_handler
-    card.mode_changed_handler = my_mode_changed_handler
+    card.acquire_framebuffer_handler = lambda buffer: framebuffer_handler(buffer, my_app)
+    card.mode_changed_handler = lambda mode: mode_changed_handler(mode, my_app)
     mode = card.getMode()
 
     if not options.headless:
