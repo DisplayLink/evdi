@@ -1,5 +1,5 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
-#include <format>
+#include <sstream>
 
 #include "../library/evdi_lib.h"
 #include "Buffer.h"
@@ -54,15 +54,18 @@ void Card::clearBuffers()
 void dpms_handler(int dpms_mode, void * /*user_data*/)
 {
 	py::module logging = py::module::import("logging");
-	logging.attr("info")(std::format("Got dpms signal: \"{}\"", dpms_mode));
+	std::stringstream s;
+	s << "Got dpms signal: \"" << dpms_mode << "\"";
+	logging.attr("info")(s.str());
 }
 
 Card::Card(int device)
 	: evdiHandle(evdi_open(device))
 {
 	if (evdiHandle == nullptr) {
-		throw py::value_error(std::format(
-			"Failed to open card \"/dev/dri/card{}\"", device));
+	  std::stringstream s;
+	  s << "Failed to open card \"/dev/dri/card" << device << "\"";
+		throw py::value_error(s.str());
 	}
 
 	memset(&eventContext, 0, sizeof(eventContext));
