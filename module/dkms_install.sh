@@ -25,7 +25,7 @@ copy_evdi_make_log()
 
 enroll_secureboot_key()
 {
-  if mokutil --sb-state | grep -i "SecureBoot enabled" > /dev/null; then
+  if command -v mokutil >/dev/null && mokutil --sb-state | grep -i "SecureBoot enabled" > /dev/null; then
     local results
     results=$(update-secureboot-policy --enroll-key 2> /dev/null) || return
 
@@ -43,17 +43,12 @@ error()
 
 evdi_dkms_install()
 {
-  if dkms status evdi/$evdi_version | grep installed &> /dev/null; then
+  if dkms status "evdi/$evdi_version" | grep installed &> /dev/null; then
     echo "Removing old evdi/$evdi_version module."
-    dkms remove evdi/$evdi_version
+    dkms remove "evdi/$evdi_version"
   fi
   dkms install "$EVDI_DIR"
   local retval=$?
-
-  if ! enroll_secureboot_key; then
-    error "Failed to enroll SecureBoot key."
-    return 1
-  fi
 
   if [[ $retval == 3 ]]; then
     echo "EVDI DKMS module already installed."
@@ -61,6 +56,11 @@ evdi_dkms_install()
     copy_evdi_make_log
     dkms remove "evdi/$evdi_version" --all
     error "Failed to install evdi to the kernel tree."
+    return 1
+  fi
+
+  if ! enroll_secureboot_key; then
+    error "Failed to enroll SecureBoot key."
     return 1
   fi
 
@@ -105,11 +105,12 @@ function reboot_if_xorg_or_tty_running()
     local session_id=${XDG_SESSION_ID-}
     if [[ -z $session_id ]]; then
       local user
-      logname &>/dev/null || return 0
-      user=$(logname 2>/dev/null)
-      [[ -n $user ]] || return 0
-      session_id=$(loginctl | awk "/$user/ {print \$1; exit}")
-      [[ -n $session_id ]] || return 0
+      command -v logname >/dev/null \
+        && user=$(logname) \
+        && [[ -n $user ]] \
+        && session_id=$(loginctl | awk "/$user/ {print \$1; exit}") \
+        && [[ -n $session_id ]] \
+        || return 0
     fi
     session=$(loginctl show-session "$session_id" -p Type)
     session=${session#*=}
