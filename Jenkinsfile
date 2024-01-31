@@ -30,7 +30,7 @@ pipeline {
             }
         }
         stage('BlackDuck Scan') {
-            when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
+            when { anyOf { branch 'main'; branch pattern: "release/v*" } }
             environment {
                DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
             }
@@ -93,7 +93,7 @@ pipeline {
             }
         }
         stage ('Publish') {
-          when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
+          when { anyOf { branch 'main'; branch pattern: "release/v*" } }
           steps {
             rtBuildInfo (
                 captureEnv: true,
@@ -124,7 +124,7 @@ pipeline {
         }
         stage ( 'Run job: promote build' )
         {
-          when { anyOf { branch 'devel'; branch pattern: "release/v*" } }
+          when { anyOf { branch 'main'; branch pattern: "release/v*" } }
           steps {
             build (
                 job: 'PPD-POSIX/promote build',
