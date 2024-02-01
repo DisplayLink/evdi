@@ -35,7 +35,7 @@ pipeline {
                DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
             }
             steps {
-                  synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.blackduck.signature.scanner.exclusion.patterns=/tmp/ --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+                  synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.excluded.directories=tmp,bd_evdi,synopsys_download --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
             }
         }
         stage ('Build evdi-amd64.deb') {
