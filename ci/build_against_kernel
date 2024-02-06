@@ -146,6 +146,17 @@ prepare_tar_gz_sources() { # PACKAGE SOURCES CC
   fi
 }
 
+clone_linux()
+{
+  local linux_mirror="https://oauth2:glpat-jeZZawHtkoZ3xLHWGCJQ@gitlab/ppd_posix/linux.git"
+  if curl -k --output /dev/null --silent --head --fail "$linux_mirror"; then
+    git -c http.sslVerify=false clone "$linux_mirror"
+    (cd linux; git config http.sslVerify false)
+  else
+    git clone https://github.com/torvalds/linux
+  fi
+}
+
 prepare_repo_sources() { # PACKAGE CC
   local PACKAGE="${1}"
   local CC="${2}"
@@ -157,7 +168,7 @@ prepare_repo_sources() { # PACKAGE CC
   echo "SRC_DIR = $SRC_DIR"
 
   if [ ! -e linux ]; then
-    git clone https://github.com/torvalds/linux
+    clone_linux
   fi
 
   (cd linux
