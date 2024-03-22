@@ -836,15 +836,16 @@ static struct evdi_mode to_evdi_mode(struct drm_evdi_event_mode_changed *event)
 	return mode;
 }
 
-static uint64_t evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle)
+static int evdi_get_dumb_offset(evdi_handle ehandle, uint32_t handle, uint64_t *offset)
 {
 	struct drm_mode_map_dumb map_dumb = { 0 };
+	int ret = 0;
 
 	map_dumb.handle = handle;
-	do_ioctl(ehandle->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb,
+	ret = do_ioctl(ehandle->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb,
 		 "DRM_MODE_MAP_DUMB");
-
-	return map_dumb.offset;
+	*offset = map_dumb.offset;
+	return ret;
 }
 
 static struct evdi_cursor_set to_evdi_cursor_set(
@@ -864,8 +865,14 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 
 	if (event->enabled) {
 		size_t size = event->buffer_length;
-		uint64_t offset =
-			evdi_get_dumb_offset(handle, event->buffer_handle);
+		int ret = 0;
+		uint64_t offset = 0;
+
+		if (evdi_get_dumb_offset(handle, event->buffer_handle, &offset)) {
+			evdi_log("Error: DRM_IOCTL_MODE_MAP_DUMB failed with error: %s", strerror(errno));
+			return cursor_set;
+		}
+
 		void *ptr = mmap(0, size, PROT_READ,
 				 MAP_SHARED, handle->fd, offset);
 
@@ -952,11 +959,14 @@ static void evdi_handle_event(evdi_handle handle,
 				(struct drm_evdi_event_cursor_set *) e;
 			struct evdi_cursor_set cursor_set = to_evdi_cursor_set(handle, event);
 
-			if (cursor_set.enabled && cursor_set.buffer == NULL)
+			if (cursor_set.enabled && cursor_set.buffer == NULL) {
 				evdi_log("Error: Cursor buffer is null!");
-			else
-				evtctx->cursor_set_handler(cursor_set,
-							   evtctx->user_data);
+				evdi_log("Disabling cursor events");
+				evdi_enable_cursor_events(handle, false);
+				cursor_set.enabled = false;
+				evtctx->cursor_move_handler = NULL;
+			}
+			evtctx->cursor_set_handler(cursor_set, evtctx->user_data);
 		}
 		break;
 
