@@ -858,14 +858,13 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 	cursor_set.width =  event->width;
 	cursor_set.height = event->height;
 	cursor_set.enabled = event->enabled;
-	cursor_set.buffer_length = event->buffer_length;
+	cursor_set.buffer_length = 0;
 	cursor_set.buffer = NULL;
 	cursor_set.pixel_format = event->pixel_format;
 	cursor_set.stride = event->stride;
 
 	if (event->enabled) {
 		size_t size = event->buffer_length;
-		int ret = 0;
 		uint64_t offset = 0;
 
 		if (evdi_get_dumb_offset(handle, event->buffer_handle, &offset)) {
@@ -880,6 +879,7 @@ static struct evdi_cursor_set to_evdi_cursor_set(
 			cursor_set.buffer = malloc(size);
 			memcpy(cursor_set.buffer, ptr, size);
 			munmap(ptr, size);
+			cursor_set.buffer_length = size;
 		} else {
 			evdi_log("Error: mmap failed with error: %s", strerror(errno));
 		}
@@ -964,7 +964,7 @@ static void evdi_handle_event(evdi_handle handle,
 				evdi_log("Disabling cursor events");
 				evdi_enable_cursor_events(handle, false);
 				cursor_set.enabled = false;
-				evtctx->cursor_move_handler = NULL;
+				cursor_set.buffer_length = 0;
 			}
 			evtctx->cursor_set_handler(cursor_set, evtctx->user_data);
 		}
