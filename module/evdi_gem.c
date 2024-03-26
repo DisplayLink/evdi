@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
+ // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
  * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
@@ -208,10 +208,8 @@ int evdi_gem_fault(struct vm_fault *vmf)
 	pgoff_t page_offset;
 	loff_t num_pages = obj->base.size >> PAGE_SHIFT;
 	int ret = 0;
-
 	page_offset = (vmf->address - vma->vm_start) >> PAGE_SHIFT;
-
-	if (!obj->pages || page_offset >= num_pages)
+	if (!obj->pages || page_offset >= (long unsigned int)num_pages)
 		return VM_FAULT_SIGBUS;
 
 	page = obj->pages[page_offset];
