@@ -20,6 +20,7 @@ def get_available_evdi_card():
     return -1
 
 def get_edid():
-    with open("sample_edid/4K60HzTest.edid", mode='rb') as file:
+    edid_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_edid", "4K60HzTest.edid")
+    with open(edid_file, mode='rb') as file:
         ed = file.read()
     return ed

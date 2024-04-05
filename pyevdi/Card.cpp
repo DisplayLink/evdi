@@ -25,7 +25,7 @@ void card_C_mode_handler(struct evdi_mode mode, void *user_data)
 	card->setMode(mode);
 	card->makeBuffers(2);
 
-	if (!card->mode_handler.is_none()) {
+	if (card->mode_handler) {
 		card->mode_handler(mode);
 	}
 
