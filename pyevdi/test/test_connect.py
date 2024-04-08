@@ -1,6 +1,5 @@
 # Copyright (c) 2022 DisplayLink (UK) Ltd.
 import pytest
-import test
 import PyEvdi
 import utilities
 import time
