@@ -29,6 +29,11 @@ class Card {
 	friend void default_update_ready_handler(int buffer_to_be_updated,
 						 void *user_data);
 	friend void card_C_mode_handler(struct evdi_mode mode, void *user_data);
+	friend void card_C_cursor_set_handler(struct evdi_cursor_set cursor_set,
+				   void *user_data);
+	friend void card_C_cursor_move_handler(struct evdi_cursor_move cursor_move,
+				   void *user_data);
+
 
     public:
 	/// used py::function to allow lambdas to work
