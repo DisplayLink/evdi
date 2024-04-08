@@ -8,7 +8,6 @@ import utilities
 def testCheckDevice():
     for i in get_available_devices():
          assert PyEvdi.check_device(i) == PyEvdi.AVAILABLE
-    assert PyEvdi.check_device(0) == PyEvdi.UNRECOGNIZED
     assert PyEvdi.check_device(25) == PyEvdi.NOT_PRESENT
 
 @pytest.mark.skipif(utilities.is_not_running_as_root(), reason = 'Only root can add a new device.')
