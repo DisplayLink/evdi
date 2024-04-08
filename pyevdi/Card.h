@@ -47,6 +47,8 @@ class Card {
 
 	struct evdi_mode getMode() const;
 
+	void enableCursorEvents(bool enable);
+
 	void handle_events(int waiting_time);
 };
 

@@ -167,3 +167,9 @@ void Card::grab_pixels()
 
 	request_update();
 }
+
+void Card::enableCursorEvents(bool enable)
+{
+	evdi_enable_cursor_events(evdiHandle, enable);
+}
+

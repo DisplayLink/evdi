@@ -113,6 +113,7 @@ PYBIND11_MODULE(PyEvdi, m)
 		.def("connect", &Card::connect)
 		.def("disconnect", &Card::disconnect)
 		.def("handle_events", &Card::handle_events)
+		.def("enableCursorEvents", &Card::enableCursorEvents)
 		.def_readwrite("acquire_framebuffer_handler",
 			       &Card::acquire_framebuffer_handler)
 		.def_readwrite("mode_changed_handler", &Card::mode_handler);
