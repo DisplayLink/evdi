@@ -208,9 +208,9 @@ int evdi_gem_fault(struct vm_fault *vmf)
 	pgoff_t page_offset;
 	loff_t num_pages = obj->base.size >> PAGE_SHIFT;
 	int ret = 0;
-	
+
 	page_offset = (vmf->address - vma->vm_start) >> PAGE_SHIFT;
-	
+
 	if (!obj->pages || page_offset >= (long unsigned int)num_pages)
 		return VM_FAULT_SIGBUS;
 
