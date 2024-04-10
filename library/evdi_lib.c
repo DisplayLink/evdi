@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 // ********************* Private part **************************
 
 #define MAX_DIRTS           16
@@ -468,11 +469,11 @@ static int get_drm_device_index(const char *evdi_sysfs_drm_dir)
 	return dev_index;
 }
 
-static bool is_correct_parent_device(const char *dirname, const char *parent_device)
+static bool is_correct_parent_device(const char *dirname, size_t dirname_maxlen, const char *parent_device, size_t parent_length)
 {
 	char link_path[PATH_MAX];
 
-	snprintf(link_path, PATH_MAX - 7, "%s/device", dirname);
+	snprintf(link_path, MIN(PATH_MAX - 7, dirname_maxlen), "%s/device", dirname);
 
 	if (parent_device == NULL)
 		return access(link_path, F_OK) != 0;
@@ -486,18 +487,16 @@ static bool is_correct_parent_device(const char *dirname, const char *parent_dev
 	link_resolution[link_resolution_len] = '\0';
 	char *parent_device_token = strrchr(link_resolution, '/');
 
-	if (strlen(parent_device) < 2)
+	if (parent_length < 2)
 		return false;
 
 	parent_device_token++;
-	size_t len = strlen(parent_device_token);
-
-	bool is_same_device = strlen(parent_device) == len && strncmp(parent_device_token, parent_device, len) == 0;
-
+	size_t len = strnlen(parent_device_token, parent_length - (parent_device_token - parent_device));
+	bool is_same_device = parent_length == len && strncmp(parent_device_token, parent_device, len) == 0;
 	return is_same_device;
 }
 
-static int find_unused_card_for(const char *parent_device)
+static int find_unused_card_for(const char *parent_device, size_t length)
 {
 	char evdi_platform_root[] = "/sys/bus/platform/devices";
 	struct dirent *fd_entry;
@@ -518,12 +517,12 @@ static int find_unused_card_for(const char *parent_device)
 
 		snprintf(evdi_path, PATH_MAX, "%s/%s", evdi_platform_root, fd_entry->d_name);
 
-		if (!is_correct_parent_device(evdi_path, parent_device))
+		if (!is_correct_parent_device(evdi_path, PATH_MAX,  parent_device, length))
 			continue;
 
 		char evdi_drm_path[PATH_MAX];
 
-		snprintf(evdi_drm_path, PATH_MAX - strlen(evdi_path), "%s/drm", evdi_path);
+		snprintf(evdi_drm_path, PATH_MAX - strnlen(evdi_path, PATH_MAX), "%s/drm", evdi_path);
 		int dev_index = get_drm_device_index(evdi_drm_path);
 
 		assert(dev_index < EVDI_USAGE_LEN && dev_index >= 0);
@@ -542,28 +541,32 @@ static int get_generic_device(void)
 {
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
 
-	device_index = find_unused_card_for(NULL);
+	device_index = find_unused_card_for(NULL, 0);
 	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
 		evdi_log("Creating card in /sys/devices/platform");
 		write_add_device("1", 1);
-		device_index = find_unused_card_for(NULL);
+		device_index = find_unused_card_for(NULL, 0);
 	}
 
 	return device_index;
 }
 
-static int get_device_attached_to_usb(const char *sysfs_parent_device)
+static int get_device_attached_to_usb(const char *sysfs_parent_device, size_t length)
 {
+	const size_t USB_OFFSET = 4;
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
-	const char *parent_device = &sysfs_parent_device[4];
 
-	device_index = find_unused_card_for(parent_device);
+	if (length < USB_OFFSET)
+		return EVDI_INVALID_DEVICE_INDEX;
+	const char *parent_device = &sysfs_parent_device[USB_OFFSET];
+	const size_t parent_length = length - USB_OFFSET;
+
+	device_index = find_unused_card_for(parent_device, parent_length);
 	if (device_index == EVDI_INVALID_DEVICE_INDEX) {
 		evdi_log("Creating card for usb device %s in /sys/bus/platform/devices", parent_device);
-		const size_t len = strlen(sysfs_parent_device);
 
-		write_add_device(sysfs_parent_device, len);
-		device_index = find_unused_card_for(parent_device);
+		write_add_device(sysfs_parent_device, length);
+		device_index = find_unused_card_for(parent_device, parent_length);
 	}
 
 	return device_index;
@@ -639,15 +642,21 @@ int evdi_add_device(void)
 	return write_add_device("1", 1);
 }
 
+// deprecated, use evdi_open_attached_to_fixed
 evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
+{
+	return evdi_open_attached_to_fixed(sysfs_parent_device, strlen(sysfs_parent_device));
+}
+
+evdi_handle evdi_open_attached_to_fixed(const char *sysfs_parent_device, size_t length)
 {
 	int device_index = EVDI_INVALID_DEVICE_INDEX;
 
 	if (sysfs_parent_device == NULL)
 		device_index = get_generic_device();
 
-	if (sysfs_parent_device != NULL && strncmp(sysfs_parent_device, "usb:", 4) == 0 && strlen(sysfs_parent_device) > 4)
-		device_index = get_device_attached_to_usb(sysfs_parent_device);
+	if (sysfs_parent_device != NULL && length > 4 && strncmp(sysfs_parent_device, "usb:", 4) == 0)
+		device_index = get_device_attached_to_usb(sysfs_parent_device, length);
 
 	if (device_index >= 0 && device_index < EVDI_USAGE_LEN)  {
 		evdi_handle handle = evdi_open(device_index);

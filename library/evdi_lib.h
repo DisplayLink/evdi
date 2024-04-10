@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,7 +104,9 @@ struct evdi_logging {
 enum evdi_device_status evdi_check_device(int device);
 evdi_handle evdi_open(int device);
 int evdi_add_device(void);
+// deprecated, use evdi_open_attached_to_fixed
 evdi_handle evdi_open_attached_to(const char *sysfs_parent_device);
+evdi_handle evdi_open_attached_to_fixed(const char *sysfs_parent_device, size_t length);
 
 void evdi_close(evdi_handle handle);
 void evdi_connect(evdi_handle handle, const unsigned char *edid,
