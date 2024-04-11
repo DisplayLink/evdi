@@ -71,8 +71,10 @@ pipeline {
         }
         stage('SonarQube Scan') {
             steps {
-                sh "make clean"
-                sh "bear -- make all-with-rc-linux"
+                sh '''#!/usr/bin/env bash
+                make clean
+                bear -- make all-with-rc-linux
+                '''
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         sonar-scanner \
