@@ -18,7 +18,7 @@ pipeline {
                         def branchName = list[i];
                         stage(branchName) {
                             withEnv(["STAGE_BRANCH=$branchName"]) {
-                            sh '''
+                            sh '''#!/usr/bin/env bash
                               git checkout ${STAGE_BRANCH}
                               ./ci/build_against_kernel --repo-ci master
                               ./ci/build_against_kernel --repo-ci rc
