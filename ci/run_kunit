@@ -1,0 +1,44 @@
+#! /usr/bin/env bash
+# Copyright (c) 2024 DisplayLink (UK) Ltd.
+
+set -e
+set -u
+
+clone_linux()
+{
+  echo "Clone linux repository"
+  local linux_mirror="https://oauth2:glpat-jeZZawHtkoZ3xLHWGCJQ@gitlab/ppd_posix/linux.git"
+  if curl -k --output /dev/null --silent --head --fail "$linux_mirror"; then
+    git -c http.sslVerify=false clone --depth 1 "$linux_mirror"
+    (cd linux; git config http.sslVerify false)
+  else
+    git clone --depth 1 https://github.com/torvalds/linux
+  fi
+}
+
+patch_linux_with_evdi_module()
+{
+  local EVDI_REPO_DIR="$1"
+  local LINUX_DIR="$2"
+
+  [ -f "$LINUX_DIR/drivers/gpu/drm/evdi/Kconfig" ] && return
+
+  (cd "$LINUX_DIR"
+  ln -s -T "${EVDI_REPO_DIR}"/module drivers/gpu/drm/evdi
+  echo -e "\nsource \"drivers/gpu/drm/evdi/Kconfig\"" >> drivers/gpu/drm/Kconfig
+  echo "obj-\$(CONFIG_DRM_EVDI) += evdi/" >> drivers/gpu/drm/Makefile
+
+  make ARCH=um mrproper)
+}
+
+EVDI_REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.."; pwd)
+LINUX_DIR=$EVDI_REPO_DIR/tmp/linux
+mkdir -p "$EVDI_REPO_DIR/tmp"
+[ -d "${EVDI_REPO_DIR}"/tmp/linux ] || (cd "$EVDI_REPO_DIR/tmp"; clone_linux)
+
+patch_linux_with_evdi_module "$EVDI_REPO_DIR" "$LINUX_DIR"
+
+echo "Run kunit tests for evdi module"
+(cd "${LINUX_DIR}"
+./tools/testing/kunit/kunit.py run --kunitconfig=drivers/gpu/drm/evdi/tests/.kunitconfig)
+

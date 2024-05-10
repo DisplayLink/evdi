@@ -20,3 +20,14 @@ config DRM_EVDI
 		retrieve contents (as a frame buffer) that system renders on it.
 		Say M/Y to add support for these devices via DRM/KMS interfaces.
 
+config DRM_EVDI_KUNIT_TEST
+	tristate "KUnit tests for evdi" if !KUNIT_ALL_TESTS
+		depends on DRM_EVDI && KUNIT
+		default KUNIT_ALL_TESTS
+	help
+		KUnit tests for evdi DRM module.
+		This option is useful for kernel developers.
+		Please remember to provide tests for code you add.
+
+		If in doubt, say "N".
+
