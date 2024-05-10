@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
 	make \
 	shellcheck \
 	pkg-config \
+	qemu-system-x86 \
 	wget
 
 # Install java for Synopsys detect

@@ -28,9 +28,10 @@ patch_linux_with_evdi_module()
   echo -e "\nsource \"drivers/gpu/drm/evdi/Kconfig\"" >> drivers/gpu/drm/Kconfig
   echo "obj-\$(CONFIG_DRM_EVDI) += evdi/" >> drivers/gpu/drm/Makefile
 
-  make ARCH=um mrproper)
+  make ARCH="$ARCH" mrproper)
 }
 
+export ARCH=x86_64 # or um
 EVDI_REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.."; pwd)
 LINUX_DIR=$EVDI_REPO_DIR/tmp/linux
 mkdir -p "$EVDI_REPO_DIR/tmp"
@@ -40,5 +41,5 @@ patch_linux_with_evdi_module "$EVDI_REPO_DIR" "$LINUX_DIR"
 
 echo "Run kunit tests for evdi module"
 (cd "${LINUX_DIR}"
-./tools/testing/kunit/kunit.py run --kunitconfig=drivers/gpu/drm/evdi/tests/.kunitconfig)
+./tools/testing/kunit/kunit.py run --arch="$ARCH" --kunitconfig=drivers/gpu/drm/evdi/tests/.kunitconfig)
 
