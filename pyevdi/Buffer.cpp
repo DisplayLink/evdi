@@ -1,6 +1,8 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
 #include <cstdlib>
 #include <cstdio>
+#include <chrono>
+#include <string_view>
 
 #include "../library/evdi_lib.h"
 #include "Buffer.h"
@@ -32,9 +34,19 @@ Buffer::Buffer(evdi_mode mode, evdi_handle evdiHandle)
 	buffer.buffer = calloc(1, buffer_size);
 	buffer_span =
 		std::span<uint32_t>(reinterpret_cast<uint32_t *>(buffer.buffer),
-				    buffer_size / sizeof(uint32_t));
+					buffer_size / sizeof(uint32_t));
 
 	evdi_register_buffer(evdiHandle, buffer);
+}
+
+double Buffer::getHash() const
+{
+	auto aux_span = std::span<char32_t>(reinterpret_cast<char32_t *>(buffer.buffer),
+					buffer_size / sizeof(char32_t));
+	auto result = std::hash<std::u32string_view>{}(
+		std::u32string_view(aux_span.begin(), aux_span.end()));
+
+	return result;
 }
 
 Buffer::~Buffer()

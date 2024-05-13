@@ -61,7 +61,7 @@ void Card::makeBuffers(int count)
 {
 	clearBuffers();
 	for (int i = 0; i < count; i++) {
-		buffers.emplace_back(new Buffer(mode, evdiHandle));
+		buffers.emplace_back(std::make_shared<Buffer>(mode, evdiHandle));
 	}
 }
 
@@ -80,14 +80,13 @@ void dpms_handler(int dpms_mode, void * /*user_data*/)
 }
 
 Card::Card(int device)
-	: evdiHandle(evdi_open(device))
+	: evdiHandle(evdi_open(device)), m_stat(std::make_shared<Stats>())
 {
 	if (evdiHandle == nullptr) {
-	  std::stringstream s;
-	  s << "Failed to open card \"/dev/dri/card" << device << "\"";
+		std::stringstream s;
+		s << "Failed to open card \"/dev/dri/card" << device << "\"";
 		throw py::value_error(s.str());
 	}
-
 	memset(&eventContext, 0, sizeof(eventContext));
 
 	eventContext.mode_changed_handler = &card_C_mode_handler;
@@ -98,6 +97,12 @@ Card::Card(int device)
 	eventContext.user_data = this;
 
 	memset(&mode, 0, sizeof(mode));
+}
+
+Card::Card(int device, std::shared_ptr<Stats> stat_counter)
+	: Card(device)
+{
+	m_stat = std::move(stat_counter);
 }
 
 Card::~Card()
@@ -115,11 +120,11 @@ void Card::close()
 }
 
 void Card::connect(const char *edid, const unsigned int edid_length,
-		   const uint32_t pixel_area_limit,
-		   const uint32_t pixel_per_second_limit)
+			const uint32_t pixel_area_limit,
+			const uint32_t pixel_per_second_limit)
 {
 	evdi_connect2(evdiHandle, reinterpret_cast<const unsigned char *>(edid),
-		      edid_length, pixel_area_limit, pixel_per_second_limit);
+			edid_length, pixel_area_limit, pixel_per_second_limit);
 }
 
 void Card::disconnect()
@@ -180,7 +185,7 @@ void Card::grab_pixels()
 		return;
 	}
 
-	evdi_grab_pixels(evdiHandle, buffer_requested->buffer.rects,
+	m_stat->grab_pixels(evdiHandle, buffer_requested->buffer.rects,
 			 &buffer_requested->buffer.rect_count);
 
 	if (acquire_framebuffer_handler)
@@ -194,4 +199,5 @@ void Card::enableCursorEvents(bool enable)
 {
 	evdi_enable_cursor_events(evdiHandle, enable);
 }
+
 

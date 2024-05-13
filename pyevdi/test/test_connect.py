@@ -73,3 +73,20 @@ def testHandlingEventsTenTimesWithAquireFramebufferSet():
 
     card.disconnect()
     card.close()
+
+@pytest.mark.skipif(utilities.get_available_evdi_card() == -1 and utilities.is_not_running_as_root(), reason = 'Please run test as root.')
+def testReadingBuffer():
+    stats = PyEvdi.MemoryAccessStats()
+    card = PyEvdi.Card(utilities.get_available_evdi_card(), stats)
+
+    card.acquire_framebuffer_handler = stats
+
+    edid = utilities.get_edid()
+    card.connect(edid, len(edid), utilities._FullHDAreaLimit, utilities._FullHDAreaLimit * utilities._60Hz)
+
+    card.handle_events(1000)
+
+    assert stats.totalGrabPixelsTime() > 0
+    card.disconnect()
+    card.close()
+

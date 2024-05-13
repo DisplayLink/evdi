@@ -108,6 +108,7 @@ PYBIND11_MODULE(PyEvdi, m)
 
 	py::class_<Card>(m, "Card")
 		.def(py::init<int>())
+		.def(py::init<int, std::shared_ptr<Stats>>())
 		.def("getMode", &Card::getMode)
 		.def("close", &Card::close)
 		.def("connect", &Card::connect)
@@ -117,4 +118,17 @@ PYBIND11_MODULE(PyEvdi, m)
 		.def_readwrite("acquire_framebuffer_handler",
 			       &Card::acquire_framebuffer_handler)
 		.def_readwrite("mode_changed_handler", &Card::mode_handler);
+
+	py::class_<Stats, std::shared_ptr<Stats>>(m, "Stats")
+		.def(py::init<>());
+
+	py::class_<MemoryAccessStats, Stats, std::shared_ptr<MemoryAccessStats>>(m, "MemoryAccessStats")
+		.def(py::init<>())
+		.def("__call__", &MemoryAccessStats::operator())
+		.def("totalGrabPixelsTime", &MemoryAccessStats::totalGrabPixelsTime)
+		.def("avgGrabPixelsTime", &MemoryAccessStats::avgGrabPixelsTime)
+		.def("totalBufferReadTime", &MemoryAccessStats::totalBufferReadTime)
+		.def("avgBufferReadTime", &MemoryAccessStats::avgBufferReadTime)
+		.def("countGrabPixels", &MemoryAccessStats::MemoryAccessStats::countGrabPixels)
+		.def("countBuffer", &MemoryAccessStats::countBuffer);
 }

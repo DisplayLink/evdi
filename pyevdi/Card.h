@@ -4,11 +4,11 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
-#include <functional>
 #include <list>
 #include <memory>
 
 #include "Buffer.h"
+#include "Stats.h"
 
 namespace py = pybind11;
 
@@ -30,12 +30,11 @@ class Card {
 						 void *user_data);
 	friend void card_C_mode_handler(struct evdi_mode mode, void *user_data);
 	friend void card_C_cursor_set_handler(struct evdi_cursor_set cursor_set,
-				   void *user_data);
+					void *user_data);
 	friend void card_C_cursor_move_handler(struct evdi_cursor_move cursor_move,
-				   void *user_data);
+					void *user_data);
 
-
-    public:
+	public:
 	/// used py::function to allow lambdas to work
 	/// void(struct evdi_mode)
 	py::function mode_handler;
@@ -43,11 +42,12 @@ class Card {
 	py::function acquire_framebuffer_handler;
 
 	explicit Card(int device);
+	explicit Card(int device, std::shared_ptr<Stats> stat_counter);
 	~Card();
 	void close();
 	void connect(const char *edid, const unsigned int edid_length,
-		     const uint32_t pixel_area_limit,
-		     const uint32_t pixel_per_second_limit);
+			const uint32_t pixel_area_limit,
+			const uint32_t pixel_per_second_limit);
 	void disconnect();
 
 	struct evdi_mode getMode() const;
@@ -55,6 +55,8 @@ class Card {
 	void enableCursorEvents(bool enable);
 
 	void handle_events(int waiting_time);
+
+	std::shared_ptr<Stats> m_stat;
 };
 
 #endif
