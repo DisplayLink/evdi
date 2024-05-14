@@ -14,14 +14,14 @@
 
 static void test_evdi_create_drm_device(struct kunit *test)
 {
-  struct device* parent = kunit_device_register(test, "/dev/card1");
-  struct drm_device* dev = evdi_drm_device_create(parent);
+	struct device *parent = kunit_device_register(test, "/dev/card1");
+	struct drm_device *dev = evdi_drm_device_create(parent);
 
-  KUNIT_EXPECT_NOT_NULL(test, dev);
+	KUNIT_EXPECT_NOT_NULL(test, dev);
 
-  evdi_drm_device_remove(dev);
+	evdi_drm_device_remove(dev);
 
-  kunit_device_unregister(test, parent);
+	kunit_device_unregister(test, parent);
 }
 
 static struct kunit_case evdi_test_cases[] = {
