@@ -40,7 +40,7 @@ PYBIND11_MODULE(PyEvdi, m)
 {
 	m.doc() = "Python bindings for evdi library";
 
-	evdi_logging el;
+	evdi_logging el = { .function = &log_function, .user_data = nullptr};
 	el.function = &log_function;
 	evdi_set_logging(el);
 

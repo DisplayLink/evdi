@@ -131,11 +131,9 @@ static struct evdi_frame_buffer_node *findBuffer(evdi_handle context, int id)
 static void addFrameBuffer(evdi_handle context,
 			   struct evdi_buffer const *frame_buffer)
 {
-	struct evdi_frame_buffer_node **node = NULL;
-
-	for (node = &context->frameBuffersListHead;
+	for (struct evdi_frame_buffer_node **node = &context->frameBuffersListHead;
 	     ;
-	     node = (struct evdi_frame_buffer_node **)&(*node)->next) {
+	     node = &(*node)->next) {
 		if (*node)
 			continue;
 
@@ -150,15 +148,12 @@ static void addFrameBuffer(evdi_handle context,
  * @brief Removes all frame buffers matching the given id
  * @param id of frame buffer to remove, NULL matches every buffer, thus all
  * will be removed
- * @return number of buffers removed
- * @todo Return value doesn't seem to be used anywhere
  */
-static int removeFrameBuffer(evdi_handle context, int const *id)
+static void removeFrameBuffer(evdi_handle context, int const *id)
 {
 	struct evdi_frame_buffer_node *current = NULL;
 	struct evdi_frame_buffer_node *next = NULL;
 	struct evdi_frame_buffer_node **prev = NULL;
-	int removedCount = 0;
 
 	current = context->frameBuffersListHead;
 	prev = &context->frameBuffersListHead;
@@ -167,7 +162,6 @@ static int removeFrameBuffer(evdi_handle context, int const *id)
 
 		if (!id || current->frame_buffer.id == *id) {
 			free(current);
-			++removedCount;
 			*prev = next;
 		} else {
 			prev = &current->next;
@@ -175,8 +169,6 @@ static int removeFrameBuffer(evdi_handle context, int const *id)
 
 		current = next;
 	}
-
-	return removedCount;
 }
 
 static int is_evdi_compatible(int fd)
@@ -210,7 +202,9 @@ static int is_evdi_compatible(int fd)
 
 static int is_evdi(int fd)
 {
-	char name[64] = { 0 }, date[64] = { 0 }, desc[64] = { 0 };
+	char name[64] = { 0 };
+	char date[64] = { 0 };
+	char desc[64] = { 0 };
 	struct drm_version ver = {
 		.name_len = sizeof(name),
 		.name = name,
@@ -311,7 +305,7 @@ static int device_has_master(const char *device_file_path)
 {
 	pid_t myself = getpid();
 	DIR *proc_dir;
-	struct dirent *proc_entry;
+	const struct dirent *proc_entry;
 	int result = 0;
 
 	proc_dir = opendir("/proc");
@@ -319,7 +313,7 @@ static int device_has_master(const char *device_file_path)
 		return 0;
 
 	while ((proc_entry = readdir(proc_dir)) != NULL) {
-		char *d_name = proc_entry->d_name;
+		const char *d_name = proc_entry->d_name;
 
 		if (d_name[0] < '0'
 		    || d_name[0] > '9'
