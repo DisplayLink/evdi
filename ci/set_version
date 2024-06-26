@@ -37,6 +37,21 @@ sed -i "s/^#define DRIVER_DATE   .*$/#define DRIVER_DATE   \"$(date +'%Y%m%d')\"
 sed -i "s/^VERSION_MAJOR =.*$/VERSION_MAJOR = ${MAJOR}/" pyevdi/test/test_version.py
 sed -i "s/^VERSION_MINOR =.*$/VERSION_MINOR = ${MINOR}/" pyevdi/test/test_version.py
 
+
+git add ci/deb_config
+
+git add library/evdi_lib.h
+git add library/Makefile
+
+git add module/evdi_platform_drv.h
+git add module/Makefile
+git add module/dkms.conf
+git add module/dkms_install.sh
+
+git add pyevdi/test/test_version.py
+git add pyevdi/Makefile
+
+git commit -m "Set version to ${MAJOR}.${MINOR}.${PATCH}"
 tag="v${MAJOR}.${MINOR}.${PATCH}"
 git tag "${tag}"
 echo -e "Please push tag ${tag} with: \\ngit push origin refs/tags/${tag}:refs/tags/${tag}"
