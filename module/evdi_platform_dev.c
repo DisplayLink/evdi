@@ -85,7 +85,11 @@ err_free:
 	return PTR_ERR_OR_ZERO(dev);
 }
 
+#if KERNEL_VERSION(6, 10, 0) >= LINUX_VERSION_CODE
 int evdi_platform_device_remove(struct platform_device *pdev)
+#else
+void evdi_platform_device_remove(struct platform_device *pdev)
+#endif
 {
 	struct evdi_platform_device_data *data = platform_get_drvdata(pdev);
 
@@ -93,8 +97,12 @@ int evdi_platform_device_remove(struct platform_device *pdev)
 
 	evdi_drm_device_remove(data->drm_dev);
 	kfree(data);
+	#if KERNEL_VERSION(6, 10, 0) >= LINUX_VERSION_CODE
 	return 0;
+	#endif
 }
+
+
 
 bool evdi_platform_device_is_free(struct platform_device *pdev)
 {
