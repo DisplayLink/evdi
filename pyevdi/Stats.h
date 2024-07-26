@@ -3,6 +3,7 @@
 #define STATS_H
 
 #include <functional>
+#include <chrono>
 
 #include "Buffer.h"
 #include "../library/evdi_lib.h"
