@@ -86,7 +86,7 @@ static void evdi_crtc_atomic_flush(
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
 
 	if (notify_dpms)
-		evdi_painter_dpms_notify(evdi,
+		evdi_painter_dpms_notify(evdi->painter,
 			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
 
 	evdi_painter_set_vblank(evdi->painter, crtc, crtc_state->event);
@@ -258,9 +258,9 @@ static void evdi_plane_atomic_update(struct drm_plane *plane,
 	crtc = state->crtc;
 
 	if (!old_state->crtc && state->crtc)
-		evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_ON);
+		evdi_painter_dpms_notify(evdi->painter, DRM_MODE_DPMS_ON);
 	else if (old_state->crtc && !state->crtc)
-		evdi_painter_dpms_notify(evdi, DRM_MODE_DPMS_OFF);
+		evdi_painter_dpms_notify(evdi->painter, DRM_MODE_DPMS_OFF);
 
 	if (state->fb) {
 		struct drm_framebuffer *fb = state->fb;

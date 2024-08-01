@@ -145,7 +145,7 @@ void evdi_painter_set_vblank(struct evdi_painter *painter,
 			     struct drm_crtc *crtc,
 			     struct drm_pending_vblank_event *vblank);
 void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter);
-void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode);
+void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_display_mode *mode);
 unsigned int evdi_painter_poll(struct file *filp,

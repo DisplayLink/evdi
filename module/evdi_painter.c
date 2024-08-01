@@ -696,13 +696,12 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 
 static const char * const dpms_str[] = { "on", "standby", "suspend", "off" };
 
-void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
+void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode)
 {
-	struct evdi_painter *painter = evdi->painter;
 	const char *mode_str;
 
 	if (!painter) {
-		EVDI_WARN("(card%d) Painter does not exist!", evdi->dev_index);
+		EVDI_WARN("Painter does not exist!");
 		return;
 	}
 
@@ -719,8 +718,8 @@ void evdi_painter_dpms_notify(struct evdi_device *evdi, int mode)
 	default:
 		mode_str = "unknown";
 	};
-	EVDI_INFO("(card%d) Notifying display power state: %s",
-		   evdi->dev_index, mode_str);
+	EVDI_INFO("(card%d) Notifying display power state: %s\n",
+		   painter->drm_device->primary->index, mode_str);
 	evdi_painter_send_dpms(painter, mode);
 }
 
