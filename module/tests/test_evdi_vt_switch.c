@@ -11,8 +11,11 @@
 #include <kunit/test.h>
 #include <kunit/test-bug.h>
 #include <kunit/device.h>
+#include <linux/vt_kern.h>
 #include "evdi_drm_drv.h"
 #include "tests/evdi_test.h"
+#include "tests/evdi_fake_user_client.h"
+#include "tests/evdi_fake_compositor.h"
 
 
 struct evdi_vt_test {
@@ -62,7 +65,32 @@ static void suite_test_vt_exit(struct kunit *test)
 
 	evdi_test_data_exit(test, &data->base);
 	kunit_kfree(test, test->priv);
-	test->priv = NULL;
+}
+
+static int suite_test_vt_and_user_connected_init(struct kunit *test)
+{
+	int result = suite_test_vt_init(test);
+	struct evdi_vt_test *data = (struct evdi_vt_test *)test->priv;
+
+	KUNIT_EXPECT_EQ(test, result, 0);
+	evdi_fake_compositor_create(test);
+	evdi_fake_user_client_create(test);
+
+	KUNIT_EXPECT_NE(test, data->dpms_mode, DRM_MODE_DPMS_OFF);
+	evdi_fake_user_client_connect(test, data->base.dev);
+	evdi_fake_compositor_connect(test, data->base.dev);
+
+	return result;
+}
+
+static void suite_test_vt_and_user_connected_exit(struct kunit *test)
+{
+	struct evdi_vt_test *data = to_evdi_vt_test(test->priv);
+
+	evdi_fake_compositor_disconnect(test, data->base.dev);
+	evdi_fake_user_client_disconnect(test, data->base.dev);
+
+	return suite_test_vt_exit(test);
 }
 
 static void test_evdi_painter_registers_for_vt(struct kunit *test)
@@ -93,10 +121,40 @@ static void test_evdi_painter_when_not_connected_does_not_send_dpms_off_event_on
 	KUNIT_EXPECT_NE(test, data->dpms_mode, DRM_MODE_DPMS_OFF);
 }
 
+static void test_evdi_painter_when_connected_does_not_send_dpms_off_event_when_fg_console_has_not_changed(struct kunit *test)
+{
+	struct evdi_vt_test *data = to_evdi_vt_test(test->priv);
+	struct evdi_device *evdi = (struct evdi_device *)data->base.dev->dev_private;
+
+	data->vt_notifier->notifier_call(data->vt_notifier, 0, NULL);
+
+	KUNIT_EXPECT_EQ(test, data->dpms_mode, DRM_MODE_DPMS_ON);
+	KUNIT_EXPECT_FALSE(test, evdi_painter_needs_full_modeset(evdi->painter));
+}
+
+static void test_evdi_painter_when_connected_sends_dpms_off_event_on_fg_console_change(struct kunit *test)
+{
+	struct evdi_vt_test *data = to_evdi_vt_test(test->priv);
+	struct evdi_device *evdi = (struct evdi_device *)data->base.dev->dev_private;
+
+	fg_console = fg_console + 1;
+
+	data->vt_notifier->notifier_call(data->vt_notifier, 0, NULL);
+
+	KUNIT_EXPECT_EQ(test, data->dpms_mode, DRM_MODE_DPMS_OFF);
+	KUNIT_EXPECT_TRUE(test, evdi_painter_needs_full_modeset(evdi->painter));
+}
+
 static struct kunit_case evdi_test_cases[] = {
 	KUNIT_CASE(test_evdi_painter_registers_for_vt),
 	KUNIT_CASE(test_evdi_painter_unregisters_for_vt_on_removal),
 	KUNIT_CASE(test_evdi_painter_when_not_connected_does_not_send_dpms_off_event_on_fg_console_change),
+	{}
+};
+
+static struct kunit_case evdi_test_cases_with_user_connected[] = {
+	KUNIT_CASE(test_evdi_painter_when_connected_does_not_send_dpms_off_event_when_fg_console_has_not_changed),
+	KUNIT_CASE(test_evdi_painter_when_connected_sends_dpms_off_event_on_fg_console_change),
 	{}
 };
 
@@ -107,5 +165,12 @@ static struct kunit_suite evdi_test_suite = {
 	.exit = suite_test_vt_exit,
 };
 
+static struct kunit_suite evdi_test_suite_with_connected_user = {
+	.name = "drm_evdi_vt_tests_with_connected_user",
+	.test_cases = evdi_test_cases_with_user_connected,
+	.init = suite_test_vt_and_user_connected_init,
+	.exit = suite_test_vt_and_user_connected_exit,
+};
 
+kunit_test_suite(evdi_test_suite_with_connected_user);
 kunit_test_suite(evdi_test_suite);

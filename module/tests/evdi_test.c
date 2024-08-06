@@ -11,7 +11,31 @@
 #include <kunit/test.h>
 #include <kunit/test-bug.h>
 #include <kunit/device.h>
+#include <linux/mman.h>
+#include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
+#include <linux/jiffies.h>
 #include "evdi_drm_drv.h"
+
+void __user *evdi_kunit_alloc_usermem(struct kunit *test, unsigned int size)
+{
+	void *kmem = kunit_kzalloc(test, size, GFP_KERNEL);
+	unsigned long user_addr;
+
+	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, kmem);
+
+	user_addr = kunit_vm_mmap(test, NULL, 0, size,
+			    PROT_READ | PROT_WRITE | PROT_EXEC,
+			    MAP_ANONYMOUS | MAP_PRIVATE, 0);
+	KUNIT_ASSERT_NE_MSG(test, user_addr, 0,
+		"Could not create userspace mm");
+	KUNIT_ASSERT_LT_MSG(test, user_addr, (unsigned long)TASK_SIZE,
+		"Failed to allocate user memory");
+
+	return (void __user *)user_addr;
+}
 
 void evdi_testhook_painter_vt_register(struct notifier_block *vt_notifier)
 {

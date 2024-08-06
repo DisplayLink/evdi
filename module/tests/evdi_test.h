@@ -44,6 +44,9 @@ struct evdi_test_data {
 void evdi_test_data_init(struct kunit *test, struct evdi_test_data *data);
 void evdi_test_data_exit(struct kunit *test, struct evdi_test_data *data);
 
+/* evdi test utils */
+void __user *evdi_kunit_alloc_usermem(struct kunit *test, unsigned int size);
+
 #endif // CONFIG_DRM_EVDI_KUNIT_TEST
 #endif // EVDI_TEST_H
 
