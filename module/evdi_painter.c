@@ -506,6 +506,7 @@ static void evdi_painter_send_dpms(struct evdi_painter *painter, int mode)
 {
 	struct drm_pending_event *event = create_dpms_event(mode);
 
+	EVDI_TEST_HOOK(evdi_testhook_painter_send_dpms(mode));
 	evdi_painter_send_event(painter, event);
 }
 

@@ -18,6 +18,7 @@
 struct evdi_vt_test {
 	struct evdi_test_data base;
 	struct notifier_block *vt_notifier;
+	int dpms_mode;
 };
 #define to_evdi_vt_test(x) container_of(x, struct evdi_vt_test, base)
 
@@ -29,12 +30,22 @@ static void testhook_painter_vt_register(struct notifier_block *vt_notifier)
 	data->vt_notifier = vt_notifier;
 }
 
+static void testhook_painter_send_dpms(int mode)
+{
+	struct kunit *test = kunit_get_current_test();
+	struct evdi_test_data *base = (struct evdi_test_data *)test->priv;
+	struct evdi_vt_test *data = to_evdi_vt_test(base);
+
+	data->dpms_mode = mode;
+}
+
 static int suite_test_vt_init(struct kunit *test)
 {
 	struct evdi_vt_test *data = kunit_kzalloc(test, sizeof(struct evdi_vt_test), GFP_KERNEL);
 
 	evdi_test_data_init(test, &data->base);
 	data->base.hooks.painter_vt_register = testhook_painter_vt_register;
+	data->base.hooks.painter_send_dpms = testhook_painter_send_dpms;
 	data->base.dev = evdi_drm_device_create(data->base.parent);
 
 	return 0;
@@ -71,9 +82,21 @@ static void test_evdi_painter_unregisters_for_vt_on_removal(struct kunit *test)
 	KUNIT_EXPECT_NULL(test, data->vt_notifier->notifier_call);
 }
 
+static void test_evdi_painter_when_not_connected_does_not_send_dpms_off_event_on_fg_console_change(struct kunit *test)
+{
+	struct evdi_vt_test *data = to_evdi_vt_test(test->priv);
+
+	KUNIT_EXPECT_NE(test, data->dpms_mode, DRM_MODE_DPMS_OFF);
+
+	data->vt_notifier->notifier_call(data->vt_notifier, 0, NULL);
+
+	KUNIT_EXPECT_NE(test, data->dpms_mode, DRM_MODE_DPMS_OFF);
+}
+
 static struct kunit_case evdi_test_cases[] = {
 	KUNIT_CASE(test_evdi_painter_registers_for_vt),
 	KUNIT_CASE(test_evdi_painter_unregisters_for_vt_on_removal),
+	KUNIT_CASE(test_evdi_painter_when_not_connected_does_not_send_dpms_off_event_on_fg_console_change),
 	{}
 };
 
