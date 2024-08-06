@@ -159,6 +159,8 @@ static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 	kfree(evdi);
 	dev->dev_private = NULL;
 	EVDI_INFO("Evdi drm_device removed.\n");
+
+	EVDI_TEST_HOOK(evdi_testhook_drm_device_destroyed());
 }
 
 static int evdi_drm_device_init(struct drm_device *dev)

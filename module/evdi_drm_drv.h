@@ -38,7 +38,7 @@
 #include <drm/drm_framebuffer.h>
 
 #include "evdi_debug.h"
-
+#include "tests/evdi_test.h"
 
 struct evdi_fbdev;
 struct evdi_painter;
