@@ -23,9 +23,11 @@
 #include <linux/completion.h>
 
 /* evdi hooks for kunit tests */
+void evdi_testhook_painter_vt_register(struct notifier_block *vt_notifier);
 void evdi_testhook_drm_device_destroyed(void);
 
 struct evdi_test_hooks {
+	void (*painter_vt_register)(struct notifier_block *vt_notifier);
 	void (*drm_device_destroyed)(void);
 };
 

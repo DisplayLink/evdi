@@ -13,6 +13,15 @@
 #include <kunit/device.h>
 #include "evdi_drm_drv.h"
 
+void evdi_testhook_painter_vt_register(struct notifier_block *vt_notifier)
+{
+	struct kunit *test = kunit_get_current_test();
+	struct evdi_test_data *base = (struct evdi_test_data *)test->priv;
+
+	if (base && base->hooks.painter_vt_register)
+		base->hooks.painter_vt_register(vt_notifier);
+}
+
 void evdi_testhook_drm_device_destroyed(void)
 {
 	struct kunit *test = kunit_get_current_test();
