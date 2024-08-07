@@ -24,7 +24,7 @@ result=0
 ./checkpatch.pl --terse --no-tree --ignore NEW_TYPEDEFS -f ./library/*
 result=$((result || $?))
 
-find ./module -type f -exec ./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE,PREFER_PR_LEVEL -f {} +
+find ./module -type f -exec ./checkpatch.pl --terse --no-tree --ignore LINUX_VERSION_CODE,PREFER_PR_LEVEL -f {} \;
 result=$((result || $?))
 
 rm "${files[@]}"
