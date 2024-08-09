@@ -24,6 +24,10 @@ This is a first release. DisplayLink are open to suggestions and feedback on imp
 - The communication between the EVDI kernel module and the wrapper libevdi library is not access-controlled or authenticated. This could be improved in future releases, making it harder to compromise the data EVDI is sending and receiving.
 - EVDI kernel module driver is currently a platform_driver, for multiple reasons; most importantly because virtual displays are not discoverable, i.e. cannot be enumerated at the hardware level. EVDI is also a generic device, not tied to any particular kind of device, transport layer or a bus.
 
+## Packages for other distributions
+
+There is an unoffical github project at [DisplayLink RPM](https://github.com/displaylink-rpm/displaylink-rpm) which is generating RPM package for Fedora, CentOS Stream, Rocky Linux and AlmaLinux OS. It is not in our control but it uses our code as the basis to create the RPM packages.
+
 ## Licensing
 
 Elements of this project are licensed under various licenses. In particular, the `module` and `library` are licensed
