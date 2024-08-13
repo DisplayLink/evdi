@@ -32,10 +32,10 @@ struct platform_device *evdi_platform_dev_create(struct platform_device_info *in
 void evdi_platform_dev_destroy(struct platform_device *dev);
 
 int evdi_platform_device_probe(struct platform_device *pdev);
-#if KERNEL_VERSION(6, 10, 0) >= LINUX_VERSION_CODE
-int evdi_platform_device_remove(struct platform_device *pdev);
-#else
+#if KERNEL_VERSION(6, 11, 0) <= LINUX_VERSION_CODE
 void evdi_platform_device_remove(struct platform_device *pdev);
+#else
+int evdi_platform_device_remove(struct platform_device *pdev);
 #endif
 bool evdi_platform_device_is_free(struct platform_device *pdev);
 void evdi_platform_device_link(struct platform_device *pdev,
