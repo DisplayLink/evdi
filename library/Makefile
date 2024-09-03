@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
+# Copyright (c) 2015 - 2024 DisplayLink (UK) Ltd.
 #
 
 INSTALL ?= install
@@ -25,7 +25,7 @@ clean:
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-libevdi.so.$(LIBVER): evdi_lib.o
+libevdi.so.$(LIBVER): evdi_lib.o evdi_procfs.o
 	$(CC) $^ -shared -Wl,-soname,libevdi.so.$(LIBABI) -o $@ -lc -lgcc $(LDFLAGS)
 	$(CP) libevdi.so.$(LIBVER) libevdi.so
 	$(LN) -sf libevdi.so.$(LIBVER) libevdi.so.$(LIBABI)

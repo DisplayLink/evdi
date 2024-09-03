@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-only
-// Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
+// Copyright (c) 2015 - 2024 DisplayLink (UK) Ltd.
 
 #include <stddef.h>
 #include <stdint.h>
@@ -409,9 +409,8 @@ static int open_device(int device)
 
 	snprintf(dev, PATH_MAX, "/dev/dri/card%d", device);
 
-#ifndef CHROMEOS
-	wait_for_master(dev);
-#endif
+	if (Xorg_running())
+		wait_for_master(dev);
 
 	fd = wait_for_device(dev);
 

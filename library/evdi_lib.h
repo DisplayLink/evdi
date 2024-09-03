@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-2.1-only
- * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2024 DisplayLink (UK) Ltd.
  */
 
 #ifndef EVDI_LIB_H
@@ -133,6 +133,8 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *evtctx);
 evdi_selectable evdi_get_event_ready(evdi_handle handle);
 void evdi_get_lib_version(struct evdi_lib_version *version);
 void evdi_set_logging(struct evdi_logging evdi_logging);
+
+bool Xorg_running(void);
 
 #ifdef __cplusplus
 }
