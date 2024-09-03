@@ -6,7 +6,7 @@ evdi_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 if [ ! -v VIRTUAL_ENV ]; then
     if [ ! -d "${evdi_dir}"/.venv_evdi ]; then
         # prepare python virtualenv for tests
-        python3 -m virtualenv .venv_evdi
+        python3 -m virtualenv "${evdi_dir}"/.venv_evdi
     fi
     # shellcheck disable=SC1091
     source "${evdi_dir}"/.venv_evdi/bin/activate
