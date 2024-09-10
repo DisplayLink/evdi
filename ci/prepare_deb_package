@@ -132,7 +132,9 @@ EOF
   cat > "$control_dir/postrm" << 'EOF'
 #!/bin/bash
 
-set -e
+if [ ${DISPLAYLINK_DEBUG_DEV:-"no"} == "yes" ]; then
+  set -e
+fi
 
 if [[ $1 == purge ]]; then
   rm -rf /var/log/displaylink
