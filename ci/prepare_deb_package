@@ -107,10 +107,18 @@ EOF
   cat > "$control_dir/preinst" << EOF
 #!/bin/bash
 
-if [[ -e /opt/displaylink/evdi.tar.gz ]]
-then
-  echo >&2 "Error: Another EVDI distribution detected"
-  exit 1
+displaylink_installer_exists()
+{
+  [[ $(command -v displaylink-installer) ]]
+}
+if [[ -e /opt/displaylink/evdi.tar.gz ]]; then
+  if displaylink_installer_exists; then
+    echo "evdi.tar.gz detected: uninstalling..."
+    displaylink-installer uninstall
+  else
+    echo >&2 "evdi.tar.gz detected, but displaylink-installer is absent, can't uninstall"
+    exit 1
+  fi
 fi
 EOF
 
