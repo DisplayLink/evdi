@@ -109,14 +109,20 @@ EOF
 
 displaylink_installer_exists()
 {
-  [[ $(command -v displaylink-installer) ]]
+  [[ \$(command -v displaylink-installer) ]]
 }
-if [[ -e /opt/displaylink/evdi.tar.gz ]]; then
+
+evdi_installed_via_standalone_run_installer()
+{
+  [[ -e /opt/displaylink/evdi.tar.gz ]]
+}
+
+if evdi_installed_via_standalone_run_installer; then
   if displaylink_installer_exists; then
-    echo "evdi.tar.gz detected: uninstalling..."
+    echo "evdi installed via standalone installer: uninstalling..."
     displaylink-installer uninstall
   else
-    echo >&2 "evdi.tar.gz detected, but displaylink-installer is absent, can't uninstall"
+    echo >&2 "ERROR: evdi installed via standalone installer but displaylink-installer script does not exists."
     exit 1
   fi
 fi
@@ -140,7 +146,7 @@ EOF
   cat > "$control_dir/postrm" << 'EOF'
 #!/bin/bash
 
-if [ ${DISPLAYLINK_DEBUG_DEV:-"no"} == "yes" ]; then
+if [ \${DISPLAYLINK_DEBUG_DEV:-"no"} == "yes" ]; then
   set -e
 fi
 
