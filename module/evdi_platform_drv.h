@@ -25,11 +25,11 @@ struct platform_device_info;
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#define DRIVER_DATE   "20240814"
+#define DRIVER_DATE   "20240920"
 
 #define DRIVER_MAJOR 1
 #define DRIVER_MINOR 14
-#define DRIVER_PATCH 6
+#define DRIVER_PATCH 7
 
 void evdi_platform_remove_all_devices(struct device *device);
 unsigned int evdi_platform_device_count(struct device *device);

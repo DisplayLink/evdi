@@ -8,7 +8,7 @@ evdi_package_name='evdi'
 evdi_maintainer='Synaptics Technical Support <technical-enquiries@synaptics.com>'
 
 # shellcheck disable=SC2034
-evdi_version='1.14.6'
+evdi_version='1.14.7'
 
 # shellcheck disable=SC2034
 evdi_description="Extensible Virtual Display Interface (EVDI) is a Linux® kernel module that enables management of multiple screens.

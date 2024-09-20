@@ -11,7 +11,7 @@ PKG_CONFIG ?= pkg-config
 DEPS = evdi_ioctl.h
 CFLAGS := -I../module -std=gnu99 -fPIC -D_FILE_OFFSET_BITS=64 $(CFLAGS) $$($(PKG_CONFIG) --cflags-only-I libdrm)
 
-LIBVER := 1.14.6
+LIBVER := 1.14.7
 LIBABI := 1
 
 PREFIX ?= /usr/local
