@@ -84,13 +84,6 @@ pipeline {
                 }
             }
         }
-        stage ('Run KUnit tests') {
-            steps {
-                sh '''#!/usr/bin/env bash
-                [ -d tmp/linux ] && (cd tmp/linux; git checkout -f master; git reset --hard origin/master)
-                ./ci/run_kunit'''
-            }
-        }
         stage ('Build against released kernels') {
             steps {
                 sh '''#!/usr/bin/env bash
@@ -101,6 +94,13 @@ pipeline {
             steps {
                 sh '''#!/usr/bin/env bash
                 ./ci/build_against_kernel --repo-ci rc'''
+            }
+        }
+        stage ('Run KUnit tests') {
+            steps {
+                sh '''#!/usr/bin/env bash
+                [ -d tmp/linux ] && (cd tmp/linux; git checkout -f master; git reset --hard origin/master)
+                ./ci/run_kunit'''
             }
         }
         stage ('Publish') {
