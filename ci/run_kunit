@@ -16,12 +16,28 @@ clone_linux()
   fi
 }
 
+increment_kernel_version()
+{
+  (cd "$1"
+  REGEX="\(VERSION *= *\)\([0-9]\+\)"
+
+  version=$(sed -ne "s/${REGEX}/\2/p" Makefile | head -1)
+  ((version++))
+
+  sed -ie "s/${REGEX}/\1${version}/" Makefile
+  )
+}
+
 patch_linux_with_evdi_module()
 {
   local EVDI_REPO_DIR="$1"
   local LINUX_DIR="$2"
 
   [ -f "$LINUX_DIR/drivers/gpu/drm/evdi/Kconfig" ] && return
+
+  (cd "$LINUX_DIR"
+  git restore Makefile)
+  increment_kernel_version "$LINUX_DIR"
 
   (cd "$LINUX_DIR"
   ln -s -T "${EVDI_REPO_DIR}"/module drivers/gpu/drm/evdi
