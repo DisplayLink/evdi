@@ -78,7 +78,7 @@ evdi_add_mod_options()
   echo "options evdi initial_device_count=4" > "$conf_file"
 
   local drm_deps
-  drm_deps=$(sed -n '/^drm_kms_helper/p' /proc/modules | awk '{print $4}' | tr ',' ' ')
+  drm_deps=$(sed -n '/^drm_[[:alpha:]]*_helper/p' /proc/modules | awk '{print $4}' | tr ',' '\n' | sort -u | tr '\n' ' ')
   drm_deps=${drm_deps/evdi/}
   [[ -z $drm_deps ]] && return 0
 
