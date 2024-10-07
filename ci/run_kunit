@@ -8,7 +8,7 @@ clone_linux()
 {
   echo "Clone linux repository"
   local linux_mirror="https://oauth2:glpat-jeZZawHtkoZ3xLHWGCJQ@gitlab/ppd_posix/linux.git"
-  if curl -k --output /dev/null --silent --head --fail "$linux_mirror"; then
+  if curl -k --output /dev/null --silent -m 5 --head --fail "$linux_mirror"; then
     git -c http.sslVerify=false clone --depth 1 "$linux_mirror"
     (cd linux; git config http.sslVerify false)
   else
