@@ -45,7 +45,9 @@ create_evdi_deb_package()
   local deb_dir="$temp_dir/EVDI"
   local control_dir="$deb_dir/DEBIAN"
   local docs_dir="$deb_dir/usr/share/doc/$evdi_package_name"
+  local libevdi_abi
 
+  libevdi_abi=$(echo "$evdi_version" | cut -d. -f1)
   mkdir -p \
       "$control_dir" \
       "$deb_dir/usr/src" \
@@ -98,7 +100,7 @@ Maintainer: $evdi_maintainer
 Source: evdi
 Section: kernel
 Depends: mokutil, dkms, libdrm-dev, libc6-dev
-Conflicts: libevdi0, libevdi0-dev, evdi-dkms
+Conflicts: libevdi${libevdi_abi}, libevdi${libevdi_abi}-dev, evdi-dkms
 Architecture: $evdi_arch
 Priority: optional
 Description: $evdi_description
