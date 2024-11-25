@@ -12,8 +12,6 @@ pipeline {
                 dir('src') {
                     script {
                       def list = [ "origin/main" ]
-                      def branches_to_build = sh(script: '''git branch -r -l origin/release/* | xargs''', returnStdout: true).trim()
-                      list.addAll(branches_to_build.split())
                       for(int i=0; i < list.size(); i++) {
                         def branchName = list[i];
                         stage(branchName) {
