@@ -73,6 +73,10 @@ static const struct file_operations evdi_driver_fops = {
 #endif
 
 	.llseek = noop_llseek,
+
+#if defined(FOP_UNSIGNED_OFFSET)
+	.fop_flags = FOP_UNSIGNED_OFFSET,
+#endif
 };
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
