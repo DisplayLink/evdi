@@ -85,6 +85,7 @@ err_free:
 	return PTR_ERR_OR_ZERO(dev);
 }
 
+/* EL9 kernel removed the callback that was returning void  */
 #if KERNEL_VERSION(6, 11, 0) <= LINUX_VERSION_CODE
 void evdi_platform_device_remove(struct platform_device *pdev)
 #else

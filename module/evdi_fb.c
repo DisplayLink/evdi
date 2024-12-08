@@ -417,7 +417,7 @@ static int evdifb_create(struct drm_fb_helper *helper,
 	info->fix.smem_len = size;
 	info->fix.smem_start = (unsigned long)efbdev->efb.obj->vmapping;
 
-#if KERNEL_VERSION(6, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 4, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #elif KERNEL_VERSION(4, 20, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	info->flags = FBINFO_DEFAULT;
 #else

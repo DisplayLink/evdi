@@ -40,7 +40,7 @@ int evdi_i2c_add(struct i2c_adapter *adapter, struct device *parent,
 	void *ddev)
 {
 	adapter->owner  = THIS_MODULE;
-#if KERNEL_VERSION(6, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(6, 8, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #else
 	adapter->class  = I2C_CLASS_DDC;
 #endif

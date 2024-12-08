@@ -31,10 +31,11 @@
 
 #include <linux/dma-buf.h>
 #include <linux/vt_kern.h>
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <linux/compiler_attributes.h>
 #endif
 
+/* Import of DMA_BUF namespace was reverted in EL8 */
 #if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
 MODULE_IMPORT_NS("DMA_BUF");
 #endif
@@ -718,7 +719,7 @@ void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode)
 	switch (mode) {
 	case DRM_MODE_DPMS_ON:
 		painter->fg_console = fg_console;
-#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 		fallthrough;
 #else
 #endif
