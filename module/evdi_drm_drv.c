@@ -34,7 +34,7 @@
 #include "evdi_debug.h"
 #include "evdi_drm.h"
 
-#if KERNEL_VERSION(6, 8, 0) <= LINUX_VERSION_CODE || defined(EL8)
+#if KERNEL_VERSION(6, 8, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #define EVDI_DRM_UNLOCKED 0
 #else
 #define EVDI_DRM_UNLOCKED DRM_UNLOCKED
@@ -126,7 +126,7 @@ static struct drm_driver driver = {
 	.fops = &evdi_driver_fops,
 
 	.gem_prime_import = drm_gem_prime_import,
-#if KERNEL_VERSION(6, 6, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 6, 0) <= LINUX_VERSION_CODE || defined(EL9)
 #else
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,

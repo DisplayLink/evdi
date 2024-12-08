@@ -184,8 +184,8 @@ int evdi_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (ret)
 		return ret;
 
-/* Some VMA modifier function patches present in 6.3 were reverted in EL kernels */
-#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE
+/* Some VMA modifier function patches present in 6.3 were reverted in EL8 kernels */
+#if KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL9)
 	vm_flags_mod(vma, VM_MIXEDMAP, VM_PFNMAP);
 #else
 	vma->vm_flags &= ~VM_PFNMAP;
