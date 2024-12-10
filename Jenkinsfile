@@ -87,12 +87,14 @@ pipeline {
         stage ('Build against released kernels') {
             steps {
                 sh '''#!/usr/bin/env bash
+                set -e
                 ./ci/build_against_kernel --repo-ci all'''
             }
         }
         stage ('Build against latest rc kernel') {
             steps {
                 sh '''#!/usr/bin/env bash
+                set -e
                 ./ci/build_against_kernel --repo-ci rc'''
             }
         }

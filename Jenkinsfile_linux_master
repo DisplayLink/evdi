@@ -11,12 +11,18 @@ pipeline {
             steps {
                 dir('src') {
                     script {
-                      def list = [ "origin/main" ]
+                     sh '''#!/usr/bin/env bash
+                       git remote add github "https://github.com/DisplayLink/evdi.git"
+                       git fetch github
+                     '''
+
+                      def list = [ "github/main", "origin/main" ]
                       for(int i=0; i < list.size(); i++) {
                         def branchName = list[i];
                         stage(branchName) {
                             withEnv(["STAGE_BRANCH=$branchName"]) {
                             sh '''#!/usr/bin/env bash
+                              set -e
                               git checkout ${STAGE_BRANCH}
                               ./ci/build_against_kernel --repo-ci master
                               ./ci/build_against_kernel --repo-ci rc
