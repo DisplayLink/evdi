@@ -1,5 +1,6 @@
 # evdi kernel module
-When installing DisplayLink software using the provided installer or via distro-provided scripts some required configuration is written. When working with the module manually that configuration will not be created automatically. This is likely to cause failure of evdi to discover external DisplayLink devices and lead to much confusion.
+When installing DisplayLink software using the provided installer or via distro-provided scripts some required configuration is written. When working with the module manually that configuration will not be created automatically.
+This is are various settings fixing issues with compositors (XServer, Gnome/Wayland) likely to cause failure of evdi to discover external DisplayLink devices and lead to much confusion.
 
 See the shell script `dkms_install.sh` and its `evdi_add_mod_options()` function for the steps required.
 
@@ -14,15 +15,16 @@ Typically `/etc/modprobe.d/evdi.conf` will contain two lines, the second being g
 options evdi initial_device_count=4
 softdep evdi pre: drm_kms_helper i915
 ```
-Note: `softdep` above shows the host has an integrated Intel GPU (`i915`).
+Note: `initial_device_count` this is workaround for XServer that builds static lists af attached gpu devices on startup and might crash when gpu device is added dynamically.
+Note: `softdep` option tells linux kernel to load evdi driver after primary gpu driver is loaded. This is to ensure that compositor will not attempt to use evdi driver as primary gpu.
 
 ## Auto-loading the module
-The  `dkms_install.sh` script assumes the host is using systemd and adds the auto-load config in `/etc/modules-load.d/` that is used by `systemd-modules-load.service`. For hosts without systemd the convention for loading modules at start-up is via an entry in `/etc/modules`. `modules-load.d` usually has a symbolic link to this file.
+The  `dkms_install.sh` adds the auto-load config in `/etc/modules-load.d/` when it exists. For hosts without systemd the convention for loading modules at start-up is via an entry in `/etc/modules`. `modules-load.d` usually has a symbolic link to this file.
 
-Adding `evdi` to `/etc/modules` therefore should work for a broader range of possible init system scenarios.
+Adding `evdi` to `/etc/modules` enables system to load the driver on boot time.
 
 ## Usage
-It is not obvious that `evdi` (as of v1.14.1) does not auto-detect and configure DisplayLink devices - something one might expect it to do. For that reason the module option `initial_device_count` is required for automatic discovery at load-time.
+Evdi driver is just kernel space driver that adds virtual displays to the Linux. DisplayLink device enumeration and control is done in binary driver that can be downloaded from https://www.synaptics.com/products/displaylink-graphics/downloads/ubuntu.
 
 Alternatively one can manually add outputs with:
 ```
