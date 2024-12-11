@@ -32,7 +32,7 @@ Alternatively one can manually add outputs with:
 ```
 and confirm with:
 ```
-$ cat /sys/devivces/evdi/count
+$ cat /sys/devices/evdi/count
 ```
 and when in an Xorg session:
 ```
