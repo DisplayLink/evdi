@@ -68,7 +68,8 @@ evdi_dkms_install()
 
 evdi_add_mod_options()
 {
-  local module_file='/etc/modules-load.d/evdi.conf'
+  local module_file='/etc/modules/evdi.conf'
+  [ -d '/etc/modules-load.d' ] && module_file='/etc/modules-load.d/evdi.conf'
   echo 'evdi' > "$module_file"
 
   local conf_file='/etc/modprobe.d/evdi.conf'
