@@ -29,6 +29,8 @@
 #include <linux/vmalloc.h>
 
 #if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL9)
+MODULE_IMPORT_NS(DMA_BUF);
+#elif KERNEL_VERSION(6, 13, 0) <= LINUX_VERSION_CODE
 MODULE_IMPORT_NS("DMA_BUF");
 #endif
 
