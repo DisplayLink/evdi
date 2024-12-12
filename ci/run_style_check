@@ -11,9 +11,10 @@ files=(
 )
 
 KVER=master
+linux_mirror="https://gitlab.com/linux-kernel/linux"
 
 for file in "${files[@]}"; do
-  wget -N -q "https://raw.githubusercontent.com/torvalds/linux/${KVER}/scripts/${file}"
+  curl -k -q "${linux_mirror}/-/raw/${KVER}/scripts/${file}" --output "${file}"
 done
 
 chmod +x checkpatch.pl
