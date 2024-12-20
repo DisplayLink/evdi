@@ -35,7 +35,11 @@ pipeline {
                DETECT_JAR_DOWNLOAD_DIR = "${env.WORKSPACE}/synopsys_download"
             }
             steps {
+            script {
                   synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.excluded.directories=tmp,bd_evdi,synopsys_download --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+                  def buildUrl = "$BUILD_URL"
+                  env.BLACKDUCK = sh(script: "curl -Lk '${buildUrl}/consoleText' | grep 'Black Duck Project BOM:'", returnStdout: true)
+            }
             }
         }
         stage ('Build evdi-amd64.deb') {
@@ -92,10 +96,13 @@ pipeline {
             }
         }
         stage ('Build against latest rc kernel') {
-            steps {
+            steps { 
                 sh '''#!/usr/bin/env bash
                 set -e
                 ./ci/build_against_kernel --repo-ci rc'''
+                script {
+                    env.KERNELS = sh(script: "./ci/build_against_kernel --list-kernels", returnStdout: true).trim()
+                }
             }
         }
         stage ('Run KUnit tests') {
@@ -144,6 +151,20 @@ pipeline {
                 parameters: [string(name: 'SERVER', value: 'DEVELOPMENT'),
                   string(name: 'buildName', value: "${env.JOB_NAME}".replaceAll('/', " :: ").replaceAll('%2F', " :: ")),
                   string(name: 'buildNumber', value: "${env.BUILD_NUMBER}")])
+          }
+        }
+        stage ( 'Create note' )
+        {
+          when { anyOf { branch 'main' } }
+          steps {
+            build (
+                job: 'PPD-POSIX/create release note/master',
+                parameters: [string(name: 'kernels', value: env.KERNELS),
+                  string(name: 'git_hash', value: env.GIT_COMMIT),
+                  string(name: 'build_number', value: env.BUILD_NUMBER),
+                  string(name: 'evdi_ver', value: env.EVDI_VERSION),
+                  string(name: 'blackduck', value: env.BLACKDUCK),
+                ])
           }
         }
     }

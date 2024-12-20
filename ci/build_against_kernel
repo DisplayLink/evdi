@@ -88,6 +88,7 @@ get_versions_from_file() { # file
 }
 
 get_supported_linux_versions() {
+  set +e
   local repo_dir
   repo_dir="$(pwd)/$TMP/linux"
   local CC="${CC:-gcc}"
@@ -297,6 +298,12 @@ do
 
     -h|--help)
       usage
+      exit 0
+      ;;
+
+    --list-kernels)
+      MODE="REPO-CI"
+      get_supported_linux_versions
       exit 0
       ;;
 
