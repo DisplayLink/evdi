@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <chrono>
+#include <vector>
 
 #include "Buffer.h"
 #include "../library/evdi_lib.h"
