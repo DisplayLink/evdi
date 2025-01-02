@@ -26,7 +26,20 @@ copy_evdi_make_log()
 enroll_secureboot_key()
 {
   if command -v mokutil >/dev/null && mokutil --sb-state | grep -i "SecureBoot enabled" > /dev/null; then
-    update-secureboot-policy --enroll-key 2> /dev/null || return
+
+    if ! update-secureboot-policy --help 2>&1 | grep "new-key" && [ -f /var/lib/dkms/mok.pub ]; then
+      # If we are in situation like in debian bookworm where dkms needs mok.pub to be imported as update-secureboot-policy does not create mok
+      # see https://github.com/dell/dkms/issues/429
+      if mokutil --test-key /var/lib/dkms/mok.pub; then
+        echo "Enter a password for Secure Boot. It will be asked again after a reboot."
+        mokutil --import /var/lib/dkms/mok.pub
+        mokutil --timeout -1 || true
+      fi
+    fi
+
+    if update-secureboot-policy --help 2>&1 | grep "enroll-key"; then
+      update-secureboot-policy --enroll-key 2> /dev/null || return
+    fi
 
     if [[ -z $EVDI_REBOOT_RATIONALE && $(mokutil --list-new | wc -l) -gt 0 ]]; then
       EVDI_REBOOT_RATIONALE="SecureBoot key was enrolled during the installation."
