@@ -20,12 +20,17 @@
 #ifndef _EVDI_PLATFORM_DRV_H_
 #define _EVDI_PLATFORM_DRV_H_
 
+#include <linux/version.h>
+
 struct device;
 struct platform_device_info;
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
+#if KERNEL_VERSION(6, 14, 0) <= LINUX_VERSION_CODE
+#else
 #define DRIVER_DATE   "20241216"
+#endif
 
 #define DRIVER_MAJOR 1
 #define DRIVER_MINOR 14
