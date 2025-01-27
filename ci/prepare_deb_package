@@ -99,7 +99,7 @@ Version: $evdi_version-$debian_revision
 Maintainer: $evdi_maintainer
 Source: evdi
 Section: kernel
-Depends: mokutil, dkms, libdrm-dev, libc6-dev
+Depends: mokutil, dkms
 Conflicts: libevdi${libevdi_abi}, libevdi${libevdi_abi}-dev, evdi-dkms
 Architecture: $evdi_arch
 Priority: optional
