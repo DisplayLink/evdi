@@ -63,7 +63,7 @@ err:
 }
 
 static bool is_lowest_frequency_mode_of_given_resolution(
-	struct drm_connector *connector, struct drm_display_mode *mode)
+	struct drm_connector *connector, const struct drm_display_mode *mode)
 {
 	struct drm_display_mode *modeptr;
 
@@ -78,7 +78,11 @@ static bool is_lowest_frequency_mode_of_given_resolution(
 }
 
 static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
+#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE
+					    const struct drm_display_mode *mode)
+#else
 					    struct drm_display_mode *mode)
+#endif
 {
 	struct evdi_device *evdi = connector->dev->dev_private;
 	uint32_t area_limit = mode->hdisplay * mode->vdisplay;

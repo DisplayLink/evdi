@@ -36,6 +36,7 @@
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_framebuffer.h>
+#include <drm/drm_fb_helper.h>
 
 #include "evdi_debug.h"
 #include "tests/evdi_test.h"
@@ -102,6 +103,8 @@ long evdi_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 int evdi_fbdev_init(struct drm_device *dev);
 void evdi_fbdev_cleanup(struct drm_device *dev);
 void evdi_fbdev_unplug(struct drm_device *dev);
+int evdifb_create(struct drm_fb_helper *helper,
+			 struct drm_fb_helper_surface_size *sizes);
 #endif /* CONFIG_FB */
 struct drm_framebuffer *evdi_fb_user_fb_create(
 				struct drm_device *dev,
