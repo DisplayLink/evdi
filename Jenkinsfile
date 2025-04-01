@@ -36,7 +36,7 @@ pipeline {
             }
             steps {
             script {
-                  synopsys_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.excluded.directories=tmp,bd_evdi,synopsys_download --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+                  blackduck_detect detectProperties: "--detect.project.name='Evdi' --detect.project.version.name='${env.GIT_BRANCH}' --detect.excluded.directories=tmp,bd_evdi,synopsys_download --detect.output.path='${env.WORKSPACE}/bd_evdi'", downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
                   def buildUrl = "$BUILD_URL"
                   env.BLACKDUCK = sh(script: "curl -Lk '${buildUrl}/consoleText' | grep 'Black Duck Project BOM:'", returnStdout: true)
             }
