@@ -215,7 +215,7 @@ static int __init evdi_init(void)
 	int ret;
 
 	EVDI_INFO("Initialising logging on level %u\n", evdi_loglevel);
-	EVDI_INFO("Atomic driver: yes");
+	EVDI_INFO("Atomic driver: yes\n");
 
 	memset(&g_ctx, 0, sizeof(g_ctx));
 	g_ctx.root_dev = root_device_register(DRIVER_NAME);

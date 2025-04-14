@@ -408,7 +408,7 @@ int evdi_gem_mmap(struct drm_file *file,
 
 	/* Don't allow imported objects to be mapped */
 	if (obj->import_attach) {
-		EVDI_WARN("Don't allow imported objects to be mapped: owner: %s",  obj->import_attach->dmabuf->owner->name);
+		EVDI_WARN("Don't allow imported objects to be mapped: owner: %s\n",  obj->import_attach->dmabuf->owner->name);
 		ret = -EINVAL;
 		goto out;
 	}

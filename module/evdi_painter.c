@@ -329,7 +329,7 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 				    struct drm_pending_event *event)
 {
 	if (!event) {
-		EVDI_ERROR("Null drm event!");
+		EVDI_ERROR("Null drm event!\n");
 		return;
 	}
 
@@ -340,13 +340,13 @@ static void evdi_painter_send_event(struct evdi_painter *painter,
 	}
 
 	if (!painter->drm_device) {
-		EVDI_WARN("Painter is not connected to drm device!");
+		EVDI_WARN("Painter is not connected to drm device!\n");
 		drm_event_cancel_free(painter->drm_device, event);
 		return;
 	}
 
 	if (!painter->is_connected) {
-		EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!\n");
 		drm_event_cancel_free(painter->drm_device, event);
 		return;
 	}
@@ -367,7 +367,7 @@ static struct drm_pending_event *create_update_ready_event(void)
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event) {
-		EVDI_ERROR("Failed to create update ready event");
+		EVDI_ERROR("Failed to create update ready event\n");
 		return NULL;
 	}
 
@@ -415,7 +415,7 @@ static struct drm_pending_event *create_cursor_set_event(
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event) {
-		EVDI_ERROR("Failed to create cursor set event");
+		EVDI_ERROR("Failed to create cursor set event\n");
 		return NULL;
 	}
 
@@ -462,7 +462,7 @@ static struct drm_pending_event *create_cursor_move_event(
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event) {
-		EVDI_ERROR("Failed to create cursor move event");
+		EVDI_ERROR("Failed to create cursor move event\n");
 		return NULL;
 	}
 
@@ -494,7 +494,7 @@ static struct drm_pending_event *create_dpms_event(int mode)
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event) {
-		EVDI_ERROR("Failed to create dpms event");
+		EVDI_ERROR("Failed to create dpms event\n");
 		return NULL;
 	}
 
@@ -522,7 +522,7 @@ static struct drm_pending_event *create_mode_changed_event(
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event) {
-		EVDI_ERROR("Failed to create mode changed event");
+		EVDI_ERROR("Failed to create mode changed event\n");
 		return NULL;
 	}
 
@@ -556,7 +556,7 @@ int evdi_painter_get_num_dirts(struct evdi_painter *painter)
 	int num_dirts;
 
 	if (painter == NULL) {
-		EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!\n");
 		return 0;
 	}
 
@@ -576,7 +576,7 @@ struct drm_clip_rect evdi_painter_framebuffer_size(
 	struct evdi_framebuffer *efb = NULL;
 
 	if (painter == NULL) {
-		EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!\n");
 		return rect;
 	}
 
@@ -584,7 +584,7 @@ struct drm_clip_rect evdi_painter_framebuffer_size(
 	efb = painter->scanout_fb;
 	if (!efb) {
 		if (painter->is_connected)
-			EVDI_WARN("Scanout buffer not set.");
+			EVDI_WARN("Scanout buffer not set.\n");
 		goto unlock;
 	}
 	rect.x1 = 0;
@@ -604,7 +604,7 @@ void evdi_painter_mark_dirty(struct evdi_device *evdi,
 	struct evdi_painter *painter = evdi->painter;
 
 	if (painter == NULL) {
-		EVDI_WARN("Painter is not connected!");
+		EVDI_WARN("Painter is not connected!\n");
 		return;
 	}
 
@@ -700,7 +700,7 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 
 		painter_unlock(painter);
 	} else {
-		EVDI_WARN("Painter does not exist!");
+		EVDI_WARN("Painter does not exist!\n");
 	}
 }
 
@@ -711,7 +711,7 @@ void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode)
 	const char *mode_str;
 
 	if (!painter) {
-		EVDI_WARN("Painter does not exist!");
+		EVDI_WARN("Painter does not exist!\n");
 		return;
 	}
 
@@ -775,7 +775,7 @@ void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	evdi_log_pixel_format(pixel_format, buf, sizeof(buf));
-	EVDI_INFO("(card%d) Notifying mode changed: %dx%d@%d; bpp %d; %s",
+	EVDI_INFO("(card%d) Notifying mode changed: %dx%d@%d; bpp %d; %s\n",
 		   evdi->dev_index, new_mode->hdisplay, new_mode->vdisplay,
 		   drm_mode_vrefresh(new_mode), bits_per_pixel, buf);
 
@@ -810,7 +810,7 @@ static void evdi_add_i2c_adapter(struct evdi_device *evdi)
 	evdi->i2c_adapter = kzalloc(sizeof(*evdi->i2c_adapter), GFP_KERNEL);
 
 	if (!evdi->i2c_adapter) {
-		EVDI_ERROR("(card%d) Failed to allocate for i2c adapter",
+		EVDI_ERROR("(card%d) Failed to allocate for i2c adapter\n",
 			evdi->dev_index);
 		return;
 	}
@@ -820,19 +820,19 @@ static void evdi_add_i2c_adapter(struct evdi_device *evdi)
 	if (result) {
 		kfree(evdi->i2c_adapter);
 		evdi->i2c_adapter = NULL;
-		EVDI_ERROR("(card%d) Failed to add i2c adapter, error %d",
+		EVDI_ERROR("(card%d) Failed to add i2c adapter, error %d\n",
 			evdi->dev_index, result);
 		return;
 	}
 
-	EVDI_INFO("(card%d) Added i2c adapter bus number %d",
+	EVDI_INFO("(card%d) Added i2c adapter bus number %d\n",
 		evdi->dev_index, evdi->i2c_adapter->nr);
 
 	result = sysfs_create_link(&evdi->conn->kdev->kobj,
 			&evdi->i2c_adapter->dev.kobj, "ddc");
 
 	if (result) {
-		EVDI_ERROR("(card%d) Failed to create sysfs link, error %d",
+		EVDI_ERROR("(card%d) Failed to create sysfs link, error %d\n",
 			evdi->dev_index, result);
 		return;
 	}
@@ -841,7 +841,7 @@ static void evdi_add_i2c_adapter(struct evdi_device *evdi)
 static void evdi_remove_i2c_adapter(struct evdi_device *evdi)
 {
 	if (evdi->i2c_adapter) {
-		EVDI_INFO("(card%d) Removing i2c adapter bus number %d",
+		EVDI_INFO("(card%d) Removing i2c adapter bus number %d\n",
 			evdi->dev_index, evdi->i2c_adapter->nr);
 
 		sysfs_remove_link(&evdi->conn->kdev->kobj, "ddc");
@@ -1008,7 +1008,7 @@ int evdi_painter_connect_ioctl(struct drm_device *drm_dev, void *data,
 		}
 		return ret;
 	}
-	EVDI_WARN("(card%d) Painter does not exist!", evdi->dev_index);
+	EVDI_WARN("(card%d) Painter does not exist!\n", evdi->dev_index);
 	return -ENODEV;
 }
 
@@ -1309,7 +1309,7 @@ static struct drm_pending_event *create_ddcci_data_event(struct i2c_msg *msg)
 
 	event = kzalloc(sizeof(*event), GFP_KERNEL);
 	if (!event || !msg) {
-		EVDI_ERROR("Failed to create ddcci data event");
+		EVDI_ERROR("Failed to create ddcci data event\n");
 		return NULL;
 	}
 
@@ -1345,28 +1345,28 @@ static void evdi_painter_ddcci_data(struct evdi_painter *painter, struct i2c_msg
 		painter_lock(painter);
 
 		if (expected_response_length != painter->ddcci_buffer_length)
-			EVDI_WARN("DDCCI buffer length mismatch");
+			EVDI_WARN("DDCCI buffer length mismatch\n");
 		else if (painter->ddcci_buffer)
 			memcpy(msg->buf, painter->ddcci_buffer,
 			       painter->ddcci_buffer_length);
 		else
-			EVDI_WARN("Ignoring NULL DDCCI buffer");
+			EVDI_WARN("Ignoring NULL DDCCI buffer\n");
 
 		painter_unlock(painter);
 	} else {
-		EVDI_WARN("DDCCI response timeout");
+		EVDI_WARN("DDCCI response timeout\n");
 	}
 }
 
 bool evdi_painter_i2c_data_notify(struct evdi_painter *painter, struct i2c_msg *msg)
 {
 	if (!evdi_painter_is_connected(painter)) {
-		EVDI_WARN("Painter not connected");
+		EVDI_WARN("Painter not connected\n");
 		return false;
 	}
 
 	if (!msg) {
-		EVDI_WARN("Ignored NULL ddc/ci message");
+		EVDI_WARN("Ignored NULL ddc/ci message\n");
 		return false;
 	}
 
