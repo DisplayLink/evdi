@@ -24,9 +24,9 @@ The  `dkms_install.sh` adds the auto-load config in `/etc/modules-load.d/` when 
 Adding `evdi` to `/etc/modules` enables system to load the driver on boot time.
 
 ## Usage
-Evdi driver is just kernel space driver that adds virtual displays to the Linux. DisplayLink device enumeration and control is done in binary driver that can be downloaded from https://www.synaptics.com/products/displaylink-graphics/downloads/ubuntu.
+Evdi driver is a kernel space driver that adds virtual displays to Linux. It is primarily used by proprietary user-space DisplayLink [driver](https://www.synaptics.com/products/displaylink-graphics/downloads/ubuntu) which provides DisplayLink [device](https://www.synaptics.com/products/displaylink-graphics/displaylink-products) enumeration and control.
 
-Alternatively one can manually add outputs with:
+Alternatively `pyevdi` bindings are provided for other applications or one can manually add outputs with:
 ```
 # echo 1 > /sys/devices/evdi/add
 ```
