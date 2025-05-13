@@ -38,7 +38,7 @@ static void close_folder(FILE *pf)
 
 static char *process_name(FILE *pf)
 {
-	int Xorg_name_len = 6;
+	int Xorg_name_len = 7;	// 6 + 1 for null terminator
 	char *name = (char *)malloc(Xorg_name_len * sizeof(char));
 
 	fscanf(pf, "%*s");
