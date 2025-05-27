@@ -1,0 +1,19 @@
+{
+  "configurations": [
+    {
+      "name": "pyevdi: Dummy Monitor",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/pyevdi/examples/dummy_monitor/dummy_monitor.py",
+      "cwd": "${workspaceFolder}/pyevdi/examples/dummy_monitor",
+      "args": [
+        "--edid-file",
+        "../../sample_edid/1920x1080_benq.edid"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "sudo": true,
+      "python": "${workspaceFolder}/pyevdi/evdienv/bin/python"
+    }
+  ]
+}
