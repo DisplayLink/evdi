@@ -95,6 +95,7 @@ create_evdi_deb_package()
 
   cat > "$control_dir/control" << EOF
 Package: evdi
+Provides: evdi-dkms (=$evdi_version), libevdi1 (=$evdi_version)
 Version: $evdi_version-$debian_revision
 Maintainer: $evdi_maintainer
 Source: evdi
