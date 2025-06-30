@@ -83,7 +83,8 @@ pipeline {
                     sh '''
                         sonar-scanner \
                           -D sonar.cfamily.compile-commands=compile_commands.json \
-                          -D sonar.projectVersion="${BUILD_NUMBER}"
+                          -D sonar.projectVersion="${BUILD_NUMBER}" \
+                          -D sonar.exclusions=bd_evdi/**
                     '''
                 }
             }
