@@ -243,6 +243,7 @@ static int does_path_links_to(const char *link, const char *substr)
 	r = readlink(link, real_path, sizeof(real_path));
 	if (r < 0)
 		return 0;
+	r = MIN(r, PATH_MAX-1);
 	real_path[r] = '\0';
 
 	return (strstr(real_path, substr) != NULL);
@@ -474,7 +475,7 @@ static bool is_correct_parent_device(const char *dirname, size_t dirname_maxlen,
 	char link_resolution[PATH_MAX];
 	const ssize_t link_resolution_len = readlink(link_path, link_resolution, PATH_MAX);
 
-	if (link_resolution_len == -1 || link_resolution_len == PATH_MAX)
+	if (link_resolution_len < 0 || link_resolution_len >= PATH_MAX)
 		return false;
 
 	link_resolution[link_resolution_len] = '\0';
