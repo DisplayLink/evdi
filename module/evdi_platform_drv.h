@@ -29,12 +29,12 @@ struct platform_device_info;
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
 #if KERNEL_VERSION(6, 14, 0) <= LINUX_VERSION_CODE
 #else
-#define DRIVER_DATE   "20250508"
+#define DRIVER_DATE   "20250630"
 #endif
 
 #define DRIVER_MAJOR 1
 #define DRIVER_MINOR 14
-#define DRIVER_PATCH 10
+#define DRIVER_PATCH 11
 
 void evdi_platform_remove_all_devices(struct device *device);
 unsigned int evdi_platform_device_count(struct device *device);
