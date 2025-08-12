@@ -340,11 +340,23 @@ static const struct drm_framebuffer_funcs evdifb_funcs = {
 static int
 evdi_framebuffer_init(struct drm_device *dev,
 		      struct evdi_framebuffer *efb,
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+		      const struct drm_format_info *info,
+#endif
 		      const struct drm_mode_fb_cmd2 *mode_cmd,
 		      struct evdi_gem_object *obj)
 {
 	efb->obj = obj;
-	drm_helper_mode_fill_fb_struct(dev, &efb->base, mode_cmd);
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+	if (info == NULL)
+		info = drm_get_format_info(dev, mode_cmd->pixel_format,
+					   mode_cmd->modifier[0]);
+#endif
+	drm_helper_mode_fill_fb_struct(dev, &efb->base,
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+				       info,
+#endif
+				       mode_cmd);
 	return drm_framebuffer_init(dev, &efb->base, &evdifb_funcs);
 }
 
@@ -397,7 +409,11 @@ int evdifb_create(struct drm_fb_helper *helper,
 	}
 	info->par = efbdev;
 
-	ret = evdi_framebuffer_init(dev, &efbdev->efb, &mode_cmd, obj);
+	ret = evdi_framebuffer_init(dev, &efbdev->efb,
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+				    NULL,
+#endif
+				    &mode_cmd, obj);
 	if (ret)
 		goto out_gfree;
 
@@ -593,6 +609,9 @@ int evdi_fb_get_bpp(uint32_t format)
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+					const struct drm_format_info *info,
+#endif
 					const struct drm_mode_fb_cmd2 *mode_cmd)
 {
 	struct drm_gem_object *obj;
@@ -625,7 +644,11 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 		goto err_no_mem;
 	efb->base.obj[0] = obj;
 
-	ret = evdi_framebuffer_init(dev, efb, mode_cmd, to_evdi_bo(obj));
+	ret = evdi_framebuffer_init(dev, efb,
+#if KERNEL_VERSION(6, 17, 0) <= LINUX_VERSION_CODE
+				    info,
+#endif
+				    mode_cmd, to_evdi_bo(obj));
 	if (ret)
 		goto err_inval;
 	return &efb->base;
