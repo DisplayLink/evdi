@@ -303,7 +303,11 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 #endif
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
+# if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+		ret = dma_buf_vmap_unlocked(obj->base.import_attach->dmabuf, &map);
+# else
 		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
+# endif
 		if (ret)
 			return -ENOMEM;
 		obj->vmapping = map.vaddr;
@@ -337,7 +341,11 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 		else
 			iosys_map_set_vaddr(&map, obj->vmapping);
 
+# if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+		dma_buf_vunmap_unlocked(obj->base.import_attach->dmabuf, &map);
+# else
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
+# endif
 
 #elif KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
 		struct dma_buf_map map;
