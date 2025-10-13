@@ -341,8 +341,6 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 		int32_t cursor_position_x = 0;
 		int32_t cursor_position_y = 0;
 
-		mutex_lock(&plane->dev->struct_mutex);
-
 		evdi_cursor_position(evdi->cursor, &cursor_position_x,
 		&cursor_position_y);
 		evdi_cursor_move(evdi->cursor, state->crtc_x, state->crtc_y);
@@ -367,7 +365,6 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 			cursor_changed = true;
 		}
 
-		mutex_unlock(&plane->dev->struct_mutex);
 		if (!evdi->cursor_events_enabled) {
 			if (fb != NULL) {
 				if (efb->obj->allow_sw_cursor_rect_updates) {
