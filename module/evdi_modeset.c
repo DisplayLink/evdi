@@ -134,13 +134,11 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 
 	EVDI_CHECKPT();
 	if (handle) {
-		mutex_lock(&dev->struct_mutex);
 		obj = drm_gem_object_lookup(file, handle);
 		if (obj)
 			eobj = to_evdi_bo(obj);
 		else
 			EVDI_ERROR("Failed to lookup gem object.\n");
-		mutex_unlock(&dev->struct_mutex);
 	}
 
 	evdi_cursor_set(evdi->cursor,
