@@ -402,11 +402,9 @@ int evdi_gem_mmap(struct drm_file *file,
 	struct drm_gem_object *obj;
 	int ret = 0;
 
-	mutex_lock(&dev->struct_mutex);
 	obj = drm_gem_object_lookup(file, handle);
 	if (obj == NULL) {
-		ret = -ENOENT;
-		goto unlock;
+		return -ENOENT;
 	}
 	gobj = to_evdi_bo(obj);
 
@@ -429,8 +427,6 @@ int evdi_gem_mmap(struct drm_file *file,
 
  out:
 	drm_gem_object_put(&gobj->base);
- unlock:
-	mutex_unlock(&dev->struct_mutex);
 	return ret;
 }
 
