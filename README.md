@@ -22,7 +22,7 @@ EVDI is usually combined with the DisplayLink driver, we release it as a deb pac
 
 There is an community driven GitHub project at [DisplayLink RPM](https://github.com/displaylink-rpm/displaylink-rpm) which is generating RPM package for Fedora, CentOS Stream, Rocky Linux and AlmaLinux OS. It uses our code as the basis to create the RPM packages.
 
-There is also an [AUR package](https://aur.archlinux.org/packages/evdi) maintained by the community.
+There is also an [AUR package](https://aur.archlinux.org/packages/evdi-dkms) maintained by the community.
 
 ## Contributing
 
