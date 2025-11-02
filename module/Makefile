@@ -6,10 +6,14 @@
 # more details.
 #
 
-include /etc/os-release
+ifneq ($(wildcard /etc/os-release),)
+-include /etc/os-release
+endif
 
 ifneq (,$(findstring rhel,$(ID_LIKE)))
-ELFLAG := -DEL$(VERSION_ID)
+  ifneq (,$(VERSION_ID))
+    ELFLAG := -DEL$(VERSION_ID)
+  endif
 endif
 
 Raspbian := $(shell grep -Eic 'raspb(erry|ian)' /proc/cpuinfo /etc/os-release 2>/dev/null )
