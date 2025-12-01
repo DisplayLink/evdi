@@ -471,7 +471,7 @@ int evdifb_create(struct drm_fb_helper *helper,
 	return ret;
 }
 
-#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 #else
 static struct drm_fb_helper_funcs evdi_fb_helper_funcs = {
 	.fb_probe = evdifb_create,
@@ -520,7 +520,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 		return -ENOMEM;
 
 	evdi->fbdev = efbdev;
-#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 	drm_fb_helper_prepare(dev, &efbdev->helper, 32, NULL);
 #elif KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
 	drm_fb_helper_prepare(dev, &efbdev->helper, 32, &evdi_fb_helper_funcs);

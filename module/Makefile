@@ -9,7 +9,7 @@
 include /etc/os-release
 
 ifneq (,$(findstring rhel,$(ID_LIKE)))
-ELFLAG := -DEL$(VERSION_ID)
+ELFLAG := -DEL$(shell echo $(VERSION_ID) | cut -d. -f1)
 endif
 
 Raspbian := $(shell grep -Eic 'raspb(erry|ian)' /proc/cpuinfo /etc/os-release 2>/dev/null )
