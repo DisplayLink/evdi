@@ -862,7 +862,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct edid *new_edid = NULL;
-	unsigned int expected_edid_size = 0;
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
@@ -885,15 +884,6 @@ evdi_painter_connect(struct evdi_device *evdi,
 		EVDI_ERROR("(card%d) Failed to read edid\n", evdi->dev_index);
 		kfree(new_edid);
 		return -EFAULT;
-	}
-
-	expected_edid_size = sizeof(struct edid) +
-			     new_edid->extensions * EDID_EXT_BLOCK_SIZE;
-	if (expected_edid_size != edid_length) {
-		EVDI_ERROR("Wrong edid size. Expected %d but is %d\n",
-			   expected_edid_size, edid_length);
-		kfree(new_edid);
-		return -EINVAL;
 	}
 
 	if (painter->drm_filp)
