@@ -78,7 +78,7 @@ static bool is_lowest_frequency_mode_of_given_resolution(
 }
 
 static enum drm_mode_status evdi_mode_valid(struct drm_connector *connector,
-#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 					    const struct drm_display_mode *mode)
 #else
 					    struct drm_display_mode *mode)
