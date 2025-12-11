@@ -19,6 +19,9 @@
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_edid.h>
+#if defined(CONFIG_X86)
+#include <drm/drm_cache.h>
+#endif
 #include "evdi_drm.h"
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
@@ -198,6 +201,9 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			     r->y2);
 
 		for (; y > 0; --y) {
+#if defined(CONFIG_X86)
+			drm_clflush_virt_range((void *)src, byte_span);
+#endif
 			if (copy_to_user(dst, src, byte_span))
 				return -EFAULT;
 
