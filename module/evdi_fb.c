@@ -523,7 +523,7 @@ int evdi_fbdev_init(struct drm_device *dev)
 	evdi->fbdev = efbdev;
 #if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 	drm_fb_helper_prepare(dev, &efbdev->helper, 32, NULL);
-#elif KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+#elif KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE || defined(EL8)
 	drm_fb_helper_prepare(dev, &efbdev->helper, 32, &evdi_fb_helper_funcs);
 #else
 	drm_fb_helper_prepare(dev, &efbdev->helper, &evdi_fb_helper_funcs);

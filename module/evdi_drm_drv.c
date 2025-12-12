@@ -104,7 +104,7 @@ static struct drm_driver driver = {
 	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
 
-#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 15, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 #ifdef CONFIG_FB
 	.fbdev_probe = evdifb_create,
 #endif
