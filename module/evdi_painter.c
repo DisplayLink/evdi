@@ -14,6 +14,7 @@
 #include <drm/drm_file.h>
 #include <drm/drm_vblank.h>
 #include <drm/drm_ioctl.h>
+#include <drm/drm_cache.h>
 #elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
@@ -198,6 +199,9 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			     r->y2);
 
 		for (; y > 0; --y) {
+#if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+			drm_clflush_virt_range((void *)src, byte_span);
+#endif			
 			if (copy_to_user(dst, src, byte_span))
 				return -EFAULT;
 
