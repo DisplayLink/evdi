@@ -21,6 +21,7 @@
 #else
 #include <drm/drmP.h>
 #endif
+#include <drm/drm_print.h>
 #include "evdi_drm_drv.h"
 #include "evdi_params.h"
 #include <linux/shmem_fs.h>

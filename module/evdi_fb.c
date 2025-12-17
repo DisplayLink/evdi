@@ -25,6 +25,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_atomic.h>
+#include <drm/drm_print.h>
 #if KERNEL_VERSION(5, 0, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_damage_helper.h>
 #endif
