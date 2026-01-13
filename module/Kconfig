@@ -24,6 +24,7 @@ config DRM_EVDI_KUNIT_TEST
 	tristate "KUnit tests for evdi" if !KUNIT_ALL_TESTS
 		depends on DRM_EVDI && KUNIT
 		default KUNIT_ALL_TESTS
+		select DRM_TTM_HELPER
 	help
 		KUnit tests for evdi DRM module.
 		This option is useful for kernel developers.

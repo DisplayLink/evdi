@@ -15,8 +15,10 @@
 #include <linux/dma-buf-map.h>
 #endif
 #if KERNEL_VERSION(5, 16, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+#include <drm/drm_gem_ttm_helper.h>
 #include <drm/drm_prime.h>
 #include <drm/drm_file.h>
+#include <linux/minmax.h>
 #elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
@@ -290,6 +292,76 @@ static void evdi_unpin_pages(struct evdi_gem_object *obj)
 		evdi_gem_put_pages(obj);
 	mutex_unlock(&obj->pages_lock);
 }
+# if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+#if IS_ENABLED(CONFIG_DRM_TTM_HELPER)
+static bool is_xe_gem_ttm_object_without_vmap(struct dma_buf *dmabuf)
+{
+	struct drm_gem_object *obj;
+
+	if (dmabuf->ops->vmap != drm_gem_dmabuf_vmap || !dmabuf->owner)
+		return false;
+	obj = dmabuf->priv;
+	if (!obj || !obj->funcs)
+		return false;
+
+	if (strncmp("xe", dmabuf->owner->name, min((size_t)2, (size_t)strlen(dmabuf->owner->name))) != 0)
+		return false;
+
+	return obj->funcs->vmap == NULL;
+}
+
+static int dma_buf_vmap_xe_gem_unlocked(struct dma_buf *dmabuf, struct iosys_map *map)
+{
+	int ret;
+
+	iosys_map_clear(map);
+
+	if (WARN_ON(!dmabuf))
+		return -EINVAL;
+
+	dma_resv_lock(dmabuf->resv, NULL);
+	ret = drm_gem_ttm_vmap(dmabuf->priv, map);
+	dma_resv_unlock(dmabuf->resv);
+
+	return ret;
+}
+
+static void dma_buf_vunmap_xe_gem_unlocked(struct dma_buf *dmabuf, struct iosys_map *map)
+{
+	if (WARN_ON(!dmabuf))
+		return;
+
+	dma_resv_lock(dmabuf->resv, NULL);
+	drm_gem_ttm_vunmap(dmabuf->priv, map);
+	dma_resv_unlock(dmabuf->resv);
+}
+
+#endif
+
+static int evdi_dma_buf_vmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map)
+{
+	int ret;
+
+	ret = dma_buf_vmap_unlocked(dmabuf, map);
+#if IS_ENABLED(CONFIG_DRM_TTM_HELPER)
+	if (ret && is_xe_gem_ttm_object_without_vmap(dmabuf))
+		ret = dma_buf_vmap_xe_gem_unlocked(dmabuf, map);
+#endif
+	return ret;
+}
+
+static void evdi_dma_buf_vunmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map)
+{
+#if IS_ENABLED(CONFIG_DRM_TTM_HELPER)
+	if (is_xe_gem_ttm_object_without_vmap(dmabuf))
+		dma_buf_vunmap_xe_gem_unlocked(dmabuf, map);
+	else
+		dma_buf_vunmap_unlocked(dmabuf, map);
+#else
+	dma_buf_vunmap_unlocked(dmabuf, map);
+#endif
+}
+#endif
 
 int evdi_gem_vmap(struct evdi_gem_object *obj)
 {
@@ -305,7 +377,7 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(EL8)
 # if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
-		ret = dma_buf_vmap_unlocked(obj->base.import_attach->dmabuf, &map);
+		ret = evdi_dma_buf_vmap_unlocked(obj->base.import_attach->dmabuf, &map);
 # else
 		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
 # endif
@@ -343,7 +415,7 @@ void evdi_gem_vunmap(struct evdi_gem_object *obj)
 			iosys_map_set_vaddr(&map, obj->vmapping);
 
 # if KERNEL_VERSION(6, 2, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
-		dma_buf_vunmap_unlocked(obj->base.import_attach->dmabuf, &map);
+		evdi_dma_buf_vunmap_unlocked(obj->base.import_attach->dmabuf, &map);
 # else
 		dma_buf_vunmap(obj->base.import_attach->dmabuf, &map);
 # endif
@@ -404,9 +476,8 @@ int evdi_gem_mmap(struct drm_file *file,
 	int ret = 0;
 
 	obj = drm_gem_object_lookup(file, handle);
-	if (obj == NULL) {
+	if (obj == NULL)
 		return -ENOENT;
-	}
 	gobj = to_evdi_bo(obj);
 
 	ret = evdi_pin_pages(gobj);

@@ -237,7 +237,7 @@ build_one() { # KVER
 
   local src_dir
   local KTAG=v${KVER}
-  local extra_cflags="-DCONFIG_FB"
+  local extra_cflags="-DCONFIG_FB -DCONFIG_DRM_TTM_HELPER"
   if [ "${KVER}" == "master" ]; then
     KTAG="origin/master"
   else
