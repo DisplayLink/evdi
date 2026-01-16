@@ -502,6 +502,24 @@ int evdi_gem_mmap(struct drm_file *file,
 	return ret;
 }
 
+#if KERNEL_VERSION(5, 8, 0) <= LINUX_VERSION_CODE
+#else
+#define for_each_sgtable_page(sgt, piter, pgoffset)	\
+	for_each_sg_page(sgt->sgl, piter, sgt->orig_nents, pgoffset)
+#endif
+
+static int evdi_get_sg_table_pages_num(struct sg_table *sgt)
+{
+	struct sg_page_iter page_iter;
+	int npages = 0;
+
+	for_each_sgtable_page(sgt, &page_iter, 0) {
+		npages++;
+	}
+
+	return npages;
+}
+
 struct drm_gem_object *
 evdi_prime_import_sg_table(struct drm_device *dev,
 			   struct dma_buf_attachment *attach,
@@ -509,6 +527,7 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 {
 	struct evdi_gem_object *obj;
 	int npages;
+	int npages_sg;
 	bool called_by_mutter;
 
 	called_by_mutter = evdi_was_called_by_mutter();
@@ -518,6 +537,8 @@ evdi_prime_import_sg_table(struct drm_device *dev,
 		return ERR_CAST(obj);
 
 	npages = DIV_ROUND_UP(attach->dmabuf->size, PAGE_SIZE);
+	npages_sg = evdi_get_sg_table_pages_num(sg);
+	npages = npages < npages_sg ? npages_sg : npages_sg;
 	DRM_DEBUG_PRIME("Importing %d pages\n", npages);
 	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
 	if (!obj->pages) {
