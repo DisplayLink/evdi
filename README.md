@@ -43,7 +43,7 @@ There are several topics we plan to cover in the future, including:
 ## Licensing
 
 Elements of this project are licensed under various licenses. In particular, the `module` and `library` are licensed
-under GPL v2 and LGPL v2.1 respectively - consult separate `LICENSE` files in subfolders. Remaining files and subfolders (unless
+under GPL v2 and LGPL v2.1-or-later respectively - consult separate `LICENSE` files in subfolders. Remaining files and subfolders (unless
 a separate `LICENSE` file states otherwise) are licensed under MIT license.
 
 
