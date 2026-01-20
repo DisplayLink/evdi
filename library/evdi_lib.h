@@ -15,7 +15,7 @@ extern "C" {
 
 #define LIBEVDI_VERSION_MAJOR 1
 #define LIBEVDI_VERSION_MINOR 14
-#define LIBEVDI_VERSION_PATCH 12
+#define LIBEVDI_VERSION_PATCH 13
 
 struct evdi_lib_version {
 	int version_major;
