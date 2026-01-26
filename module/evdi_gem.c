@@ -304,7 +304,7 @@ static bool is_xe_gem_ttm_object_without_vmap(struct dma_buf *dmabuf)
 	if (!obj || !obj->funcs)
 		return false;
 
-	if (strncmp("xe", dmabuf->owner->name, min((size_t)2, (size_t)strlen(dmabuf->owner->name))) != 0)
+	if (strncmp("xe", dmabuf->owner->name, min_t(size_t, 2, strlen(dmabuf->owner->name))) != 0)
 		return false;
 
 	return obj->funcs->vmap == NULL;
