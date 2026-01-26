@@ -340,13 +340,14 @@ static void dma_buf_vunmap_xe_gem_unlocked(struct dma_buf *dmabuf, struct iosys_
 
 static int evdi_dma_buf_vmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map)
 {
-	int ret;
+	int ret = -EINVAL;
 
-	ret = dma_buf_vmap_unlocked(dmabuf, map);
 #if IS_ENABLED(CONFIG_DRM_TTM_HELPER)
-	if (ret && is_xe_gem_ttm_object_without_vmap(dmabuf))
+	if (is_xe_gem_ttm_object_without_vmap(dmabuf))
 		ret = dma_buf_vmap_xe_gem_unlocked(dmabuf, map);
 #endif
+	if (ret)
+		ret = dma_buf_vmap_unlocked(dmabuf, map);
 	return ret;
 }
 
