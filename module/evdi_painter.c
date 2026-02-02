@@ -14,6 +14,7 @@
 #include <drm/drm_file.h>
 #include <drm/drm_vblank.h>
 #include <drm/drm_ioctl.h>
+#include <drm/drm_gem_framebuffer_helper.h>
 #elif KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE
 #else
 #include <drm/drmP.h>
@@ -31,9 +32,11 @@
 #include <linux/compiler.h>
 #include <linux/platform_device.h>
 #include <linux/completion.h>
-
+#include <linux/ktime.h>
+#include <linux/debugfs.h>
 #include <linux/dma-buf.h>
 #include <linux/vt_kern.h>
+#include <linux/vmalloc.h>
 #if KERNEL_VERSION(5, 4, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <linux/compiler_attributes.h>
 #endif
@@ -116,6 +119,9 @@ struct evdi_painter {
 	unsigned int ddcci_buffer_length;
 	struct notifier_block vt_notifier;
 	int fg_console;
+#if KERNEL_VERSION(6, 7, 0) <= LINUX_VERSION_CODE
+	struct dentry *debugfs_measure_copy;
+#endif
 };
 
 static void expand_rect(struct drm_clip_rect *a, const struct drm_clip_rect *b)
@@ -1219,6 +1225,58 @@ static void evdi_painter_unregister_from_vt(struct evdi_painter *painter)
 	EVDI_TEST_HOOK(evdi_testhook_painter_vt_register(&painter->vt_notifier));
 }
 
+#if KERNEL_VERSION(6, 7, 0) <= LINUX_VERSION_CODE
+static int evdi_painter_debugfs_measure_copy_fb(void *data, u64 val)
+{
+	struct evdi_painter *painter = (struct evdi_painter *)data;
+	struct drm_framebuffer *fb;
+	struct evdi_framebuffer *efb;
+	uint32_t dst_buf_size = 0;
+	struct iosys_map dst_mapping = IOSYS_MAP_INIT_VADDR(NULL);
+	ktime_t copy_start_time = 0;
+	ktime_t copy_end_time = 0;
+	uint32_t copy_time = 0;
+
+
+	fb = drm_framebuffer_lookup(painter->drm_device, painter->drm_filp, val);
+
+	if (!fb) {
+		EVDI_ERROR("Failed to lookup fb %llu\n", val);
+		return 0;
+	}
+
+	efb = to_evdi_fb(fb);
+	dst_buf_size = fb->obj[0]->size;
+	dst_mapping.vaddr = vmalloc(dst_buf_size);
+
+	if (evdi_gem_vmap(efb->obj) == -ENOMEM || !efb->obj->vmapping) {
+		EVDI_ERROR("Failed to map buffer\n");
+		goto put_fb;
+	}
+
+	drm_gem_fb_begin_cpu_access(fb, DMA_FROM_DEVICE);
+	copy_start_time = ktime_get();
+		
+	memcpy(dst_mapping.vaddr, efb->obj->vmapping, dst_buf_size);
+
+	copy_end_time = ktime_get();
+	drm_gem_fb_end_cpu_access(fb, DMA_FROM_DEVICE);
+
+	evdi_gem_vunmap(efb->obj);
+	vfree(dst_mapping.vaddr);
+	copy_time = ktime_to_ms(copy_end_time - copy_start_time);
+
+	EVDI_DEBUG("debugfs: measure_copy_fb %llu takes %u [ms]\n", val, copy_time);
+put_fb:
+
+	drm_framebuffer_put(fb);
+	return copy_time;
+	return 0;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(evdi_painter_debug_test_ops, NULL, evdi_painter_debugfs_measure_copy_fb, "%llu\n");
+#endif
+
 int evdi_painter_init(struct evdi_device *dev)
 {
 	EVDI_CHECKPT();
@@ -1232,6 +1290,9 @@ int evdi_painter_init(struct evdi_device *dev)
 		dev->painter->vblank = NULL;
 		dev->painter->drm_device = dev->ddev;
 		evdi_painter_register_to_vt(dev->painter);
+#if KERNEL_VERSION(6, 7, 0) <= LINUX_VERSION_CODE
+		dev->painter->debugfs_measure_copy = debugfs_create_file("measure_copy_fb", 0400, dev->ddev->debugfs_root, dev->painter, &evdi_painter_debug_test_ops);
+#endif
 
 		INIT_LIST_HEAD(&dev->painter->pending_events);
 		INIT_DELAYED_WORK(&dev->painter->send_events_work,
@@ -1251,6 +1312,9 @@ void evdi_painter_cleanup(struct evdi_painter *painter)
 	}
 
 	painter_lock(painter);
+#if KERNEL_VERSION(6, 7, 0) <= LINUX_VERSION_CODE
+	debugfs_lookup_and_remove("measure_copy_fb", painter->drm_device->debugfs_root);
+#endif
 	evdi_painter_unregister_from_vt(painter);
 	kfree(painter->edid);
 	painter->edid_length = 0;
