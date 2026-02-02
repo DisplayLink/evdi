@@ -175,6 +175,39 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 	*count = 1;
 }
 
+#if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+static int copy_primary_pixels_on_xe(struct evdi_framebuffer *efb,
+			       char __user *buffer,
+			       int buf_byte_stride,
+			       int const max_x,
+			       int const max_y)
+{
+	int y;
+	struct drm_framebuffer *fb = &efb->base;
+	const int byte_span = max_x * 4;
+	struct iosys_map dst_mapping = IOSYS_MAP_INIT_VADDR(vmalloc(max_x * 4));
+
+	for (y = 0; y < max_y; ++y) {
+		const int src_offset = fb->offsets[0] + fb->pitches[0] * y;
+		struct iosys_map src_mapping = IOSYS_MAP_INIT_VADDR((char *)efb->obj->vmapping + src_offset);
+		const int dst_offset = buf_byte_stride * y;
+		char __user *dst = buffer + dst_offset;
+
+		drm_clflush_virt_range(src_mapping.vaddr, byte_span);
+		drm_memcpy_from_wc(&dst_mapping, &src_mapping, byte_span);
+		if (copy_to_user(dst, dst_mapping.vaddr, byte_span))
+			return -EFAULT;
+
+		src_mapping.vaddr += fb->pitches[0];
+		dst += buf_byte_stride;
+	}
+
+	vfree(dst_mapping.vaddr);
+	return 0;
+
+}
+#endif
+
 static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			       char __user *buffer,
 			       int buf_byte_stride,
@@ -186,6 +219,11 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 	struct drm_clip_rect *r;
 
 	EVDI_CHECKPT();
+
+#if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE || defined(EL8) || defined(EL9)
+	if (efb->is_from_xe)
+		return copy_primary_pixels_on_xe(efb, buffer, buf_byte_stride, max_x, max_y);
+#endif
 
 	for (r = rects; r != rects + num_rects; ++r) {
 		const int byte_offset = r->x1 * 4;
@@ -1256,7 +1294,7 @@ static int evdi_painter_debugfs_measure_copy_fb(void *data, u64 val)
 
 	drm_gem_fb_begin_cpu_access(fb, DMA_FROM_DEVICE);
 	copy_start_time = ktime_get();
-		
+
 	memcpy(dst_mapping.vaddr, efb->obj->vmapping, dst_buf_size);
 
 	copy_end_time = ktime_get();
@@ -1271,7 +1309,6 @@ put_fb:
 
 	drm_framebuffer_put(fb);
 	return copy_time;
-	return 0;
 }
 
 DEFINE_DEBUGFS_ATTRIBUTE(evdi_painter_debug_test_ops, NULL, evdi_painter_debugfs_measure_copy_fb, "%llu\n");

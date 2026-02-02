@@ -607,6 +607,24 @@ int evdi_fb_get_bpp(uint32_t format)
 	return info->cpp[0] * 8;
 }
 
+#if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE
+static bool is_xe_gem(struct dma_buf *dmabuf)
+{
+	struct drm_gem_object *obj;
+
+	if (!dmabuf)
+		return false;
+	if (dmabuf->ops->vmap != drm_gem_dmabuf_vmap || !dmabuf->owner)
+		return false;
+	obj = dmabuf->priv;
+	if (!obj || !obj->funcs)
+		return false;
+
+	return strncmp("xe", dmabuf->owner->name, min_t(size_t, 2, strlen(dmabuf->owner->name))) == 0;
+		return false;
+}
+#endif
+
 struct drm_framebuffer *evdi_fb_user_fb_create(
 					struct drm_device *dev,
 					struct drm_file *file,
@@ -652,6 +670,10 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 				    mode_cmd, to_evdi_bo(obj));
 	if (ret)
 		goto err_inval;
+
+#if KERNEL_VERSION(5, 18, 0) <= LINUX_VERSION_CODE
+	efb->is_from_xe = is_xe_gem(obj->dma_buf);
+#endif
 	return &efb->base;
 
  err_no_mem:

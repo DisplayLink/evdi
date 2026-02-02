@@ -79,6 +79,7 @@ struct evdi_framebuffer {
 	struct drm_framebuffer base;
 	struct evdi_gem_object *obj;
 	bool active;
+	bool is_from_xe;
 };
 
 #define to_evdi_fb(x) container_of(x, struct evdi_framebuffer, base)
