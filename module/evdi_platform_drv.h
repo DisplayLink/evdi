@@ -27,7 +27,7 @@ struct platform_device_info;
 
 #define DRIVER_NAME   "evdi"
 #define DRIVER_DESC   "Extensible Virtual Display Interface"
-#if KERNEL_VERSION(6, 14, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(6, 14, 0) <= LINUX_VERSION_CODE || defined(EL9) || defined(EL10)
 #else
 #define DRIVER_DATE   "20260120"
 #endif
