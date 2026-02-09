@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2023 DisplayLink (UK) Ltd.
 
-evdi_version='1.14.13'
+evdi_version='1.14.14'
 
 EVDI_DIR=$(dirname "${BASH_SOURCE[0]}")
 EVDI_REBOOT_RATIONALE=
