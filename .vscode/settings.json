@@ -10,4 +10,5 @@
     "editor.formatOnSave": false
   },
   "C_Cpp.clang_format_style": "file",
+  "python.defaultInterpreterPath": "${workspaceFolder}/pyevdi/.venv_evdi/bin/python",
 }
