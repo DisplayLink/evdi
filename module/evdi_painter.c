@@ -20,9 +20,7 @@
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_edid.h>
-#if defined(CONFIG_X86)
 #include <drm/drm_cache.h>
-#endif
 #include "evdi_drm.h"
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
