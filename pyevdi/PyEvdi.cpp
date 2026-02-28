@@ -1,4 +1,6 @@
 // Copyright (c) 2022 DisplayLink (UK) Ltd.
+#include <pybind11/detail/common.h>
+
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
