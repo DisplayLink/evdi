@@ -17,6 +17,7 @@
 #include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/device.h>
+#include <linux/hrtimer.h>
 #include <linux/i2c.h>
 #if KERNEL_VERSION(5, 5, 0) <= LINUX_VERSION_CODE || defined(EL8)
 #include <drm/drm_drv.h>
@@ -47,6 +48,7 @@ struct evdi_painter;
 struct evdi_device {
 	struct drm_device *ddev;
 	struct drm_connector *conn;
+	struct drm_crtc *crtc;
 	struct evdi_cursor *cursor;
 	bool cursor_events_enabled;
 
@@ -56,6 +58,9 @@ struct evdi_device {
 	struct evdi_fbdev *fbdev;
 	struct evdi_painter *painter;
 	struct i2c_adapter *i2c_adapter;
+
+	struct hrtimer vblank_timer;
+	ktime_t vblank_period;
 
 	int dev_index;
 };
@@ -140,9 +145,6 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 int evdi_painter_get_num_dirts(struct evdi_painter *painter);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *rect);
-void evdi_painter_set_vblank(struct evdi_painter *painter,
-			     struct drm_crtc *crtc,
-			     struct drm_pending_vblank_event *vblank);
 void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter);
 void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,

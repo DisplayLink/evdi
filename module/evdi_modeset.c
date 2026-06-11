@@ -49,7 +49,11 @@ static void evdi_crtc_disable(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_destroy(struct drm_crtc *crtc)
 {
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
 	EVDI_CHECKPT();
+	hrtimer_cancel(&evdi->vblank_timer);
+	evdi->crtc = NULL;
 	drm_crtc_cleanup(crtc);
 	kfree(crtc);
 }
@@ -82,16 +86,34 @@ static void evdi_crtc_atomic_flush(
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
-	if (notify_mode_changed)
-		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
+	if (notify_mode_changed) {
+		struct drm_display_mode *m = &crtc_state->adjusted_mode;
 
-	if (notify_dpms)
+		if (m->htotal && m->vtotal && m->clock)
+			evdi->vblank_period = ktime_set(0,
+				(u64)m->vtotal * m->htotal *
+				1000000ULL / m->clock);
+
+		evdi_painter_mode_changed_notify(evdi, m);
+	}
+
+	if (notify_dpms) {
+		if (crtc_state->active)
+			drm_crtc_vblank_on(crtc);
 		evdi_painter_dpms_notify(evdi->painter,
 			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
+	}
 
-	evdi_painter_set_vblank(evdi->painter, crtc, crtc_state->event);
+	if (crtc_state->event) {
+		spin_lock(&crtc->dev->event_lock);
+		if (drm_crtc_vblank_get(crtc) != 0)
+			drm_crtc_send_vblank_event(crtc, crtc_state->event);
+		else
+			drm_crtc_arm_vblank_event(crtc, crtc_state->event);
+		spin_unlock(&crtc->dev->event_lock);
+		crtc_state->event = NULL;
+	}
 	evdi_painter_send_update_ready_if_needed(evdi->painter);
-	crtc_state->event = NULL;
 }
 
 #if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE || defined(EL8)
@@ -188,13 +210,32 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 };
 
 #if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE || defined(RPI) || defined(EL8)
-static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
+static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
 {
-	return 1;
+	struct evdi_device *evdi =
+		container_of(timer, struct evdi_device, vblank_timer);
+
+	if (evdi->crtc)
+		drm_crtc_handle_vblank(evdi->crtc);
+
+	hrtimer_forward_now(timer, evdi->vblank_period);
+	return HRTIMER_RESTART;
 }
 
-static void evdi_disable_vblank(__always_unused struct drm_crtc *crtc)
+static int evdi_enable_vblank(struct drm_crtc *crtc)
 {
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
+	hrtimer_start(&evdi->vblank_timer, evdi->vblank_period,
+		      HRTIMER_MODE_REL);
+	return 0;
+}
+
+static void evdi_disable_vblank(struct drm_crtc *crtc)
+{
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
+	hrtimer_cancel(&evdi->vblank_timer);
 }
 #endif
 
@@ -493,6 +534,22 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
+
+	{
+		struct evdi_device *evdi = dev->dev_private;
+
+		evdi->crtc = crtc;
+		evdi->vblank_period = ktime_set(0, 16666667);
+#if KERNEL_VERSION(6, 12, 0) <= LINUX_VERSION_CODE
+		hrtimer_setup(&evdi->vblank_timer,
+			      evdi_vblank_timer_fn,
+			      CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+#else
+		hrtimer_init(&evdi->vblank_timer, CLOCK_MONOTONIC,
+			     HRTIMER_MODE_REL);
+		evdi->vblank_timer.function = evdi_vblank_timer_fn;
+#endif
+	}
 
 	return 0;
 }
