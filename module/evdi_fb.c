@@ -102,7 +102,11 @@ static int evdi_user_framebuffer_dirty(
 	struct evdi_device *evdi = dev->dev_private;
 
 	struct drm_modeset_acquire_ctx ctx;
+#if KERNEL_VERSION(7, 2, 0) <= LINUX_VERSION_CODE
+	struct drm_atomic_commit *state;
+#else
 	struct drm_atomic_state *state;
+#endif
 	struct drm_plane *plane;
 	int ret = 0;
 	unsigned int i;
@@ -116,7 +120,11 @@ static int evdi_user_framebuffer_dirty(
 		 */
 		file_priv ? DRM_MODESET_ACQUIRE_INTERRUPTIBLE :	0);
 
+#if KERNEL_VERSION(7, 2, 0) <= LINUX_VERSION_CODE
+	state = drm_atomic_commit_alloc(fb->dev);
+#else
 	state = drm_atomic_state_alloc(fb->dev);
+#endif
 	if (!state) {
 		ret = -ENOMEM;
 		goto out;
@@ -150,14 +158,22 @@ retry:
 
 out:
 	if (ret == -EDEADLK) {
+#if KERNEL_VERSION(7, 2, 0) <= LINUX_VERSION_CODE
+		drm_atomic_commit_clear(state);
+#else
 		drm_atomic_state_clear(state);
+#endif
 		ret = drm_modeset_backoff(&ctx);
 		if (!ret)
 			goto retry;
 	}
 
 	if (state)
+#if KERNEL_VERSION(7, 2, 0) <= LINUX_VERSION_CODE
+		drm_atomic_commit_put(state);
+#else
 		drm_atomic_state_put(state);
+#endif
 
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
