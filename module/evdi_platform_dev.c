@@ -140,7 +140,7 @@ void evdi_platform_device_link(struct platform_device *pdev,
 	}
 }
 
-void evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
+bool evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
 				struct device *parent)
 {
 	struct evdi_platform_device_data *data = platform_get_drvdata(pdev);
@@ -150,5 +150,7 @@ void evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
 		data->symlinked = false;
 		data->parent = NULL;
 		EVDI_INFO("Detached from parent device\n");
+		return true;
 	}
+	return false;
 }

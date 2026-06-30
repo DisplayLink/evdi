@@ -62,8 +62,8 @@ static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
 		pdev = g_ctx.devices[i];
 		if (!pdev)
 			continue;
-		evdi_platform_device_unlink_if_linked_with(pdev, &usb_dev->dev);
-		if (pdev->dev.parent == &usb_dev->dev) {
+		if (evdi_platform_device_unlink_if_linked_with(pdev, &usb_dev->dev) &&
+		    i >= evdi_initial_device_count) {
 			EVDI_INFO("Parent USB removed. Removing evdi.%d\n", i);
 			evdi_platform_dev_destroy(pdev);
 			evdi_platform_drv_context_lock((&g_ctx));
