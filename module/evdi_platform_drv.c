@@ -55,7 +55,7 @@ static int evdi_platform_drv_usb(__always_unused struct notifier_block *nb,
 
 	if (!usb_dev)
 		return 0;
-	if (action != BUS_NOTIFY_DEL_DEVICE)
+	if (action != USB_DEVICE_REMOVE)
 		return 0;
 
 	for (i = 0; i < EVDI_DEVICE_COUNT_MAX; ++i) {
