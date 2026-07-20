@@ -139,9 +139,14 @@ static s64 evdi_color_apply_ctm_channel(const struct evdi_color_data *snapshot,
 void evdi_color_transform_apply_row(const struct evdi_color_data *snapshot,
 				     void *row, int width_px, bool swap_rb)
 {
+	/*
+	 * XRGB8888/ARGB8888 ("x:R:G:B" MSB-to-LSB, little endian per
+	 * drm_fourcc.h) store B at byte 0 and R at byte 2; XBGR8888/
+	 * ABGR8888 swap that. G (byte 1) and X/alpha (byte 3) never move.
+	 */
 	u8 *px = row;
-	const int r_idx = swap_rb ? 2 : 0;
-	const int b_idx = swap_rb ? 0 : 2;
+	const int r_idx = swap_rb ? 0 : 2;
+	const int b_idx = swap_rb ? 2 : 0;
 	int i;
 
 	if (!snapshot->active)

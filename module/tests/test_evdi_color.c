@@ -29,22 +29,29 @@ static void test_identity_is_noop(struct kunit *test)
 static void test_gamma_lut_applied_per_channel(struct kunit *test)
 {
 	struct evdi_color_data data = { 0 };
-	u8 row[4] = { 10, 20, 30, 0xAA }; /* B, G, R, X (XRGB8888 byte order) */
+	/* XRGB8888 is "x:R:G:B" MSB-to-LSB, little endian (drm_fourcc.h):
+	 * byte0=B=10, byte1=G=20, byte2=R=30, byte3=X=0xAA.
+	 */
+	u8 row[4] = { 10, 20, 30, 0xAA };
 	int i;
 
 	data.active = true;
 	data.has_gamma = true;
 	for (i = 0; i < EVDI_GAMMA_LUT_SIZE; ++i) {
-		data.gamma[0][i] = 255 - i; /* invert blue */
-		data.gamma[1][i] = i;       /* identity green */
-		data.gamma[2][i] = 0;       /* zero red */
+		data.gamma[0][i] = 255 - i; /* R: invert */
+		data.gamma[1][i] = i;       /* G: identity */
+		data.gamma[2][i] = 0;       /* B: zero */
 	}
 
 	evdi_color_transform_apply_row(&data, row, 1, false);
 
-	KUNIT_EXPECT_EQ(test, row[0], (u8)(255 - 10));
+	/* byte0 (true B, was 10) must go through the B curve (-> 0), not
+	 * the R curve - this is the exact split that would catch an R/B
+	 * byte-offset swap.
+	 */
+	KUNIT_EXPECT_EQ(test, row[0], (u8)0);
 	KUNIT_EXPECT_EQ(test, row[1], (u8)20);
-	KUNIT_EXPECT_EQ(test, row[2], (u8)0);
+	KUNIT_EXPECT_EQ(test, row[2], (u8)(255 - 30));
 	KUNIT_EXPECT_EQ(test, row[3], (u8)0xAA); /* X/alpha byte untouched */
 }
 
