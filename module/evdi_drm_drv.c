@@ -188,6 +188,7 @@ static int evdi_drm_device_init(struct drm_device *dev)
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err_free;
+	evdi_color_transform_init(&evdi->color);
 
 	evdi_modeset_init(dev);
 

@@ -23,12 +23,14 @@
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_atomic.h>
+#include <drm/drm_color_mgmt.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include "evdi_drm.h"
 #include "evdi_drm_drv.h"
+#include "evdi_color.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 #ifdef EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB
@@ -86,6 +88,8 @@ static void evdi_crtc_atomic_flush(
 	bool notify_mode_changed = crtc_state->active &&
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
+
+	evdi_color_transform_update(&evdi->color, crtc_state);
 
 	if (notify_mode_changed)
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
@@ -502,6 +506,16 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
+
+	/*
+	 * evdi has no hardware gamma/CTM block to program; the properties
+	 * registered here are applied in software to the raw framebuffer
+	 * bytes in evdi_painter.c's copy_primary_pixels()/_on_xe(), since
+	 * that's the only place the driver has direct access to pixel data
+	 * before it's handed to userspace.
+	 */
+	drm_mode_crtc_set_gamma_size(crtc, EVDI_GAMMA_LUT_SIZE);
+	drm_crtc_enable_color_mgmt(crtc, 0, true, EVDI_GAMMA_LUT_SIZE);
 
 	return 0;
 }
