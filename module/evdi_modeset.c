@@ -89,7 +89,18 @@ static void evdi_crtc_atomic_flush(
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
-	evdi_color_transform_update(&evdi->color, crtc_state);
+	/*
+	 * Colour is applied only on GRABPIX of dirty rects. When the compositor
+	 * changes GAMMA_LUT/CTM without repainting, force a full-frame dirty so
+	 * DisplayLinkManager re-grabs and the new transform is visible.
+	 */
+	if (evdi_color_transform_update(&evdi->color, crtc_state)) {
+		struct drm_clip_rect full =
+			evdi_painter_framebuffer_size(evdi->painter);
+
+		if (full.x2 > full.x1 && full.y2 > full.y1)
+			evdi_painter_mark_dirty(evdi, &full);
+	}
 
 	if (notify_mode_changed)
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);

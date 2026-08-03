@@ -41,11 +41,12 @@ struct evdi_color_transform {
 
 void evdi_color_transform_init(struct evdi_color_transform *color);
 
-/* Recomputes the LUT/CTM from crtc_state; cheap no-op unless
- * crtc_state->color_mgmt_changed is set (i.e. on actual property writes).
+/* Recomputes the LUT/CTM from crtc_state. Returns true when colour
+ * properties actually changed (caller should mark the scanout dirty so
+ * clients re-grab). No-op when !color_mgmt_changed.
  */
-void evdi_color_transform_update(struct evdi_color_transform *color,
-				  struct drm_crtc_state *crtc_state);
+bool evdi_color_transform_update(struct evdi_color_transform *color,
+				 struct drm_crtc_state *crtc_state);
 
 /* Copies the current transform out under lock. Returns whether it's a
  * no-op identity transform, letting the caller skip apply_row() entirely.
