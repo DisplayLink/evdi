@@ -299,13 +299,15 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 static void copy_cursor_pixels(struct evdi_framebuffer *efb,
 			       char __user *buffer,
 			       int buf_byte_stride,
-			       struct evdi_cursor *cursor)
+			       struct evdi_cursor *cursor,
+			       const struct evdi_color_data *color)
 {
 	evdi_cursor_lock(cursor);
 	if (evdi_cursor_compose_and_copy(cursor,
 					 efb,
 					 buffer,
-					 buf_byte_stride))
+					 buf_byte_stride,
+					 color))
 		EVDI_ERROR("Failed to blend cursor\n");
 
 	evdi_cursor_unlock(cursor);
@@ -1215,7 +1217,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 		copy_cursor_pixels(efb,
 				   cmd->buffer,
 				   cmd->buf_byte_stride,
-				   evdi->cursor);
+				   evdi->cursor,
+				   &color);
 
 	if (import_attach)
 		dma_buf_end_cpu_access(import_attach->dmabuf,
