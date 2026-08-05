@@ -105,17 +105,18 @@ void evdi_color_transform_init(struct evdi_color_transform *color)
 	memset(&color->data, 0, sizeof(color->data));
 }
 
-void evdi_color_transform_update(struct evdi_color_transform *color,
-				  struct drm_crtc_state *crtc_state)
+bool evdi_color_transform_update(struct evdi_color_transform *color,
+				 struct drm_crtc_state *crtc_state)
 {
 	if (!crtc_state->color_mgmt_changed)
-		return;
+		return false;
 
 	mutex_lock(&color->lock);
 	evdi_color_update_gamma(&color->data, crtc_state);
 	evdi_color_update_ctm(&color->data, crtc_state);
 	color->data.active = color->data.has_gamma || color->data.has_ctm;
 	mutex_unlock(&color->lock);
+	return true;
 }
 
 bool evdi_color_transform_snapshot(struct evdi_color_transform *color,

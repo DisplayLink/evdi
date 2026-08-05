@@ -89,7 +89,18 @@ static void evdi_crtc_atomic_flush(
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
-	evdi_color_transform_update(&evdi->color, crtc_state);
+	/*
+	 * Colour is applied only on GRABPIX of dirty rects. When the compositor
+	 * changes GAMMA_LUT/CTM without repainting, force a full-frame dirty so
+	 * DisplayLinkManager re-grabs and the new transform is visible.
+	 */
+	if (evdi_color_transform_update(&evdi->color, crtc_state)) {
+		struct drm_clip_rect full =
+			evdi_painter_framebuffer_size(evdi->painter);
+
+		if (full.x2 > full.x1 && full.y2 > full.y1)
+			evdi_painter_mark_dirty(evdi, &full);
+	}
 
 	if (notify_mode_changed)
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
@@ -508,14 +519,23 @@ static int evdi_crtc_init(struct drm_device *dev)
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
 
 	/*
-	 * evdi has no hardware gamma/CTM block to program; the properties
-	 * registered here are applied in software to the raw framebuffer
-	 * bytes in evdi_painter.c's copy_primary_pixels()/_on_xe(), since
-	 * that's the only place the driver has direct access to pixel data
-	 * before it's handed to userspace.
+	 * Software colour management (see evdi_color.c). Which properties are
+	 * advertised is selected by the color_props module parameter so a
+	 * compositor can be steered to GAMMA_LUT or CTM for testing.
 	 */
-	drm_mode_crtc_set_gamma_size(crtc, EVDI_GAMMA_LUT_SIZE);
-	drm_crtc_enable_color_mgmt(crtc, 0, true, EVDI_GAMMA_LUT_SIZE);
+	{
+		const bool has_gamma = evdi_color_props_has_gamma();
+		const bool has_ctm = evdi_color_props_has_ctm();
+		const uint gamma_size = has_gamma ? EVDI_GAMMA_LUT_SIZE : 0;
+
+		if (has_gamma)
+			drm_mode_crtc_set_gamma_size(crtc, EVDI_GAMMA_LUT_SIZE);
+		if (has_gamma || has_ctm)
+			drm_crtc_enable_color_mgmt(crtc, 0, has_ctm, gamma_size);
+		EVDI_INFO("color_props=%s (gamma=%d ctm=%d)\n",
+			  evdi_color_props ? evdi_color_props : "both",
+			  has_gamma, has_ctm);
+	}
 
 	return 0;
 }
