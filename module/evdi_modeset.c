@@ -90,9 +90,10 @@ static void evdi_crtc_atomic_flush(
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
 	/*
-	 * Colour is applied only on GRABPIX of dirty rects. When the compositor
-	 * changes GAMMA_LUT/CTM without repainting, force a full-frame dirty so
-	 * DisplayLinkManager re-grabs and the new transform is visible.
+	 * Refresh the software transform from compositor blobs. If the
+	 * effective apply payload changed, full-dirty so a static desktop
+	 * re-grabs (Night Light toggle / temperature). Identity is skipped
+	 * in evdi_color so redundant updates do not spam USB.
 	 */
 	if (evdi_color_transform_update(&evdi->color, crtc_state)) {
 		struct drm_clip_rect full =

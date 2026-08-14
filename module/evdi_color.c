@@ -8,21 +8,24 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/list.h>
 #include <linux/minmax.h>
+#include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/vmalloc.h>
 #include <drm/drm_color_mgmt.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_fixed.h>
 
 #include "evdi_color.h"
+#include "evdi_debug.h"
+#include "evdi_drm_drv.h"
+#include "evdi_params.h"
 
-/*
- * struct drm_color_ctm stores each entry as S31.32 sign-magnitude (bit 63
- * is the sign, bits 0-62 are the unsigned value) rather than the two's
- * complement drm_fixed.h (drm_fixp_t) format the drm_fixp_* helpers use.
- * Some newer kernels provide drm_sm2fixp() for this, but it isn't present
- * across the full 4.15+ range evdi supports, so convert it ourselves.
- */
+static LIST_HEAD(evdi_color_list);
+static DEFINE_MUTEX(evdi_color_list_lock);
+
 static s64 evdi_sm2fixp(u64 sm)
 {
 	s64 magnitude = (s64)(sm & ~BIT_ULL(63));
@@ -30,8 +33,64 @@ static s64 evdi_sm2fixp(u64 sm)
 	return (sm & BIT_ULL(63)) ? -magnitude : magnitude;
 }
 
-static void evdi_color_update_gamma(struct evdi_color_data *data,
-				     struct drm_crtc_state *crtc_state)
+static bool evdi_gamma_is_identity(const u8 g[3][EVDI_GAMMA_LUT_SIZE])
+{
+	int c, i;
+
+	for (c = 0; c < 3; ++c)
+		for (i = 0; i < EVDI_GAMMA_LUT_SIZE; ++i)
+			if (g[c][i] != (u8)i)
+				return false;
+	return true;
+}
+
+static bool evdi_ctm_is_identity(const s64 m[3][3])
+{
+	int r, c;
+
+	for (r = 0; r < 3; ++r) {
+		for (c = 0; c < 3; ++c) {
+			s64 expect = (r == c) ? (s64)DRM_FIXED_ONE : 0;
+
+			if (m[r][c] != expect)
+				return false;
+		}
+	}
+	return true;
+}
+
+static bool evdi_ctm_is_diagonal(const s64 m[3][3])
+{
+	int r, c;
+
+	for (r = 0; r < 3; ++r)
+		for (c = 0; c < 3; ++c)
+			if (r != c && m[r][c] != 0)
+				return false;
+	return true;
+}
+
+/* Same diagonal matrix, table form — not a different colour model. */
+static void evdi_fuse_diagonal_ctm_to_gamma(struct evdi_color_data *data)
+{
+	int c, i;
+
+	for (c = 0; c < 3; ++c) {
+		s64 scale = data->ctm[c][c];
+
+		for (i = 0; i < EVDI_GAMMA_LUT_SIZE; ++i) {
+			s64 v = drm_fixp_mul(scale, drm_int2fixp(i));
+
+			data->gamma[c][i] = clamp(drm_fixp2int_round(v), 0, 255);
+		}
+	}
+	data->has_gamma = true;
+	data->has_ctm = false;
+	data->fused_diagonal = true;
+}
+
+static void evdi_color_load_gamma(struct evdi_color_data *data,
+				  struct drm_crtc_state *crtc_state)
 {
 	const struct drm_color_lut *lut;
 	unsigned int lut_len;
@@ -44,19 +103,11 @@ static void evdi_color_update_gamma(struct evdi_color_data *data,
 
 	lut = (const struct drm_color_lut *)crtc_state->gamma_lut->data;
 	lut_len = crtc_state->gamma_lut->length / sizeof(*lut);
-
 	if (lut_len == 0) {
 		data->has_gamma = false;
 		return;
 	}
 
-	/*
-	 * Build a direct 256-entry table indexed by raw 8-bit channel value,
-	 * regardless of the length of the LUT userspace actually uploaded
-	 * (expected to be EVDI_GAMMA_LUT_SIZE, since that's what we advertise
-	 * via drm_mode_crtc_set_gamma_size(), but not all clients necessarily
-	 * respect that hint).
-	 */
 	for (i = 0; i < EVDI_GAMMA_LUT_SIZE; ++i) {
 		s64 idx_fp = drm_fixp_div(drm_int2fixp(i * (lut_len - 1)),
 					   drm_int2fixp(EVDI_GAMMA_LUT_SIZE - 1));
@@ -72,16 +123,14 @@ static void evdi_color_update_gamma(struct evdi_color_data *data,
 			s64 interp = floor_fp + drm_fixp_mul(ceil_fp - floor_fp, frac);
 			int val16 = clamp(drm_fixp2int(interp), 0, 65535);
 
-			/* 16-bit LUT entry -> 8-bit raw pixel channel */
 			data->gamma[c][i] = val16 >> 8;
 		}
 	}
-
 	data->has_gamma = true;
 }
 
-static void evdi_color_update_ctm(struct evdi_color_data *data,
-				   struct drm_crtc_state *crtc_state)
+static void evdi_color_load_ctm(struct evdi_color_data *data,
+				struct drm_crtc_state *crtc_state)
 {
 	const struct drm_color_ctm *ctm;
 	int r, c;
@@ -99,52 +148,180 @@ static void evdi_color_update_ctm(struct evdi_color_data *data,
 	data->has_ctm = true;
 }
 
-void evdi_color_transform_init(struct evdi_color_transform *color)
+static void evdi_color_finalize_locked(struct evdi_color_data *data)
 {
+	data->fused_diagonal = false;
+
+	/* Apply DRM order without degamma: CTM then gamma. */
+	if (data->has_ctm && evdi_ctm_is_identity(data->ctm))
+		data->has_ctm = false;
+	else if (data->has_ctm && evdi_ctm_is_diagonal(data->ctm))
+		evdi_fuse_diagonal_ctm_to_gamma(data);
+
+	if (data->has_gamma && evdi_gamma_is_identity(data->gamma))
+		data->has_gamma = false;
+
+	data->active = data->has_gamma || data->has_ctm;
+}
+
+void evdi_color_transform_init(struct evdi_color_transform *color,
+			       struct drm_device *ddev)
+{
+	memset(color, 0, sizeof(*color));
 	mutex_init(&color->lock);
-	memset(&color->data, 0, sizeof(color->data));
+	color->ddev = ddev;
+	INIT_LIST_HEAD(&color->link);
+
+	mutex_lock(&evdi_color_list_lock);
+	list_add_tail(&color->link, &evdi_color_list);
+	mutex_unlock(&evdi_color_list_lock);
+}
+
+void evdi_color_transform_cleanup(struct evdi_color_transform *color)
+{
+	mutex_lock(&evdi_color_list_lock);
+	list_del_init(&color->link);
+	mutex_unlock(&evdi_color_list_lock);
+	vfree(color->scratch);
+	color->scratch = NULL;
+	color->scratch_bytes = 0;
+	mutex_destroy(&color->lock);
 }
 
 bool evdi_color_transform_update(struct evdi_color_transform *color,
 				 struct drm_crtc_state *crtc_state)
 {
+	struct evdi_color_data before;
+	bool changed;
+
 	if (!crtc_state->color_mgmt_changed)
 		return false;
 
 	mutex_lock(&color->lock);
-	evdi_color_update_gamma(&color->data, crtc_state);
-	evdi_color_update_ctm(&color->data, crtc_state);
-	color->data.active = color->data.has_gamma || color->data.has_ctm;
+	before = color->data;
+	memset(&color->data, 0, sizeof(color->data));
+	evdi_color_load_gamma(&color->data, crtc_state);
+	evdi_color_load_ctm(&color->data, crtc_state);
+	evdi_color_finalize_locked(&color->data);
+	changed = memcmp(&before, &color->data, sizeof(before)) != 0;
 	mutex_unlock(&color->lock);
-	return true;
+	return changed;
 }
 
 bool evdi_color_transform_snapshot(struct evdi_color_transform *color,
-				    struct evdi_color_data *snapshot)
+				   struct evdi_color_data *snapshot)
 {
 	mutex_lock(&color->lock);
 	*snapshot = color->data;
 	mutex_unlock(&color->lock);
-
 	return snapshot->active;
 }
 
+void *evdi_color_get_scratch(struct evdi_color_transform *color, size_t bytes)
+{
+	void *p;
+
+	if (bytes == 0)
+		return NULL;
+
+	mutex_lock(&color->lock);
+	if (color->scratch_bytes >= bytes) {
+		p = color->scratch;
+		mutex_unlock(&color->lock);
+		return p;
+	}
+	vfree(color->scratch);
+	color->scratch = NULL;
+	color->scratch_bytes = 0;
+	mutex_unlock(&color->lock);
+
+	p = vmalloc(bytes);
+	if (!p)
+		return NULL;
+
+	mutex_lock(&color->lock);
+	if (color->scratch_bytes >= bytes) {
+		vfree(p);
+		p = color->scratch;
+	} else {
+		vfree(color->scratch);
+		color->scratch = p;
+		color->scratch_bytes = bytes;
+	}
+	mutex_unlock(&color->lock);
+	return p;
+}
+
 static s64 evdi_color_apply_ctm_channel(const struct evdi_color_data *snapshot,
-					 int row, s64 r, s64 g, s64 b)
+					int row, s64 r, s64 g, s64 b)
 {
 	return drm_fixp_mul(snapshot->ctm[row][0], r) +
 	       drm_fixp_mul(snapshot->ctm[row][1], g) +
 	       drm_fixp_mul(snapshot->ctm[row][2], b);
 }
 
-void evdi_color_transform_apply_row(const struct evdi_color_data *snapshot,
-				     void *row, int width_px, bool swap_rb)
+int evdi_color_format_status(char *buf, size_t size)
 {
-	/*
-	 * XRGB8888/ARGB8888 ("x:R:G:B" MSB-to-LSB, little endian per
-	 * drm_fourcc.h) store B at byte 0 and R at byte 2; XBGR8888/
-	 * ABGR8888 swap that. G (byte 1) and X/alpha (byte 3) never move.
-	 */
+	struct evdi_color_transform *color;
+	int n = 0;
+
+	n += scnprintf(buf + n, size - n,
+		       "color_props=%s (reload module to change)\n"
+		       "# apply only what the compositor programmed; no gamma↔ctm synthesis\n"
+		       "# path=lut|ctm|fused_ctm_lut|off  drm=N is /dev/dri/cardN\n",
+		       evdi_color_props ? evdi_color_props : "both");
+
+	mutex_lock(&evdi_color_list_lock);
+	list_for_each_entry(color, &evdi_color_list, link) {
+		struct evdi_color_data d;
+		int r_s, g_s, b_s;
+		int drm_idx = -1;
+		const char *path;
+
+		mutex_lock(&color->lock);
+		d = color->data;
+		if (color->ddev && color->ddev->primary)
+			drm_idx = color->ddev->primary->index;
+		mutex_unlock(&color->lock);
+
+		if (d.has_gamma) {
+			r_s = d.gamma[0][255];
+			g_s = d.gamma[1][255];
+			b_s = d.gamma[2][255];
+		} else if (d.has_ctm) {
+			r_s = clamp(drm_fixp2int_round(
+				drm_fixp_mul(d.ctm[0][0], drm_int2fixp(255))), 0, 255);
+			g_s = clamp(drm_fixp2int_round(
+				drm_fixp_mul(d.ctm[1][1], drm_int2fixp(255))), 0, 255);
+			b_s = clamp(drm_fixp2int_round(
+				drm_fixp_mul(d.ctm[2][2], drm_int2fixp(255))), 0, 255);
+		} else {
+			r_s = g_s = b_s = 255;
+		}
+
+		if (!d.active)
+			path = "off";
+		else if (d.fused_diagonal)
+			path = "fused_ctm_lut";
+		else if (d.has_ctm)
+			path = "ctm";
+		else if (d.has_gamma)
+			path = "lut";
+		else
+			path = "off";
+
+		n += scnprintf(buf + n, size > n ? size - n : 0,
+			       "drm=%d path=%s active=%d has_gamma=%d has_ctm=%d scales_rgb≈%d/%d/%d\n",
+			       drm_idx, path, d.active, d.has_gamma, d.has_ctm,
+			       r_s, g_s, b_s);
+	}
+	mutex_unlock(&evdi_color_list_lock);
+	return n;
+}
+
+void evdi_color_transform_apply_row(const struct evdi_color_data *snapshot,
+				    void *row, int width_px, bool swap_rb)
+{
 	u8 *px = row;
 	const int r_idx = swap_rb ? 0 : 2;
 	const int b_idx = swap_rb ? 2 : 0;

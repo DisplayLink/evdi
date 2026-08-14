@@ -9,19 +9,21 @@
 #ifndef EVDI_COLOR_H
 #define EVDI_COLOR_H
 
+#include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/types.h>
 
 struct drm_crtc_state;
 
 /*
- * evdi has no hardware CRTC gamma/CTM block, so Night Light and other
- * DRM color management clients need the transform applied in software
- * to the raw framebuffer bytes before they leave the driver.
+ * Software colour management: apply whatever the compositor programs on the
+ * CRTC (GAMMA_LUT and/or CTM). No synthesis between the two.
  *
- * Advertised via drm_mode_crtc_set_gamma_size()/drm_crtc_enable_color_mgmt()
- * and consumed here as a direct 8-bit-indexed lookup table, independent of
- * whatever length LUT userspace actually uploads (see evdi_color_transform_update()).
+ * Which properties exist is chosen at module load by color_props=
+ * both|gamma|ctm (see evdi_params). Reload the module to change that.
+ *
+ * Diagonal CTMs are fused into a 256-entry LUT only as a speed optimisation
+ * of the same matrix (Night Light style scales); identity is skipped.
  */
 #define EVDI_GAMMA_LUT_SIZE 256
 
@@ -29,6 +31,7 @@ struct evdi_color_data {
 	bool active;
 	bool has_gamma;
 	bool has_ctm;
+	bool fused_diagonal;
 	u8 gamma[3][EVDI_GAMMA_LUT_SIZE];
 	/* row-major 3x3, drm_fixed.h S32.32 two's-complement fixed point */
 	s64 ctm[3][3];
@@ -36,29 +39,29 @@ struct evdi_color_data {
 
 struct evdi_color_transform {
 	struct mutex lock;
+	struct list_head link;
 	struct evdi_color_data data;
+	struct drm_device *ddev;
+	void *scratch;
+	size_t scratch_bytes;
 };
 
-void evdi_color_transform_init(struct evdi_color_transform *color);
+void evdi_color_transform_init(struct evdi_color_transform *color,
+			       struct drm_device *ddev);
+void evdi_color_transform_cleanup(struct evdi_color_transform *color);
 
-/* Recomputes the LUT/CTM from crtc_state. Returns true when colour
- * properties actually changed (caller should mark the scanout dirty so
- * clients re-grab). No-op when !color_mgmt_changed.
- */
+/* Returns true if the effective apply payload changed (caller may full-dirty). */
 bool evdi_color_transform_update(struct evdi_color_transform *color,
 				 struct drm_crtc_state *crtc_state);
 
-/* Copies the current transform out under lock. Returns whether it's a
- * no-op identity transform, letting the caller skip apply_row() entirely.
- */
 bool evdi_color_transform_snapshot(struct evdi_color_transform *color,
-				    struct evdi_color_data *snapshot);
+				   struct evdi_color_data *snapshot);
 
-/* Applies gamma/CTM in place to one packed 32bpp scanline of width_px
- * pixels. swap_rb selects XBGR/ABGR (R and B swapped vs XRGB/ARGB) byte
- * order; the alpha/padding byte is always left untouched.
- */
+void *evdi_color_get_scratch(struct evdi_color_transform *color, size_t bytes);
+
 void evdi_color_transform_apply_row(const struct evdi_color_data *snapshot,
-				     void *row, int width_px, bool swap_rb);
+				    void *row, int width_px, bool swap_rb);
+
+int evdi_color_format_status(char *buf, size_t size);
 
 #endif

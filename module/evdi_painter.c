@@ -231,7 +231,8 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			       int num_rects, struct drm_clip_rect *rects,
 			       int const max_x,
 			       int const max_y,
-			       const struct evdi_color_data *color)
+			       const struct evdi_color_data *color,
+			       struct evdi_color_transform *color_tf)
 {
 	struct drm_framebuffer *fb = &efb->base;
 	struct drm_clip_rect *r;
@@ -246,7 +247,7 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 #endif
 
 	if (color->active) {
-		scratch_row = vmalloc(max_x * 4);
+		scratch_row = evdi_color_get_scratch(color_tf, (size_t)max_x * 4);
 		if (!scratch_row)
 			return -ENOMEM;
 	}
@@ -264,7 +265,6 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 		/* rect size may correspond to previous resolution */
 		if (max_x < r->x2 || max_y < r->y2) {
 			EVDI_WARN("Rect size beyond expected dimensions\n");
-			vfree(scratch_row);
 			return -EFAULT;
 		}
 
@@ -279,10 +279,8 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 				memcpy(scratch_row, src, byte_span);
 				evdi_color_transform_apply_row(color, scratch_row,
 								byte_span / 4, swap_rb);
-				if (copy_to_user(dst, scratch_row, byte_span)) {
-					vfree(scratch_row);
+				if (copy_to_user(dst, scratch_row, byte_span))
 					return -EFAULT;
-				}
 			} else if (copy_to_user(dst, src, byte_span)) {
 				return -EFAULT;
 			}
@@ -292,7 +290,6 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 		}
 	}
 
-	vfree(scratch_row);
 	return 0;
 }
 
@@ -1212,7 +1209,8 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				  dirty_rects,
 				  cmd->buf_width,
 				  cmd->buf_height,
-				  &color);
+				  &color,
+				  &evdi->color);
 	if (err == 0 && !evdi->cursor_events_enabled)
 		copy_cursor_pixels(efb,
 				   cmd->buffer,

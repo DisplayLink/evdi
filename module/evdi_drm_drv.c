@@ -159,6 +159,7 @@ static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 {
 	struct evdi_device *evdi = dev->dev_private;
 
+	evdi_color_transform_cleanup(&evdi->color);
 	evdi_cursor_free(evdi->cursor);
 	evdi_painter_cleanup(evdi->painter);
 	kfree(evdi);
@@ -188,7 +189,7 @@ static int evdi_drm_device_init(struct drm_device *dev)
 	ret =  evdi_cursor_init(&evdi->cursor);
 	if (ret)
 		goto err_free;
-	evdi_color_transform_init(&evdi->color);
+	evdi_color_transform_init(&evdi->color, dev);
 
 	evdi_modeset_init(dev);
 
@@ -206,6 +207,7 @@ static int evdi_drm_device_init(struct drm_device *dev)
 	return 0;
 
 err_init:
+	evdi_color_transform_cleanup(&evdi->color);
 err_free:
 	EVDI_ERROR("Failed to setup drm device %d\n", ret);
 	evdi_cursor_free(evdi->cursor);
