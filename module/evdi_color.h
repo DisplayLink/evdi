@@ -23,7 +23,9 @@ struct drm_crtc_state;
  * both|gamma|ctm (see evdi_params). Reload the module to change that.
  *
  * Diagonal CTMs are fused into a 256-entry LUT only as a speed optimisation
- * of the same matrix (Night Light style scales); identity is skipped.
+ * of the same matrix (Night Light style scales). If a gamma LUT is also
+ * present it is composed (CTM then gamma), not overwritten. Identity is
+ * skipped.
  */
 #define EVDI_GAMMA_LUT_SIZE 256
 
@@ -42,8 +44,6 @@ struct evdi_color_transform {
 	struct list_head link;
 	struct evdi_color_data data;
 	struct drm_device *ddev;
-	void *scratch;
-	size_t scratch_bytes;
 };
 
 void evdi_color_transform_init(struct evdi_color_transform *color,
@@ -56,8 +56,6 @@ bool evdi_color_transform_update(struct evdi_color_transform *color,
 
 bool evdi_color_transform_snapshot(struct evdi_color_transform *color,
 				   struct evdi_color_data *snapshot);
-
-void *evdi_color_get_scratch(struct evdi_color_transform *color, size_t bytes);
 
 void evdi_color_transform_apply_row(const struct evdi_color_data *snapshot,
 				    void *row, int width_px, bool swap_rb);

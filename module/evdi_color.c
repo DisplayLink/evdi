@@ -13,7 +13,6 @@
 #include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/vmalloc.h>
 #include <drm/drm_color_mgmt.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_fixed.h>
@@ -70,18 +69,29 @@ static bool evdi_ctm_is_diagonal(const s64 m[3][3])
 	return true;
 }
 
-/* Same diagonal matrix, table form — not a different colour model. */
+/*
+ * Same diagonal matrix as a 256-entry LUT — speed only, not a new model.
+ * DRM order is CTM then gamma: when a real LUT is already loaded, compose
+ * gamma_out[i] = gamma_in[clamp(scale * i)] instead of overwriting it.
+ */
 static void evdi_fuse_diagonal_ctm_to_gamma(struct evdi_color_data *data)
 {
+	u8 src_gamma[3][EVDI_GAMMA_LUT_SIZE];
+	const bool compose = data->has_gamma;
 	int c, i;
+
+	if (compose)
+		memcpy(src_gamma, data->gamma, sizeof(src_gamma));
 
 	for (c = 0; c < 3; ++c) {
 		s64 scale = data->ctm[c][c];
 
 		for (i = 0; i < EVDI_GAMMA_LUT_SIZE; ++i) {
 			s64 v = drm_fixp_mul(scale, drm_int2fixp(i));
+			int mid = clamp(drm_fixp2int_round(v), 0, 255);
 
-			data->gamma[c][i] = clamp(drm_fixp2int_round(v), 0, 255);
+			data->gamma[c][i] = compose ? src_gamma[c][mid]
+						    : (u8)mid;
 		}
 	}
 	data->has_gamma = true;
@@ -182,9 +192,6 @@ void evdi_color_transform_cleanup(struct evdi_color_transform *color)
 	mutex_lock(&evdi_color_list_lock);
 	list_del_init(&color->link);
 	mutex_unlock(&evdi_color_list_lock);
-	vfree(color->scratch);
-	color->scratch = NULL;
-	color->scratch_bytes = 0;
 	mutex_destroy(&color->lock);
 }
 
@@ -215,41 +222,6 @@ bool evdi_color_transform_snapshot(struct evdi_color_transform *color,
 	*snapshot = color->data;
 	mutex_unlock(&color->lock);
 	return snapshot->active;
-}
-
-void *evdi_color_get_scratch(struct evdi_color_transform *color, size_t bytes)
-{
-	void *p;
-
-	if (bytes == 0)
-		return NULL;
-
-	mutex_lock(&color->lock);
-	if (color->scratch_bytes >= bytes) {
-		p = color->scratch;
-		mutex_unlock(&color->lock);
-		return p;
-	}
-	vfree(color->scratch);
-	color->scratch = NULL;
-	color->scratch_bytes = 0;
-	mutex_unlock(&color->lock);
-
-	p = vmalloc(bytes);
-	if (!p)
-		return NULL;
-
-	mutex_lock(&color->lock);
-	if (color->scratch_bytes >= bytes) {
-		vfree(p);
-		p = color->scratch;
-	} else {
-		vfree(color->scratch);
-		color->scratch = p;
-		color->scratch_bytes = bytes;
-	}
-	mutex_unlock(&color->lock);
-	return p;
 }
 
 static s64 evdi_color_apply_ctm_channel(const struct evdi_color_data *snapshot,
