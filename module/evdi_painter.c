@@ -23,6 +23,7 @@
 #include <drm/drm_cache.h>
 #include "evdi_drm.h"
 #include "evdi_drm_drv.h"
+#include "evdi_color.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 #include "evdi_i2c.h"
@@ -177,16 +178,23 @@ static void collapse_dirty_rects(struct drm_clip_rect *rects, int *count)
 	*count = 1;
 }
 
+static bool evdi_format_swaps_rb(uint32_t format)
+{
+	return format == DRM_FORMAT_XBGR8888 || format == DRM_FORMAT_ABGR8888;
+}
+
 #if defined(EVDI_HAVE_IOSYS_MAP) && defined(CONFIG_X86)
 static int copy_primary_pixels_on_xe(struct evdi_framebuffer *efb,
 			       char __user *buffer,
 			       int buf_byte_stride,
 			       int const max_x,
-			       int const max_y)
+			       int const max_y,
+			       const struct evdi_color_data *color)
 {
 	int y;
 	struct drm_framebuffer *fb = &efb->base;
 	const int byte_span = max_x * 4;
+	const bool swap_rb = evdi_format_swaps_rb(fb->format->format);
 	struct iosys_map dst_mapping = IOSYS_MAP_INIT_VADDR(vmalloc(max_x * 4));
 
 	if (!dst_mapping.vaddr)
@@ -200,6 +208,8 @@ static int copy_primary_pixels_on_xe(struct evdi_framebuffer *efb,
 
 		drm_clflush_virt_range(src_mapping.vaddr, byte_span);
 		drm_memcpy_from_wc(&dst_mapping, &src_mapping, byte_span);
+		if (color->active)
+			evdi_color_transform_apply_row(color, dst_mapping.vaddr, max_x, swap_rb);
 		if (copy_to_user(dst, dst_mapping.vaddr, byte_span)) {
 			vfree(dst_mapping.vaddr);
 			return -EFAULT;
@@ -220,17 +230,30 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 			       int buf_byte_stride,
 			       int num_rects, struct drm_clip_rect *rects,
 			       int const max_x,
-			       int const max_y)
+			       int const max_y,
+			       const struct evdi_color_data *color)
 {
 	struct drm_framebuffer *fb = &efb->base;
 	struct drm_clip_rect *r;
+	const bool swap_rb = evdi_format_swaps_rb(fb->format->format);
+	/* Per-grab row — never share freable storage across concurrent GRABPIX. */
+	char *scratch_row = NULL;
+	int ret = 0;
 
 	EVDI_CHECKPT();
 
 #if defined(EVDI_HAVE_IOSYS_MAP) && defined(CONFIG_X86)
 	if (efb->is_from_xe)
-		return copy_primary_pixels_on_xe(efb, buffer, buf_byte_stride, max_x, max_y);
+		return copy_primary_pixels_on_xe(efb, buffer, buf_byte_stride, max_x, max_y, color);
 #endif
+
+	if (color->active) {
+		if (max_x <= 0)
+			return 0;
+		scratch_row = kvmalloc((size_t)max_x * 4, GFP_KERNEL);
+		if (!scratch_row)
+			return -ENOMEM;
+	}
 
 	for (r = rects; r != rects + num_rects; ++r) {
 		const int byte_offset = r->x1 * 4;
@@ -245,7 +268,8 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 		/* rect size may correspond to previous resolution */
 		if (max_x < r->x2 || max_y < r->y2) {
 			EVDI_WARN("Rect size beyond expected dimensions\n");
-			return -EFAULT;
+			ret = -EFAULT;
+			goto out;
 		}
 
 		EVDI_VERBOSE("copy rect %d,%d-%d,%d\n", r->x1, r->y1, r->x2,
@@ -255,27 +279,41 @@ static int copy_primary_pixels(struct evdi_framebuffer *efb,
 #if defined(CONFIG_X86)
 			drm_clflush_virt_range((void *)src, byte_span);
 #endif
-			if (copy_to_user(dst, src, byte_span))
-				return -EFAULT;
+			if (color->active) {
+				memcpy(scratch_row, src, byte_span);
+				evdi_color_transform_apply_row(color, scratch_row,
+								byte_span / 4, swap_rb);
+				if (copy_to_user(dst, scratch_row, byte_span)) {
+					ret = -EFAULT;
+					goto out;
+				}
+			} else if (copy_to_user(dst, src, byte_span)) {
+				ret = -EFAULT;
+				goto out;
+			}
 
 			src += fb->pitches[0];
 			dst += buf_byte_stride;
 		}
 	}
 
-	return 0;
+out:
+	kvfree(scratch_row);
+	return ret;
 }
 
 static void copy_cursor_pixels(struct evdi_framebuffer *efb,
 			       char __user *buffer,
 			       int buf_byte_stride,
-			       struct evdi_cursor *cursor)
+			       struct evdi_cursor *cursor,
+			       const struct evdi_color_data *color)
 {
 	evdi_cursor_lock(cursor);
 	if (evdi_cursor_compose_and_copy(cursor,
 					 efb,
 					 buffer,
-					 buf_byte_stride))
+					 buf_byte_stride,
+					 color))
 		EVDI_ERROR("Failed to blend cursor\n");
 
 	evdi_cursor_unlock(cursor);
@@ -469,6 +507,10 @@ static struct drm_pending_event *create_cursor_set_event(
 {
 	struct evdi_event_cursor_set_pending *event;
 	struct evdi_gem_object *eobj = NULL;
+	struct evdi_device *evdi = painter->drm_device ?
+		painter->drm_device->dev_private : NULL;
+	struct evdi_color_data color_snap;
+	bool color_active = false;
 
 	event = kzalloc_obj(*event, GFP_KERNEL);
 	if (!event) {
@@ -478,6 +520,10 @@ static struct drm_pending_event *create_cursor_set_event(
 
 	event->cursor_set.base.type = DRM_EVDI_EVENT_CURSOR_SET;
 	event->cursor_set.base.length = sizeof(event->cursor_set);
+
+	if (evdi)
+		color_active = evdi_color_transform_snapshot(&evdi->color,
+							     &color_snap);
 
 	evdi_cursor_lock(cursor);
 	event->cursor_set.enabled = evdi_cursor_enabled(cursor);
@@ -495,6 +541,16 @@ static struct drm_pending_event *create_cursor_set_event(
 		event->cursor_set.buffer_length = eobj->base.size;
 	if (!event->cursor_set.buffer_handle) {
 		event->cursor_set.enabled = false;
+		event->cursor_set.buffer_length = 0;
+	}
+	/*
+	 * Hardware cursor events expose the untinted GEM. While software
+	 * colour is active, hide the HW cursor so GRABPIX SW-blends a tinted
+	 * one instead (see grabpix_ioctl).
+	 */
+	if (color_active) {
+		event->cursor_set.enabled = false;
+		event->cursor_set.buffer_handle = 0;
 		event->cursor_set.buffer_length = 0;
 	}
 	evdi_cursor_unlock(cursor);
@@ -1074,6 +1130,9 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 	int err;
 	int ret;
 	struct dma_buf_attachment *import_attach;
+	struct evdi_color_data color;
+
+	evdi_color_transform_snapshot(&evdi->color, &color);
 
 	EVDI_CHECKPT();
 
@@ -1176,12 +1235,19 @@ int evdi_painter_grabpix_ioctl(struct drm_device *drm_dev, void *data,
 				  cmd->num_rects,
 				  dirty_rects,
 				  cmd->buf_width,
-				  cmd->buf_height);
-	if (err == 0 && !evdi->cursor_events_enabled)
+				  cmd->buf_height,
+				  &color);
+	/*
+	 * Cursor events hand DLM an untinted GEM. When colour is active, force
+	 * the software blend path (which applies the same transform) instead.
+	 * create_cursor_set_event hides the HW cursor so DLM does not double-draw.
+	 */
+	if (err == 0 && (!evdi->cursor_events_enabled || color.active))
 		copy_cursor_pixels(efb,
 				   cmd->buffer,
 				   cmd->buf_byte_stride,
-				   evdi->cursor);
+				   evdi->cursor,
+				   &color);
 
 	if (import_attach)
 		dma_buf_end_cpu_access(import_attach->dmabuf,
@@ -1530,6 +1596,9 @@ int evdi_painter_enable_cursor_events_ioctl(struct drm_device *drm_dev, void *da
 	struct drm_evdi_enable_cursor_events *cmd = data;
 
 	evdi->cursor_events_enabled = cmd->enable;
+	/* Re-advertise cursor so colour-active force-hide / restore applies. */
+	if (evdi->painter && evdi->cursor)
+		evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
 
 	return 0;
 }

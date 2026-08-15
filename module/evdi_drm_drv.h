@@ -38,6 +38,7 @@
 #include <drm/drm_framebuffer.h>
 #include <drm/drm_fb_helper.h>
 
+#include "evdi_color.h"
 #include "evdi_debug.h"
 #include "tests/evdi_test.h"
 
@@ -49,6 +50,7 @@ struct evdi_device {
 	struct drm_connector *conn;
 	struct evdi_cursor *cursor;
 	bool cursor_events_enabled;
+	struct evdi_color_transform color;
 
 	uint32_t pixel_area_limit;
 	uint32_t pixel_per_second_limit;

@@ -23,12 +23,14 @@
 #include <drm/drmP.h>
 #endif
 #include <drm/drm_atomic.h>
+#include <drm/drm_color_mgmt.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include "evdi_drm.h"
 #include "evdi_drm_drv.h"
+#include "evdi_color.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
 #ifdef EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB
@@ -86,6 +88,26 @@ static void evdi_crtc_atomic_flush(
 	bool notify_mode_changed = crtc_state->active &&
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
+
+	/*
+	 * Refresh the software transform from compositor blobs. If the
+	 * effective apply payload changed, full-dirty so a static desktop
+	 * re-grabs (Night Light toggle / temperature). Identity is skipped
+	 * in evdi_color so redundant updates do not spam USB.
+	 */
+	if (evdi_color_transform_update(&evdi->color, crtc_state)) {
+		struct drm_clip_rect full =
+			evdi_painter_framebuffer_size(evdi->painter);
+
+		if (full.x2 > full.x1 && full.y2 > full.y1)
+			evdi_painter_mark_dirty(evdi, &full);
+		/*
+		 * Cursor events path must re-hide/restore the HW cursor when
+		 * software colour turns on/off so tint stays on the SW blend.
+		 */
+		if (evdi->cursor_events_enabled)
+			evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
+	}
 
 	if (notify_mode_changed)
 		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
@@ -157,12 +179,19 @@ static int evdi_crtc_cursor_set(struct drm_crtc *crtc,
 
 	/*
 	 * For now we don't care whether the application wanted the mouse set,
-	 * or not.
+	 * or not. Colour-active forces SW blend (tinted); keep DLM's HW cursor
+	 * hidden via the set event when events are enabled.
 	 */
-	if (evdi->cursor_events_enabled)
-		evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
-	else
-		evdi_mark_full_screen_dirty(evdi);
+	{
+		struct evdi_color_data color_snap;
+		const bool color_active =
+			evdi_color_transform_snapshot(&evdi->color, &color_snap);
+
+		if (evdi->cursor_events_enabled)
+			evdi_painter_send_cursor_set(evdi->painter, evdi->cursor);
+		if (!evdi->cursor_events_enabled || color_active)
+			evdi_mark_full_screen_dirty(evdi);
+	}
 	return 0;
 }
 
@@ -170,11 +199,14 @@ static int evdi_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 {
 	struct drm_device *dev = crtc->dev;
 	struct evdi_device *evdi = dev->dev_private;
+	struct evdi_color_data color_snap;
+	const bool color_active =
+		evdi_color_transform_snapshot(&evdi->color, &color_snap);
 
 	EVDI_CHECKPT();
 	evdi_cursor_move(evdi->cursor, x, y);
 
-	if (evdi->cursor_events_enabled)
+	if (evdi->cursor_events_enabled && !color_active)
 		evdi_painter_send_cursor_move(evdi->painter, evdi->cursor);
 	else
 		evdi_mark_full_screen_dirty(evdi);
@@ -374,19 +406,35 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 			cursor_changed = true;
 		}
 
-		if (!evdi->cursor_events_enabled) {
-			if (fb != NULL) {
-				if (efb->obj->allow_sw_cursor_rect_updates) {
-					evdi_cursor_atomic_get_rect(&old_rect, old_state);
-					evdi_cursor_atomic_get_rect(&rect, state);
+		{
+			struct evdi_color_data color_snap;
+			const bool color_active =
+				evdi_color_transform_snapshot(&evdi->color,
+							      &color_snap);
+			/* SW blend when events off, or when colour forces tint. */
+			const bool sw_cursor =
+				!evdi->cursor_events_enabled || color_active;
 
-					evdi_painter_mark_dirty(evdi, &old_rect);
-				} else {
-					rect = evdi_painter_framebuffer_size(evdi->painter);
+			if (sw_cursor) {
+				if (fb != NULL) {
+					if (efb->obj->allow_sw_cursor_rect_updates) {
+						evdi_cursor_atomic_get_rect(&old_rect,
+									    old_state);
+						evdi_cursor_atomic_get_rect(&rect, state);
+
+						evdi_painter_mark_dirty(evdi, &old_rect);
+					} else {
+						rect = evdi_painter_framebuffer_size(
+							evdi->painter);
+					}
+					evdi_painter_mark_dirty(evdi, &rect);
 				}
-				evdi_painter_mark_dirty(evdi, &rect);
+				/* Keep DLM HW cursor hidden while colour is active. */
+				if (evdi->cursor_events_enabled && cursor_changed)
+					evdi_painter_send_cursor_set(evdi->painter,
+								     evdi->cursor);
+				return;
 			}
-			return;
 		}
 
 		if (cursor_changed)
@@ -502,6 +550,25 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
+
+	/*
+	 * Software colour management (see evdi_color.c). Which properties are
+	 * advertised is selected by the color_props module parameter so a
+	 * compositor can be steered to GAMMA_LUT or CTM for testing.
+	 */
+	{
+		const bool has_gamma = evdi_color_props_has_gamma();
+		const bool has_ctm = evdi_color_props_has_ctm();
+		const uint gamma_size = has_gamma ? EVDI_GAMMA_LUT_SIZE : 0;
+
+		if (has_gamma)
+			drm_mode_crtc_set_gamma_size(crtc, EVDI_GAMMA_LUT_SIZE);
+		if (has_gamma || has_ctm)
+			drm_crtc_enable_color_mgmt(crtc, 0, has_ctm, gamma_size);
+		EVDI_INFO("color_props=%s (gamma=%d ctm=%d)\n",
+			  evdi_color_props ? evdi_color_props : "both",
+			  has_gamma, has_ctm);
+	}
 
 	return 0;
 }
