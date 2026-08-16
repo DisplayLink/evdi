@@ -385,6 +385,9 @@ static void evdi_cursor_atomic_update(struct drm_plane *plane,
 					rect = evdi_painter_framebuffer_size(evdi->painter);
 				}
 				evdi_painter_mark_dirty(evdi, &rect);
+			} else if (old_state && old_state->fb) {
+				evdi_cursor_atomic_get_rect(&old_rect, old_state);
+				evdi_painter_mark_dirty(evdi, &old_rect);
 			}
 			return;
 		}
