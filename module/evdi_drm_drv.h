@@ -47,6 +47,7 @@ struct evdi_painter;
 struct evdi_device {
 	struct drm_device *ddev;
 	struct drm_connector *conn;
+	struct drm_crtc *crtc;
 	struct evdi_cursor *cursor;
 	bool cursor_events_enabled;
 

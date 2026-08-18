@@ -913,6 +913,71 @@ static void evdi_remove_i2c_adapter(struct evdi_device *evdi)
 	}
 }
 
+/*
+ * A replug that completes within the compositor's hotplug hysteresis (3s in
+ * mutter) is coalesced away, so no atomic commit follows the reconnect and the
+ * painter - whose scanout buffer was dropped on disconnect - never starts
+ * producing frames again. The KMS pipeline itself was never torn down, so
+ * re-emit from the live crtc/plane state what a commit would have emitted.
+ */
+static void evdi_painter_replay_kms_state(struct evdi_device *evdi)
+{
+	struct evdi_painter *painter = evdi->painter;
+	struct drm_crtc *crtc = evdi->crtc;
+	struct drm_plane *primary = crtc ? crtc->primary : NULL;
+	struct drm_modeset_acquire_ctx ctx;
+	struct evdi_framebuffer *efb = NULL;
+	struct drm_display_mode mode = { 0 };
+	struct drm_clip_rect rect;
+	int ret;
+
+	if (!primary)
+		return;
+
+	drm_modeset_acquire_init(&ctx, 0);
+retry:
+	ret = drm_modeset_lock(&crtc->mutex, &ctx);
+	if (!ret)
+		ret = drm_modeset_lock(&primary->mutex, &ctx);
+
+	if (ret == -EDEADLK) {
+		ret = drm_modeset_backoff(&ctx);
+		if (!ret)
+			goto retry;
+	}
+
+	if (!ret &&
+	    crtc->state && crtc->state->active &&
+	    primary->state && primary->state->fb &&
+	    primary->state->crtc == crtc) {
+		efb = to_evdi_fb(primary->state->fb);
+		drm_framebuffer_get(&efb->base);
+		mode = crtc->state->adjusted_mode;
+	}
+
+	drm_modeset_drop_locks(&ctx);
+	drm_modeset_acquire_fini(&ctx);
+
+	if (!efb)
+		return;
+
+	EVDI_INFO("(card%d) Reconnected without modeset, replaying %dx%d@%d\n",
+		  evdi->dev_index, mode.hdisplay, mode.vdisplay,
+		  drm_mode_vrefresh(&mode));
+
+	evdi_painter_set_scanout_buffer(painter, efb);
+	evdi_painter_mode_changed_notify(evdi, &mode);
+	/* Keep it armed so a commit still in flight notifies again. */
+	evdi_painter_force_full_modeset(painter);
+	evdi_painter_dpms_notify(painter, DRM_MODE_DPMS_ON);
+
+	rect = evdi_painter_framebuffer_size(painter);
+	evdi_painter_mark_dirty(evdi, &rect);
+	evdi_painter_send_update_ready_if_needed(painter);
+
+	drm_framebuffer_put(&efb->base);
+}
+
 static int
 evdi_painter_connect(struct evdi_device *evdi,
 		     void const __user *edid_data, unsigned int edid_length,
@@ -922,6 +987,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 {
 	struct evdi_painter *painter = evdi->painter;
 	struct edid *new_edid = NULL;
+	bool was_connected;
 	char buf[100];
 
 	evdi_log_process(buf, sizeof(buf));
@@ -952,6 +1018,7 @@ evdi_painter_connect(struct evdi_device *evdi,
 
 	painter_lock(painter);
 
+	was_connected = painter->is_connected;
 	evdi->pixel_area_limit = pixel_area_limit;
 	evdi->pixel_per_second_limit = pixel_per_second_limit;
 	painter->drm_filp = file;
@@ -967,6 +1034,10 @@ evdi_painter_connect(struct evdi_device *evdi,
 	painter_unlock(painter);
 
 	EVDI_INFO("(card%d) Connected with %s\n", evdi->dev_index, buf);
+
+	/* A double connect keeps the painter armed, nothing to replay. */
+	if (!was_connected)
+		evdi_painter_replay_kms_state(evdi);
 
 	drm_helper_hpd_irq_event(evdi->ddev);
 
