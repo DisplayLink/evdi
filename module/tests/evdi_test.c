@@ -55,6 +55,15 @@ void evdi_testhook_painter_send_dpms(int mode)
 		base->hooks.painter_send_dpms(mode);
 }
 
+void evdi_testhook_painter_send_mode_changed(const struct drm_display_mode *mode)
+{
+	struct kunit *test = kunit_get_current_test();
+	struct evdi_test_data *base = test ? (struct evdi_test_data *)test->priv : NULL;
+
+	if (base && base->hooks.painter_send_mode_changed)
+		base->hooks.painter_send_mode_changed(mode);
+}
+
 void evdi_testhook_drm_device_destroyed(void)
 {
 	struct kunit *test = kunit_get_current_test();

@@ -22,14 +22,18 @@
 
 #include <linux/completion.h>
 
+struct drm_display_mode;
+
 /* evdi hooks for kunit tests */
 void evdi_testhook_painter_vt_register(struct notifier_block *vt_notifier);
 void evdi_testhook_painter_send_dpms(int mode);
+void evdi_testhook_painter_send_mode_changed(const struct drm_display_mode *mode);
 void evdi_testhook_drm_device_destroyed(void);
 
 struct evdi_test_hooks {
 	void (*painter_vt_register)(struct notifier_block *vt_notifier);
 	void (*painter_send_dpms)(int mode);
+	void (*painter_send_mode_changed)(const struct drm_display_mode *mode);
 	void (*drm_device_destroyed)(void);
 };
 

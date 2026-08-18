@@ -605,6 +605,7 @@ static void evdi_painter_send_mode_changed(
 	struct drm_pending_event *event = create_mode_changed_event(
 		current_mode, bits_per_pixel, pixel_format);
 
+	EVDI_TEST_HOOK(evdi_testhook_painter_send_mode_changed(current_mode));
 	evdi_painter_send_event(painter, event);
 }
 
