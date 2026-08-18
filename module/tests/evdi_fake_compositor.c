@@ -45,6 +45,8 @@ void evdi_fake_compositor_create(struct kunit *test)
 		.base = {
 			.format = drm_format_info(DRM_FORMAT_XRGB8888),
 			.pitches = { 4*640, 0, 0 },
+			.width = 640,
+			.height = 480,
 			},
 		.obj = NULL,
 		.active = true
@@ -55,18 +57,43 @@ void evdi_fake_compositor_create(struct kunit *test)
 	memcpy(&compositor_data->mode, &default_mode, sizeof(default_mode));
 }
 
+/* Stands in for the atomic commit a real compositor would have done. */
+static void fake_compositor_set_kms_state(struct drm_device *device,
+					  struct evdi_framebuffer *efb,
+					  struct drm_display_mode *mode)
+{
+	struct evdi_device *evdi = (struct evdi_device *)device->dev_private;
+	struct drm_crtc *crtc = evdi->crtc;
+	struct drm_plane *primary = crtc ? crtc->primary : NULL;
+
+	if (!crtc || !crtc->state || !primary || !primary->state)
+		return;
+
+	crtc->state->enable = efb != NULL;
+	crtc->state->active = efb != NULL;
+	primary->state->crtc = efb ? crtc : NULL;
+	primary->state->fb = efb ? &efb->base : NULL;
+
+	if (mode)
+		crtc->state->adjusted_mode = *mode;
+}
+
 void evdi_fake_compositor_connect(struct kunit *test, struct drm_device *device)
 {
 	struct kunit_resource *resource = kunit_find_named_resource(test, "fake_wayland");
 	struct evdi_fake_compositor_data *compositor_data = resource->data;
 	struct evdi_device *evdi = (struct evdi_device *)device->dev_private;
 
+	fake_compositor_set_kms_state(device, compositor_data->efb,
+				      &compositor_data->mode);
+
 	evdi_painter_set_scanout_buffer(evdi->painter, compositor_data->efb);
 	evdi_painter_mode_changed_notify(evdi, &compositor_data->mode);
 	evdi_painter_dpms_notify(evdi->painter, DRM_MODE_DPMS_ON);
 }
 
-void evdi_fake_compositor_disconnect(__maybe_unused struct kunit *test, __maybe_unused struct drm_device *device)
+void evdi_fake_compositor_disconnect(__maybe_unused struct kunit *test, struct drm_device *device)
 {
+	fake_compositor_set_kms_state(device, NULL, NULL);
 }
 
