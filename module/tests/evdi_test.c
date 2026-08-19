@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2024 DisplayLink (UK) Ltd.
+ * Copyright (c) 2024 - 2026 DisplayLink (UK) Ltd.
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License v2. See the file COPYING in the main directory of this archive for
@@ -53,6 +53,15 @@ void evdi_testhook_painter_send_dpms(int mode)
 
 	if (base && base->hooks.painter_send_dpms)
 		base->hooks.painter_send_dpms(mode);
+}
+
+void evdi_testhook_painter_send_mode_changed(const struct drm_display_mode *mode)
+{
+	struct kunit *test = kunit_get_current_test();
+	struct evdi_test_data *base = test ? (struct evdi_test_data *)test->priv : NULL;
+
+	if (base && base->hooks.painter_send_mode_changed)
+		base->hooks.painter_send_mode_changed(mode);
 }
 
 void evdi_testhook_drm_device_destroyed(void)

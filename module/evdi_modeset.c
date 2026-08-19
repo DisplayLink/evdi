@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2026 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -472,6 +472,7 @@ static struct drm_plane *evdi_create_plane(
 
 static int evdi_crtc_init(struct drm_device *dev)
 {
+	struct evdi_device *evdi = dev->dev_private;
 	struct drm_crtc *crtc = NULL;
 	struct drm_plane *primary_plane = NULL;
 	struct drm_plane *cursor_plane = NULL;
@@ -502,6 +503,9 @@ static int evdi_crtc_init(struct drm_device *dev)
 
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
+
+	if (!status)
+		evdi->crtc = crtc;
 
 	return 0;
 }
