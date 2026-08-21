@@ -38,6 +38,23 @@
 #include <drm/drm_framebuffer.h>
 #include <drm/drm_fb_helper.h>
 
+/*
+ * drm-next (>= 7.1.0) renamed the global atomic-state object and its helpers:
+ *   struct drm_atomic_state              -> struct drm_atomic_commit
+ *   drm_atomic_state_alloc/clear/put     -> drm_atomic_commit_alloc/clear/put
+ * The atomic-helper vtable callbacks (.atomic_flush/.atomic_update/...) and the
+ * state accessors (drm_atomic_get_{new,old}_*_state) now take a
+ * struct drm_atomic_commit *. evdi's source still uses the historical names, so
+ * alias them. The old identifiers are fully gone from the tree, so these
+ * whole-token macros are collision-free.
+ */
+#if KERNEL_VERSION(7, 1, 0) <= LINUX_VERSION_CODE
+#define drm_atomic_state		drm_atomic_commit
+#define drm_atomic_state_alloc		drm_atomic_commit_alloc
+#define drm_atomic_state_clear		drm_atomic_commit_clear
+#define drm_atomic_state_put		drm_atomic_commit_put
+#endif
+
 #include "evdi_debug.h"
 #include "tests/evdi_test.h"
 
