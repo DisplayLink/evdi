@@ -32,6 +32,7 @@ requote() {
 	done
 }
 CFLAGS=$(requote "$@")
+CFLAGS="$CFLAGS '-DKBUILD_MODNAME=\"conftest\"' '-DKBUILD_BASENAME=\"conftest\"'"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
