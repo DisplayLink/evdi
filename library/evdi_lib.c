@@ -639,7 +639,9 @@ int evdi_add_device(void)
 // deprecated, use evdi_open_attached_to_fixed
 evdi_handle evdi_open_attached_to(const char *sysfs_parent_device)
 {
-	return evdi_open_attached_to_fixed(sysfs_parent_device, strlen(sysfs_parent_device));
+	return evdi_open_attached_to_fixed(
+		sysfs_parent_device,
+		sysfs_parent_device ? strlen(sysfs_parent_device) : 0);
 }
 
 evdi_handle evdi_open_attached_to_fixed(const char *sysfs_parent_device, size_t length)
