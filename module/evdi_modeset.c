@@ -31,6 +31,7 @@
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
+
 #ifdef EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB
 #include <drm/drm_gem_atomic_helper.h>
 #else
@@ -231,6 +232,47 @@ static void evdi_update_work_fn(struct work_struct *work)
 	}
 }
 
+static bool evdi_frame_slot_due(struct evdi_device *evdi)
+{
+	unsigned int limit = READ_ONCE(evdi_max_fps);
+	s64 period_ns = ktime_to_ns(evdi->vblank_period);
+	unsigned int refresh;
+	int accumulated;
+
+	if (!limit || period_ns <= 0) {
+		atomic_set(&evdi->frame_accumulator, 0);
+		return true;
+	}
+
+	refresh = DIV_ROUND_CLOSEST_ULL(NSEC_PER_SEC, (u64)period_ns);
+
+	if (!refresh || limit >= refresh) {
+		atomic_set(&evdi->frame_accumulator, 0);
+		return true;
+	}
+
+	/*
+	 * Fractional frame scheduler.
+	 *
+	 * Example for 60 Hz / 45 FPS:
+	 *
+	 *   45   -> no frame
+	 *   90-60 = 30 -> frame
+	 *   75-60 = 15 -> frame
+	 *   60-60 =  0 -> frame
+	 *
+	 * giving exactly 3 frames every 4 vblanks.
+	 */
+	accumulated = atomic_add_return(limit, &evdi->frame_accumulator);
+
+	if (accumulated >= refresh) {
+		atomic_sub(refresh, &evdi->frame_accumulator);
+		return true;
+	}
+
+	return false;
+}
+
 static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
 {
 	struct evdi_device *evdi =
@@ -239,10 +281,12 @@ static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
 	if (evdi->crtc)
 		drm_crtc_handle_vblank(evdi->crtc);
 
-	atomic_set(&evdi->frame_token, 1);
+	if (evdi_frame_slot_due(evdi)) {
+		atomic_set(&evdi->frame_token, 1);
 
-	if (atomic_xchg(&evdi->update_pending, 0))
-		schedule_work(&evdi->update_work);
+		if (atomic_xchg(&evdi->update_pending, 0))
+			schedule_work(&evdi->update_work);
+	}
 
 	hrtimer_forward_now(timer, evdi->vblank_period);
 	return HRTIMER_RESTART;
@@ -587,6 +631,7 @@ static int evdi_crtc_init(struct drm_device *dev)
 		INIT_WORK(&evdi->update_work, evdi_update_work_fn);
 		atomic_set(&evdi->update_pending, 0);
 		atomic_set(&evdi->frame_token, 0);
+		atomic_set(&evdi->frame_accumulator, 0);
 #if KERNEL_VERSION(6, 12, 0) <= LINUX_VERSION_CODE
 		hrtimer_setup(&evdi->vblank_timer,
 			      evdi_vblank_timer_fn,

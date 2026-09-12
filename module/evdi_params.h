@@ -11,5 +11,6 @@
 
 extern unsigned int evdi_loglevel;
 extern unsigned short int evdi_initial_device_count;
+extern unsigned int evdi_max_fps;
 
 #endif /* EVDI_PARAMS_H */

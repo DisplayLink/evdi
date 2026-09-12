@@ -67,6 +67,7 @@ struct evdi_device {
 	struct work_struct update_work;
 	atomic_t update_pending;
 	atomic_t frame_token;
+	atomic_t frame_accumulator;
 
 	int dev_index;
 };
