@@ -55,6 +55,9 @@ static void evdi_crtc_destroy(struct drm_crtc *crtc)
 
 	EVDI_CHECKPT();
 	hrtimer_cancel(&evdi->vblank_timer);
+	atomic_set(&evdi->update_pending, 0);
+	atomic_set(&evdi->frame_token, 0);
+	cancel_work_sync(&evdi->update_work);
 	evdi->crtc = NULL;
 	drm_crtc_cleanup(crtc);
 	kfree(crtc);
@@ -118,7 +121,7 @@ static void evdi_crtc_atomic_flush(
 		spin_unlock(&crtc->dev->event_lock);
 		crtc_state->event = NULL;
 	}
-	evdi_painter_send_update_ready_if_needed(evdi->painter);
+	atomic_set(&evdi->update_pending, 1);
 }
 
 #ifdef EVDI_HAVE_DRM_PRIME_PAGES_TO_SG_DEV
@@ -214,8 +217,20 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#if defined(EVDI_HAVE_CRTC_ATOMIC_STATE_ARG) || \
-	defined(EVDI_HAVE_CRTC_ATOMIC_COMMIT_ARG)
+static void evdi_update_work_fn(struct work_struct *work)
+{
+	struct evdi_device *evdi =
+		container_of(work, struct evdi_device, update_work);
+
+	if (atomic_cmpxchg(&evdi->frame_token, 1, 0) != 1)
+		return;
+
+	if (!evdi_painter_send_update_ready_if_needed(evdi->painter)) {
+		/* Nothing was waiting; keep this vblank token available. */
+		atomic_set(&evdi->frame_token, 1);
+	}
+}
+
 static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
 {
 	struct evdi_device *evdi =
@@ -224,24 +239,43 @@ static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
 	if (evdi->crtc)
 		drm_crtc_handle_vblank(evdi->crtc);
 
+	atomic_set(&evdi->frame_token, 1);
+
+	if (atomic_xchg(&evdi->update_pending, 0))
+		schedule_work(&evdi->update_work);
+
 	hrtimer_forward_now(timer, evdi->vblank_period);
 	return HRTIMER_RESTART;
 }
 
+int evdi_vblank_enable(struct evdi_device *evdi)
+{
+	hrtimer_start(&evdi->vblank_timer, evdi->vblank_period,
+		      HRTIMER_MODE_REL);
+	return 0;
+}
+
+void evdi_vblank_disable(struct evdi_device *evdi)
+{
+	hrtimer_cancel(&evdi->vblank_timer);
+	atomic_set(&evdi->update_pending, 0);
+	atomic_set(&evdi->frame_token, 0);
+}
+
+#if defined(EVDI_HAVE_CRTC_ATOMIC_STATE_ARG) || \
+	defined(EVDI_HAVE_CRTC_ATOMIC_COMMIT_ARG)
 static int evdi_enable_vblank(struct drm_crtc *crtc)
 {
 	struct evdi_device *evdi = crtc->dev->dev_private;
 
-	hrtimer_start(&evdi->vblank_timer, evdi->vblank_period,
-		      HRTIMER_MODE_REL);
-	return 0;
+	return evdi_vblank_enable(evdi);
 }
 
 static void evdi_disable_vblank(struct drm_crtc *crtc)
 {
 	struct evdi_device *evdi = crtc->dev->dev_private;
 
-	hrtimer_cancel(&evdi->vblank_timer);
+	evdi_vblank_disable(evdi);
 }
 #endif
 
@@ -550,7 +584,9 @@ static int evdi_crtc_init(struct drm_device *dev)
 	if (!status) {
 		evdi->crtc = crtc;
 		evdi->vblank_period = ktime_set(0, 16666667);
-
+		INIT_WORK(&evdi->update_work, evdi_update_work_fn);
+		atomic_set(&evdi->update_pending, 0);
+		atomic_set(&evdi->frame_token, 0);
 #if KERNEL_VERSION(6, 12, 0) <= LINUX_VERSION_CODE
 		hrtimer_setup(&evdi->vblank_timer,
 			      evdi_vblank_timer_fn,

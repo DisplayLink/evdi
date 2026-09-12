@@ -693,8 +693,10 @@ unlock:
 	painter_unlock(painter);
 }
 
-void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
+bool evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 {
+	bool sent = false;
+
 	EVDI_CHECKPT();
 	if (painter) {
 		painter_lock(painter);
@@ -708,12 +710,15 @@ void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter)
 #endif
 			evdi_painter_send_update_ready(painter);
 			painter->was_update_requested = false;
+			sent = true;
 		}
 
 		painter_unlock(painter);
 	} else {
 		EVDI_WARN("Painter does not exist!\n");
 	}
+
+	return sent;
 }
 
 static const char * const dpms_str[] = { "on", "standby", "suspend", "off" };
@@ -1225,10 +1230,21 @@ int evdi_painter_request_update_ioctl(struct drm_device *drm_dev,
 			  ("(card%d) Update was already requested - ignoring\n",
 			   evdi->dev_index);
 		} else {
-			if (painter->num_dirts > 0)
-				result = 1;
-			else
+			if (painter->num_dirts > 0) {
+				if (atomic_cmpxchg(&evdi->frame_token, 1, 0) == 1) {
+					result = 1;
+				} else {
+					/*
+					 * Dirty pixels exist, but this vblank has
+					 * already been consumed. Wait for the next
+					 * frame token instead of grabbing again.
+					 */
+					painter->was_update_requested = true;
+					atomic_set(&evdi->update_pending, 1);
+				}
+			} else {
 				painter->was_update_requested = true;
+			}
 		}
 
 		painter_unlock(painter);
