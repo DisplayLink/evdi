@@ -31,6 +31,7 @@
 struct evdi_cursor;
 struct evdi_framebuffer;
 struct evdi_gem_object;
+struct evdi_color_data;
 
 int evdi_cursor_init(struct evdi_cursor **cursor);
 void evdi_cursor_free(struct evdi_cursor *cursor);
@@ -57,5 +58,6 @@ struct evdi_gem_object *evdi_cursor_gem(struct evdi_cursor *cursor);
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 				 struct evdi_framebuffer *efb,
 				 char __user *buffer,
-				 int buf_byte_stride);
+				 int buf_byte_stride,
+				 const struct evdi_color_data *color);
 #endif

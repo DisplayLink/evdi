@@ -29,6 +29,7 @@
 #include <drm/drm_crtc_helper.h>
 
 #include "evdi_cursor.h"
+#include "evdi_color.h"
 #include "evdi_drm_drv.h"
 
 /*
@@ -176,17 +177,45 @@ static inline uint32_t blend_alpha(const uint32_t pixel_val32,
 static int evdi_cursor_compose_pixel(char __user *buffer,
 				     int const cursor_value,
 				     int const fb_value,
-				     int cmd_offset)
+				     int cmd_offset,
+				     const struct evdi_color_data *color,
+				     bool swap_rb)
 {
-	int const composed_value = blend_alpha(fb_value, cursor_value);
+	uint32_t composed_value = blend_alpha(fb_value, cursor_value);
+
+	/*
+	 * Primary scanout is already colour-managed in copy_primary_pixels, but
+	 * this path re-blends from the untinted GEM and would undo that under
+	 * the cursor. Apply the same transform to the composed ARGB pixel so
+	 * Night Light matches the desktop (alpha left untouched).
+	 */
+	if (color && color->active) {
+		u8 px[4];
+
+		px[0] = composed_value & 0xff;
+		px[1] = (composed_value >> 8) & 0xff;
+		px[2] = (composed_value >> 16) & 0xff;
+		px[3] = (composed_value >> 24) & 0xff;
+		evdi_color_transform_apply_row(color, px, 1, swap_rb);
+		composed_value = (uint32_t)px[0]
+			| ((uint32_t)px[1] << 8)
+			| ((uint32_t)px[2] << 16)
+			| ((uint32_t)px[3] << 24);
+	}
 
 	return copy_to_user(buffer + cmd_offset, &composed_value, 4);
+}
+
+static bool evdi_cursor_format_swaps_rb(uint32_t format)
+{
+	return format == DRM_FORMAT_XBGR8888 || format == DRM_FORMAT_ABGR8888;
 }
 
 int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 				 struct evdi_framebuffer *efb,
 				 char __user *buffer,
-				 int buf_byte_stride)
+				 int buf_byte_stride,
+				 const struct evdi_color_data *color)
 {
 	int x, y;
 	struct drm_framebuffer *fb = &efb->base;
@@ -194,6 +223,7 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 	const int h_cursor_h = cursor->height >> 1;
 	uint32_t *cursor_buffer = NULL;
 	uint32_t bytespp = 0;
+	const bool swap_rb = evdi_cursor_format_swaps_rb(cursor->pixel_format);
 
 	if (!cursor->enabled)
 		return 0;
@@ -248,7 +278,9 @@ int evdi_cursor_compose_and_copy(struct evdi_cursor *cursor,
 			if (evdi_cursor_compose_pixel(buffer,
 						      curs_val,
 						      fb_value,
-						      cmd_offset)) {
+						      cmd_offset,
+						      color,
+						      swap_rb)) {
 				EVDI_ERROR("Failed to compose cursor pixel\n");
 				return -EFAULT;
 			}
