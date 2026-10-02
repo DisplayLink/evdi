@@ -25,6 +25,7 @@
 MODULE_AUTHOR("DisplayLink (UK) Ltd.");
 MODULE_DESCRIPTION("Extensible Virtual Display Interface");
 MODULE_LICENSE("GPL");
+MODULE_VERSION(__stringify(DRIVER_MAJOR) "." __stringify(DRIVER_MINOR) "." __stringify(DRIVER_PATCH));
 
 #define EVDI_DEVICE_COUNT_MAX 16
 
