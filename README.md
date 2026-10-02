@@ -47,6 +47,6 @@ under GPL v2 and LGPL v2.1-or-later respectively - consult separate `LICENSE` fi
 a separate `LICENSE` file states otherwise) are licensed under MIT license.
 
 
-&copy; Copyright 2015-2025 DisplayLink (UK) Ltd.
+&copy; Copyright 2015-2026 DisplayLink (UK) Ltd.
 
 Linux is a registered trademark of Linus Torvalds in the U.S. and other countries.
