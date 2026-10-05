@@ -17,6 +17,9 @@
 #include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/device.h>
+#include <linux/hrtimer.h>
+#include <linux/workqueue.h>
+#include <linux/atomic.h>
 #include <linux/i2c.h>
 #ifdef EVDI_HAVE_DRMP_H
 #include <drm/drmP.h>
@@ -58,6 +61,14 @@ struct evdi_device {
 	struct evdi_painter *painter;
 	struct i2c_adapter *i2c_adapter;
 
+	struct hrtimer vblank_timer;
+	ktime_t vblank_period;
+
+	struct work_struct update_work;
+	atomic_t update_pending;
+	atomic_t frame_token;
+	atomic_t frame_accumulator;
+
 	int dev_index;
 };
 
@@ -88,6 +99,8 @@ struct evdi_framebuffer {
 /* modeset */
 void evdi_modeset_init(struct drm_device *dev);
 void evdi_modeset_cleanup(struct drm_device *dev);
+int evdi_vblank_enable(struct evdi_device *evdi);
+void evdi_vblank_disable(struct evdi_device *evdi);
 int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
@@ -141,10 +154,7 @@ u8 *evdi_painter_get_edid_copy(struct evdi_device *evdi);
 int evdi_painter_get_num_dirts(struct evdi_painter *painter);
 void evdi_painter_mark_dirty(struct evdi_device *evdi,
 			     const struct drm_clip_rect *rect);
-void evdi_painter_set_vblank(struct evdi_painter *painter,
-			     struct drm_crtc *crtc,
-			     struct drm_pending_vblank_event *vblank);
-void evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter);
+bool evdi_painter_send_update_ready_if_needed(struct evdi_painter *painter);
 void evdi_painter_dpms_notify(struct evdi_painter *painter, int mode);
 void evdi_painter_mode_changed_notify(struct evdi_device *evdi,
 				      struct drm_display_mode *mode);

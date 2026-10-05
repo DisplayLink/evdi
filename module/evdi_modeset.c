@@ -31,6 +31,7 @@
 #include "evdi_drm_drv.h"
 #include "evdi_cursor.h"
 #include "evdi_params.h"
+
 #ifdef EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB
 #include <drm/drm_gem_atomic_helper.h>
 #else
@@ -51,7 +52,14 @@ static void evdi_crtc_disable(__always_unused struct drm_crtc *crtc)
 
 static void evdi_crtc_destroy(struct drm_crtc *crtc)
 {
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
 	EVDI_CHECKPT();
+	hrtimer_cancel(&evdi->vblank_timer);
+	atomic_set(&evdi->update_pending, 0);
+	atomic_set(&evdi->frame_token, 0);
+	cancel_work_sync(&evdi->update_work);
+	evdi->crtc = NULL;
 	drm_crtc_cleanup(crtc);
 	kfree(crtc);
 }
@@ -87,16 +95,34 @@ static void evdi_crtc_atomic_flush(
 				   (crtc_state->mode_changed || evdi_painter_needs_full_modeset(evdi->painter));
 	bool notify_dpms = crtc_state->active_changed || evdi_painter_needs_full_modeset(evdi->painter);
 
-	if (notify_mode_changed)
-		evdi_painter_mode_changed_notify(evdi, &crtc_state->adjusted_mode);
+	if (notify_mode_changed) {
+		struct drm_display_mode *m = &crtc_state->adjusted_mode;
 
-	if (notify_dpms)
+		if (m->htotal && m->vtotal && m->clock)
+			evdi->vblank_period = ktime_set(0,
+				(u64)m->vtotal * m->htotal *
+				1000000ULL / m->clock);
+
+		evdi_painter_mode_changed_notify(evdi, m);
+	}
+
+	if (notify_dpms) {
+		if (crtc_state->active)
+			drm_crtc_vblank_on(crtc);
 		evdi_painter_dpms_notify(evdi->painter,
 			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
+	}
 
-	evdi_painter_set_vblank(evdi->painter, crtc, crtc_state->event);
-	evdi_painter_send_update_ready_if_needed(evdi->painter);
-	crtc_state->event = NULL;
+	if (crtc_state->event) {
+		spin_lock(&crtc->dev->event_lock);
+		if (drm_crtc_vblank_get(crtc) != 0)
+			drm_crtc_send_vblank_event(crtc, crtc_state->event);
+		else
+			drm_crtc_arm_vblank_event(crtc, crtc_state->event);
+		spin_unlock(&crtc->dev->event_lock);
+		crtc_state->event = NULL;
+	}
+	atomic_set(&evdi->update_pending, 1);
 }
 
 #ifdef EVDI_HAVE_DRM_PRIME_PAGES_TO_SG_DEV
@@ -192,14 +218,108 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#ifdef EVDI_HAVE_CRTC_ATOMIC_STATE_ARG
-static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
+static void evdi_update_work_fn(struct work_struct *work)
 {
-	return 1;
+	struct evdi_device *evdi =
+		container_of(work, struct evdi_device, update_work);
+
+	if (atomic_cmpxchg(&evdi->frame_token, 1, 0) != 1)
+		return;
+
+	if (!evdi_painter_send_update_ready_if_needed(evdi->painter)) {
+		/* Nothing was waiting; keep this vblank token available. */
+		atomic_set(&evdi->frame_token, 1);
+	}
 }
 
-static void evdi_disable_vblank(__always_unused struct drm_crtc *crtc)
+static bool evdi_frame_slot_due(struct evdi_device *evdi)
 {
+	unsigned int limit = READ_ONCE(evdi_max_fps);
+	s64 period_ns = ktime_to_ns(evdi->vblank_period);
+	unsigned int refresh;
+	int accumulated;
+
+	if (!limit || period_ns <= 0) {
+		atomic_set(&evdi->frame_accumulator, 0);
+		return true;
+	}
+
+	refresh = DIV_ROUND_CLOSEST_ULL(NSEC_PER_SEC, (u64)period_ns);
+
+	if (!refresh || limit >= refresh) {
+		atomic_set(&evdi->frame_accumulator, 0);
+		return true;
+	}
+
+	/*
+	 * Fractional frame scheduler.
+	 *
+	 * Example for 60 Hz / 45 FPS:
+	 *
+	 *   45   -> no frame
+	 *   90-60 = 30 -> frame
+	 *   75-60 = 15 -> frame
+	 *   60-60 =  0 -> frame
+	 *
+	 * giving exactly 3 frames every 4 vblanks.
+	 */
+	accumulated = atomic_add_return(limit, &evdi->frame_accumulator);
+
+	if (accumulated >= refresh) {
+		atomic_sub(refresh, &evdi->frame_accumulator);
+		return true;
+	}
+
+	return false;
+}
+
+static enum hrtimer_restart evdi_vblank_timer_fn(struct hrtimer *timer)
+{
+	struct evdi_device *evdi =
+		container_of(timer, struct evdi_device, vblank_timer);
+
+	if (evdi->crtc)
+		drm_crtc_handle_vblank(evdi->crtc);
+
+	if (evdi_frame_slot_due(evdi)) {
+		atomic_set(&evdi->frame_token, 1);
+
+		if (atomic_xchg(&evdi->update_pending, 0))
+			schedule_work(&evdi->update_work);
+	}
+
+	hrtimer_forward_now(timer, evdi->vblank_period);
+	return HRTIMER_RESTART;
+}
+
+int evdi_vblank_enable(struct evdi_device *evdi)
+{
+	hrtimer_start(&evdi->vblank_timer, evdi->vblank_period,
+		      HRTIMER_MODE_REL);
+	return 0;
+}
+
+void evdi_vblank_disable(struct evdi_device *evdi)
+{
+	hrtimer_cancel(&evdi->vblank_timer);
+	atomic_set(&evdi->update_pending, 0);
+	atomic_set(&evdi->frame_token, 0);
+}
+
+#if defined(EVDI_HAVE_CRTC_ATOMIC_STATE_ARG) || \
+	defined(EVDI_HAVE_CRTC_ATOMIC_COMMIT_ARG)
+static int evdi_enable_vblank(struct drm_crtc *crtc)
+{
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
+	return evdi_vblank_enable(evdi);
+}
+
+static void evdi_disable_vblank(struct drm_crtc *crtc)
+{
+	struct evdi_device *evdi = crtc->dev->dev_private;
+
+	evdi_vblank_disable(evdi);
 }
 #endif
 
@@ -216,7 +336,8 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
 #endif
-#ifdef EVDI_HAVE_CRTC_ATOMIC_STATE_ARG
+#if defined(EVDI_HAVE_CRTC_ATOMIC_STATE_ARG) || \
+	defined(EVDI_HAVE_CRTC_ATOMIC_COMMIT_ARG)
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
 #endif
@@ -507,8 +628,23 @@ static int evdi_crtc_init(struct drm_device *dev)
 	EVDI_DEBUG("drm_crtc_init: %d p%p\n", status, primary_plane);
 	drm_crtc_helper_add(crtc, &evdi_helper_funcs);
 
-	if (!status)
+	if (!status) {
 		evdi->crtc = crtc;
+		evdi->vblank_period = ktime_set(0, 16666667);
+		INIT_WORK(&evdi->update_work, evdi_update_work_fn);
+		atomic_set(&evdi->update_pending, 0);
+		atomic_set(&evdi->frame_token, 0);
+		atomic_set(&evdi->frame_accumulator, 0);
+#if KERNEL_VERSION(6, 12, 0) <= LINUX_VERSION_CODE
+		hrtimer_setup(&evdi->vblank_timer,
+			      evdi_vblank_timer_fn,
+			      CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+#else
+		hrtimer_init(&evdi->vblank_timer, CLOCK_MONOTONIC,
+			     HRTIMER_MODE_REL);
+		evdi->vblank_timer.function = evdi_vblank_timer_fn;
+#endif
+	}
 
 	return 0;
 }
