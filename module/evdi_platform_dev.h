@@ -40,7 +40,7 @@ int evdi_platform_device_remove(struct platform_device *pdev);
 bool evdi_platform_device_is_free(struct platform_device *pdev);
 void evdi_platform_device_link(struct platform_device *pdev,
 				struct device *parent);
-void evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
+bool evdi_platform_device_unlink_if_linked_with(struct platform_device *pdev,
 				struct device *parent);
 
 #endif
