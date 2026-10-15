@@ -192,7 +192,7 @@ static struct drm_crtc_helper_funcs evdi_helper_funcs = {
 	.disable        = evdi_crtc_disable
 };
 
-#ifdef EVDI_HAVE_CRTC_ATOMIC_STATE_ARG
+#if defined(EVDI_HAVE_IOSYS_MAP) || defined(EVDI_HAVE_DMA_BUF_MAP)
 static int evdi_enable_vblank(__always_unused struct drm_crtc *crtc)
 {
 	return 1;
@@ -216,7 +216,7 @@ static const struct drm_crtc_funcs evdi_crtc_funcs = {
 	.cursor_set2            = evdi_crtc_cursor_set,
 	.cursor_move            = evdi_crtc_cursor_move,
 #endif
-#ifdef EVDI_HAVE_CRTC_ATOMIC_STATE_ARG
+#if defined(EVDI_HAVE_IOSYS_MAP) || defined(EVDI_HAVE_DMA_BUF_MAP)
 	.enable_vblank          = evdi_enable_vblank,
 	.disable_vblank         = evdi_disable_vblank,
 #endif
