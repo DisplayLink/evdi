@@ -114,9 +114,16 @@ static void evdi_crtc_atomic_flush(
 			crtc_state->active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
 	}
 
-	evdi_painter_set_vblank(evdi->painter, crtc, crtc_state->event);
+	if (crtc_state->event) {
+		spin_lock_irq(&crtc->dev->event_lock);
+		if (drm_crtc_vblank_get(crtc) != 0)
+			drm_crtc_send_vblank_event(crtc, crtc_state->event);
+		else
+			drm_crtc_arm_vblank_event(crtc, crtc_state->event);
+		spin_unlock_irq(&crtc->dev->event_lock);
+		crtc_state->event = NULL;
+	}
 	evdi_painter_send_update_ready_if_needed(evdi->painter);
-	crtc_state->event = NULL;
 }
 
 #ifdef EVDI_HAVE_DRM_PRIME_PAGES_TO_SG_DEV
