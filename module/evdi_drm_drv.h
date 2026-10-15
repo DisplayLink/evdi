@@ -17,6 +17,7 @@
 #include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/device.h>
+#include <linux/hrtimer.h>
 #include <linux/i2c.h>
 #ifdef EVDI_HAVE_DRMP_H
 #include <drm/drmP.h>
@@ -58,6 +59,9 @@ struct evdi_device {
 	struct evdi_painter *painter;
 	struct i2c_adapter *i2c_adapter;
 
+	struct hrtimer vblank_timer;
+	ktime_t vblank_period;
+
 	int dev_index;
 };
 
@@ -88,6 +92,8 @@ struct evdi_framebuffer {
 /* modeset */
 void evdi_modeset_init(struct drm_device *dev);
 void evdi_modeset_cleanup(struct drm_device *dev);
+void evdi_crtc_set_vblank_period(struct evdi_device *evdi,
+				 const struct drm_display_mode *mode);
 int evdi_connector_init(struct drm_device *dev, struct drm_encoder *encoder);
 
 struct drm_encoder *evdi_encoder_init(struct drm_device *dev);
