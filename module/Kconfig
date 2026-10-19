@@ -25,6 +25,7 @@ config DRM_EVDI_KUNIT_TEST
 		depends on DRM_EVDI && KUNIT
 		default KUNIT_ALL_TESTS
 		select DRM_TTM_HELPER
+		select TRACEPOINTS
 	help
 		KUnit tests for evdi DRM module.
 		This option is useful for kernel developers.

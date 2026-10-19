@@ -419,10 +419,16 @@ static const struct drm_plane_helper_funcs evdi_cursor_helper_funcs = {
 #endif
 };
 
+static void evdi_plane_destroy(struct drm_plane *plane)
+{
+	drm_plane_cleanup(plane);
+	kfree(plane);
+}
+
 static const struct drm_plane_funcs evdi_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
-	.destroy = drm_plane_cleanup,
+	.destroy = evdi_plane_destroy,
 	.reset = drm_atomic_helper_plane_reset,
 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
