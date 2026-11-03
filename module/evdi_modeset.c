@@ -204,7 +204,11 @@ static void evdi_disable_vblank(__always_unused struct drm_crtc *crtc)
 #endif
 
 static const struct drm_crtc_funcs evdi_crtc_funcs = {
+#ifdef EVDI_HAVE_CRTC_PLANE_FUNCS_RESET
 	.reset                  = drm_atomic_helper_crtc_reset,
+#else
+	.atomic_create_state    = drm_atomic_helper_crtc_create_state,
+#endif
 	.destroy                = evdi_crtc_destroy,
 	.set_config             = drm_atomic_helper_set_config,
 	.page_flip              = drm_atomic_helper_page_flip,
@@ -423,7 +427,11 @@ static const struct drm_plane_funcs evdi_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
 	.destroy = drm_plane_cleanup,
+#ifdef EVDI_HAVE_CRTC_PLANE_FUNCS_RESET
 	.reset = drm_atomic_helper_plane_reset,
+#else
+	.atomic_create_state = drm_atomic_helper_plane_create_state,
+#endif
 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
 };

@@ -36,7 +36,11 @@
 #include <drm/drm_rect.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_framebuffer.h>
+#ifdef EVDI_HAVE_CLIENTS_DRM_FBDEV_HELPER_H
+#include <drm/clients/drm_fbdev_helper.h>
+#else
 #include <drm/drm_fb_helper.h>
+#endif
 
 #include "evdi_debug.h"
 #include "tests/evdi_test.h"

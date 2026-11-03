@@ -149,6 +149,23 @@ compile_test EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB <<'EOF'
 void *conftest = (void *)&drm_gem_plane_helper_prepare_fb;
 EOF
 
+# <drm/drm_fb_helper.h> moved to <drm/clients/drm_fbdev_helper.h> in 7.4.
+compile_test EVDI_HAVE_CLIENTS_DRM_FBDEV_HELPER_H <<'EOF'
+#include <drm/clients/drm_fbdev_helper.h>
+static void conftest(void) { }
+EOF
+
+# drm_crtc_funcs/drm_plane_funcs lost .reset in 7.4 (use .atomic_create_state).
+compile_test EVDI_HAVE_CRTC_PLANE_FUNCS_RESET <<'EOF'
+#include <drm/drm_crtc.h>
+#include <drm/drm_plane.h>
+static void conftest(struct drm_crtc_funcs *c, struct drm_plane_funcs *p)
+{
+	c->reset = (void *)0;
+	p->reset = (void *)0;
+}
+EOF
+
 # drm_mode_config_funcs lost its .output_poll_changed member in 6.12.
 compile_test EVDI_HAVE_OUTPUT_POLL_CHANGED <<'EOF'
 #include <drm/drm_mode_config.h>
