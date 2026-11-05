@@ -271,6 +271,9 @@ struct drm_framebuffer *evdi_fb_user_fb_create(
 		return ERR_PTR(-EINVAL);
 	}
 
+	if (!drm_any_plane_has_format(dev, mode_cmd->pixel_format, mode_cmd->modifier[0]))
+		return ERR_PTR(-EINVAL);
+
 	obj = drm_gem_object_lookup(file, mode_cmd->handles[0]);
 	if (obj == NULL)
 		return ERR_PTR(-ENOENT);
