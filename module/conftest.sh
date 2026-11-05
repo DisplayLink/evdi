@@ -416,4 +416,13 @@ static void conftest(struct drm_device *dev, struct drm_framebuffer *fb,
 }
 EOF
 
+compile_test EVDI_HAVE_HRTIMER_SETUP <<'EOF'
+#include <linux/hrtimer.h>
+static enum hrtimer_restart conftest_fn(struct hrtimer *t) { return HRTIMER_NORESTART; }
+static void conftest(struct hrtimer *t)
+{
+	hrtimer_setup(t, conftest_fn, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+}
+EOF
+
 echo "#endif /* EVDI_DETECT_H */" >> "$OUT"
