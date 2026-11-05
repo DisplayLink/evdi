@@ -81,15 +81,20 @@ static const struct file_operations evdi_driver_fops = {
 
 #if defined(EVDI_HAVE_IOSYS_MAP) || defined(EVDI_HAVE_DMA_BUF_MAP)
 #else
-static int evdi_enable_vblank(__always_unused struct drm_device *dev,
+static int evdi_enable_vblank(struct drm_device *dev,
 			      __always_unused unsigned int pipe)
 {
-	return 1;
+	struct evdi_device *evdi = dev->dev_private;
+
+	return evdi_vblank_enable(evdi);
 }
 
-static void evdi_disable_vblank(__always_unused struct drm_device *dev,
+static void evdi_disable_vblank(struct drm_device *dev,
 				__always_unused unsigned int pipe)
 {
+	struct evdi_device *evdi = dev->dev_private;
+
+	evdi_vblank_disable(evdi);
 }
 #endif
 
