@@ -21,7 +21,8 @@
 #include <drm/drm_crtc_helper.h>
 #ifdef EVDI_HAVE_CLIENTS_DRM_FBDEV_HELPER_H
 #include <drm/clients/drm_fbdev_helper.h>
-#else
+#endif
+#ifdef EVDI_HAVE_DRM_FB_HELPER_H
 #include <drm/drm_fb_helper.h>
 #endif
 #include <drm/drm_atomic.h>

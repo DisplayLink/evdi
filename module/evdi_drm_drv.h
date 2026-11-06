@@ -38,7 +38,8 @@
 #include <drm/drm_framebuffer.h>
 #ifdef EVDI_HAVE_CLIENTS_DRM_FBDEV_HELPER_H
 #include <drm/clients/drm_fbdev_helper.h>
-#else
+#endif
+#ifdef EVDI_HAVE_DRM_FB_HELPER_H
 #include <drm/drm_fb_helper.h>
 #endif
 

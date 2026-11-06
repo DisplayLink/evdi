@@ -150,6 +150,13 @@ compile_test EVDI_HAVE_DRM_GEM_PLANE_HELPER_PREPARE_FB <<'EOF'
 void *conftest = (void *)&drm_gem_plane_helper_prepare_fb;
 EOF
 
+# <drm/drm_fb_helper.h> removed in 7.4.
+compile_test EVDI_HAVE_DRM_FB_HELPER_H <<'EOF'
+#include <drm/drm_fb_helper.h>
+static void conftest(void) { }
+EOF
+
+
 # <drm/drm_fb_helper.h> moved to <drm/clients/drm_fbdev_helper.h> in 7.4.
 compile_test EVDI_HAVE_CLIENTS_DRM_FBDEV_HELPER_H <<'EOF'
 #include <drm/clients/drm_fbdev_helper.h>
