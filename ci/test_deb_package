@@ -82,7 +82,7 @@ inspect_deb_contents()
   rm -rf "$temp_dir"
 }
 
-# shellcheck disable=SC1090
+# shellcheck source=ci/deb_config
 . "$(dirname "${BASH_SOURCE[0]}")/deb_config" || exit 1
 
 

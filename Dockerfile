@@ -1,5 +1,5 @@
 # Copyright (c) 2022 DisplayLink (UK) Ltd.
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 MAINTAINER Synaptics Technical Support <technical-enquiries@synaptics.com>
 
 # Install basic tools
@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
 # Install java for Synopsys detect
 RUN apt-get update && apt-get install -y default-jre default-jdk && apt-get clean
 
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
 
 RUN dpkg --add-architecture i386
 RUN dpkg --add-architecture armhf
@@ -42,11 +42,16 @@ RUN apt-get update && apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux
 
 
 # Dependencies for pybind
-RUN apt-get update && apt-get install -y python3 libpython3-dev python3-pip && apt-get clean
-RUN pip3 install pybind11
+RUN apt-get update && apt-get install -y python3 libpython3-dev python3-pip python3-venv && apt-get clean
+ENV VIRTUAL_ENV=/tmp/venv
+# Set the virtual environment
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN pip install pybind11
+
 
 # needed to generate the compile_commands.json
-run apt-get update && apt-get install -y bear && apt-get clean
+RUN apt-get update && apt-get install -y bear && apt-get clean
 
 # Install SonarQube utils
 RUN cd /tmp && curl -ksSLo sonar-scanner-cli.zip https://artifactory.cam.displaylink.com:443/artifactory/third-party-tools/SonarQube/sonar-scanner-cli-linux.zip

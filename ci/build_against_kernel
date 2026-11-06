@@ -209,13 +209,32 @@ prepare_sources() { ( # PACKAGE SOURCES CC
 prepare_kernel() { ( # SRC_DIR CC
   cd "${1}"
 
-  make olddefconfig CC="${2}" --jobs="${JOBS}"
-  make prepare CC="${2}" --jobs="${JOBS}"
-  make modules_prepare CC="${2}" --jobs="${JOBS}"
+  local compat_flags=()
+
+  # Compatibility flags for kernels older than 5.16.
+  if [[ "${KVER}" =~ ^([0-9]+)\.([0-9]+) ]] &&
+     (( 10#${BASH_REMATCH[1]} < 5 ||
+        (10#${BASH_REMATCH[1]} == 5 && 10#${BASH_REMATCH[2]} < 17) )); then
+    # libsubcmd and objtool use different flags for newer GCC diagnostics.
+    compat_flags=(EXTRA_CFLAGS="-Wno-error=use-after-free -Wno-error=redundant-decls"
+                  HOSTCFLAGS="${HOSTCFLAGS:-} -Wno-error=format-truncation -Wno-error=redundant-decls")
+
+    # Older SELinux tools must not use newer host libc socket definitions.
+    local source
+    for source in scripts/selinux/genheaders/genheaders.c scripts/selinux/mdp/mdp.c; do
+      if [[ -f "${source}" ]]; then
+        sed -i 's|^#include <sys/socket.h>$|#include <linux/socket.h>|' "${source}"
+      fi
+    done
+  fi
+
+  make olddefconfig CC="${2}" "${compat_flags[@]}" --jobs="${JOBS}"
+  make prepare CC="${2}" "${compat_flags[@]}" --jobs="${JOBS}"
+  make modules_prepare CC="${2}" "${compat_flags[@]}" --jobs="${JOBS}"
 
   if [[ "${KVER}" != "master" ]] && [[ "${KVER}" != "main" ]] ; then
     if [[ "${KVER:0:1}" -lt "5" ]]; then
-      make scripts CC="${2}" --jobs="${JOBS}"
+      make scripts CC="${2}" "${compat_flags[@]}" --jobs="${JOBS}"
     fi
   fi
 ) }
@@ -334,4 +353,3 @@ do
 
   shift
 done
-

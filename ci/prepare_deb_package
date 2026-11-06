@@ -100,7 +100,7 @@ Version: $evdi_version-$debian_revision
 Maintainer: $evdi_maintainer
 Source: evdi
 Section: kernel
-Depends: mokutil, dkms
+Depends: mokutil, dkms, libc6
 Conflicts: libevdi${libevdi_abi}, libevdi${libevdi_abi}-dev, evdi-dkms
 Architecture: $evdi_arch
 Priority: optional
@@ -162,7 +162,7 @@ EOF
 
   (
     cd "$temp_dir"
-    fakeroot dpkg-deb --build EVDI
+    dpkg-deb --root-owner-group --build EVDI
   )
 
   mv "$temp_dir/EVDI.deb" "evdi-${evdi_version}-${debian_revision}_${evdi_arch}.deb"
@@ -176,11 +176,10 @@ evdi_package_name=
 evdi_version=
 evdi_description=
 evdi_maintainer=
-# shellcheck disable=SC1090
+# shellcheck source=ci/deb_config
 . "$script_dir/deb_config" || exit 1
 
 
 : "${evdi_maintainer:?}" "${evdi_description:?}" "${evdi_version:?}"
 
 create_evdi_deb_package "$script_dir/.."
-

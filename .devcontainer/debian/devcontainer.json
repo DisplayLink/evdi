@@ -1,6 +1,6 @@
 {
   "name": "Evdi debian dev-container",
-  "image": "artifactory.cam.displaylink.com:6001/swt/evdi:1.0",
+  "image": "artifactory.cam.displaylink.com:6001/swt/evdi:1.1",
   //"build": {
   //  "dockerfile": "../../Dockerfile"
   //},

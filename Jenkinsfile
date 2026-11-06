@@ -2,7 +2,7 @@
 pipeline {
     agent {
         docker {
-            image "swt/evdi:1.0"
+            image "swt/evdi:1.1"
             label 'linux && big && docker'
         }
     }
@@ -97,7 +97,7 @@ pipeline {
             }
         }
         stage ('Build against latest rc kernel') {
-            steps { 
+            steps {
                 sh '''#!/usr/bin/env bash
                 set -e
                 ./ci/build_against_kernel --repo-ci rc'''

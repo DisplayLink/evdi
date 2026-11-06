@@ -6,7 +6,7 @@ set -eu
 script_dir="$(dirname "${BASH_SOURCE[0]}")"
 
 evdi_version=
-# shellcheck disable=SC1090
+# shellcheck source=ci/deb_config
 . "$script_dir/deb_config"
 
 git_evdi_version=
@@ -15,4 +15,3 @@ git_evdi_version=
   [[ "${git_evdi_version}" != "v${evdi_version}" ]]  && (echo >&2 "evdi version v$evdi_version does not match git tag ${git_evdi_version}" && exit 1)
   echo "evdi version v$evdi_version match git tag ${git_evdi_version}"
 )
-

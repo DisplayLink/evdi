@@ -19,7 +19,7 @@ pipeline {
         stage ('Validate vanilla kernel against origin/main') {
             agent {
                 docker {
-                    image "swt/evdi:1.0"
+                    image "swt/evdi:1.1"
                     label 'linux && big && docker'
                     reuseNode true
                 }
@@ -75,7 +75,7 @@ pipeline {
         stage ('Validate vanilla kernel against github/main') {
             agent {
                 docker {
-                    image "swt/evdi:1.0"
+                    image "swt/evdi:1.1"
                     label 'linux && big && docker'
                     reuseNode true
                 }
