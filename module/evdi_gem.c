@@ -51,6 +51,55 @@ static const struct vm_operations_struct evdi_gem_vm_ops = {
 	.close = drm_gem_vm_close,
 };
 
+static int evdi_pin_pages(struct evdi_gem_object *obj);
+static void evdi_unpin_pages(struct evdi_gem_object *obj);
+
+static int evdi_gem_object_vmap(struct drm_gem_object *gem,
+#ifdef EVDI_HAVE_IOSYS_MAP
+				struct iosys_map *map)
+#else
+				struct dma_buf_map *map)
+#endif
+{
+	struct evdi_gem_object *obj = to_evdi_bo(gem);
+	int page_count = DIV_ROUND_UP(gem->size, PAGE_SIZE);
+	int ret;
+
+	ret = evdi_pin_pages(obj);
+	if (ret)
+		return ret;
+
+	obj->vmapping = vmap(obj->pages, page_count, 0, PAGE_KERNEL);
+	if (!obj->vmapping) {
+		evdi_unpin_pages(obj);
+		return -ENOMEM;
+	}
+
+#ifdef EVDI_HAVE_IOSYS_MAP
+	iosys_map_set_vaddr(map, obj->vmapping);
+#else
+	dma_buf_map_set_vaddr(map, obj->vmapping);
+#endif
+
+	return 0;
+}
+
+static void evdi_gem_object_vunmap(struct drm_gem_object *gem,
+#ifdef EVDI_HAVE_IOSYS_MAP
+				   struct iosys_map *map)
+#else
+				   struct dma_buf_map *map)
+#endif
+{
+	struct evdi_gem_object *obj = to_evdi_bo(gem);
+
+	if (obj->vmapping) {
+		vunmap(obj->vmapping);
+		obj->vmapping = NULL;
+		evdi_unpin_pages(obj);
+	}
+}
+
 static struct drm_gem_object_funcs gem_obj_funcs = {
 	.free = evdi_gem_free_object,
 	.pin = evdi_prime_pin,
@@ -58,6 +107,8 @@ static struct drm_gem_object_funcs gem_obj_funcs = {
 	.vm_ops = &evdi_gem_vm_ops,
 	.export = drm_gem_prime_export,
 	.get_sg_table = evdi_prime_get_sg_table,
+	.vmap = evdi_gem_object_vmap,
+	.vunmap = evdi_gem_object_vunmap,
 };
 #endif
 
@@ -384,8 +435,13 @@ int evdi_gem_vmap(struct evdi_gem_object *obj)
 # else
 		ret = dma_buf_vmap(obj->base.import_attach->dmabuf, &map);
 # endif
-		if (ret)
-			return -ENOMEM;
+		if (ret) {
+			pr_err("evdi: dma_buf_vmap_unlocked failed: ret=%d owner=%s\n",
+			       ret,
+			       obj->base.import_attach->dmabuf->owner ?
+			       obj->base.import_attach->dmabuf->owner->name : "<none>");
+			return ret;
+		}
 		obj->vmapping = map.vaddr;
 		obj->vmap_is_iomem = map.is_iomem;
 #else
