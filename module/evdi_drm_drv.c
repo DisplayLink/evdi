@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2012 Red Hat
- * Copyright (c) 2015 - 2020 DisplayLink (UK) Ltd.
+ * Copyright (c) 2015 - 2026 DisplayLink (UK) Ltd.
  *
  * Based on parts on udlfb.c:
  * Copyright (C) 2009 its respective authors
@@ -159,6 +159,7 @@ static void evdi_drm_device_release_cb(__always_unused struct drm_device *dev,
 {
 	struct evdi_device *evdi = dev->dev_private;
 
+	hrtimer_cancel(&evdi->vblank_timer);
 	evdi_cursor_free(evdi->cursor);
 	evdi_painter_cleanup(evdi->painter);
 	kfree(evdi);
