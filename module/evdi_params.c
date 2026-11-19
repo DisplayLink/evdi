@@ -15,6 +15,7 @@
 
 unsigned int evdi_loglevel __read_mostly = EVDI_LOGLEVEL_INFO;
 unsigned short int evdi_initial_device_count __read_mostly;
+unsigned int evdi_max_fps __read_mostly;
 
 module_param_named(initial_loglevel, evdi_loglevel, int, 0400);
 MODULE_PARM_DESC(initial_loglevel, "Initial log level");
@@ -22,4 +23,8 @@ MODULE_PARM_DESC(initial_loglevel, "Initial log level");
 module_param_named(initial_device_count,
 		   evdi_initial_device_count, ushort, 0644);
 MODULE_PARM_DESC(initial_device_count, "Initial DRM device count (default: 0)");
+
+module_param_named(max_fps, evdi_max_fps, uint, 0644);
+MODULE_PARM_DESC(max_fps,
+		 "Maximum EVDI update rate (0 = native refresh)");
 
